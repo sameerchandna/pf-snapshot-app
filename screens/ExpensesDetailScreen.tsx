@@ -1,0 +1,187 @@
+import React, { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSnapshot } from '../SnapshotContext';
+import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import { ExpenseItem, Group } from '../types';
+import { selectSnapshotExpenses } from '../selectors';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
+import EducationBox from '../components/EducationBox';
+
+function createId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+}
+
+function formatGBP(value: number): string {
+  return formatCurrencyFull(value);
+}
+
+const expensesHelpContent: HelpContent = {
+  title: 'Expenses',
+  sections: [
+    {
+      heading: 'Where this fits in the model',
+      paragraphs: [
+        'Expenses are ongoing monthly cash outflows.',
+        'They reduce how much money is available to grow assets or reduce liabilities.',
+        'Expenses are recorded in Snapshot and carried unchanged into Projection.',
+      ],
+    },
+    {
+      heading: 'What are Expenses?',
+      paragraphs: [
+        'Expenses are money you spend that does not come back.',
+        'They include recurring costs such as:',
+      ],
+      bullets: [
+        'housing and property costs',
+        'transport and insurance',
+        'subscriptions and lifestyle spending',
+      ],
+      paragraphsAfter: [
+        'Whether discretionary or essential, all expenses permanently leave your system.',
+      ],
+    },
+    {
+      heading: 'Expenses and interest',
+      paragraphs: [
+        'Interest paid on loans is also treated as an expense.',
+        'This is because interest:',
+      ],
+      bullets: [
+        'leaves your system permanently',
+        'does not build assets',
+        'does not reduce the original debt balance',
+      ],
+      paragraphsAfter: [
+        'For this reason, loan interest appears alongside other expenses.',
+      ],
+    },
+    {
+      heading: 'Why Expenses matter',
+      paragraphs: [
+        'Expenses directly shape your financial trajectory.',
+        'They determine:',
+      ],
+      bullets: [
+        'how much cash is available each month',
+        'how quickly assets can grow',
+        'how quickly liabilities can fall',
+      ],
+      paragraphsAfter: [
+        'Small differences in monthly expenses can lead to large differences over time when projected forward.',
+      ],
+    },
+    {
+      heading: 'How to use this screen',
+      paragraphs: [
+        'Enter all recurring expenses you want reflected in your finances.',
+        'Amounts should be entered as monthly values.',
+        'If you pay something annually or irregularly, convert it to a monthly amount.',
+      ],
+      example: {
+        text: 'Council Tax of £2,400 per year → enter ',
+        boldValue: '£200 per month',
+      },
+      paragraphsAfter: [
+        'You can group expenses in any way that helps you understand where money is going (for example: Property, Transport, Lifestyle).',
+      ],
+    },
+    {
+      heading: 'What this screen does not do',
+      paragraphs: [
+        'This screen:',
+      ],
+      bullets: [
+        'does not judge expenses as good or bad',
+        'does not suggest reductions or optimisations',
+        'does not assume expenses will change over time',
+      ],
+      paragraphsAfter: [
+        'It is observational, not advisory.',
+      ],
+    },
+    {
+      heading: 'Common surprises',
+      bullets: [
+        'Reducing expenses often has a larger long-term impact than increasing investment returns',
+        'Loan interest can be one of the largest hidden expenses',
+        'Annual costs matter more once averaged monthly',
+      ],
+    },
+    {
+      heading: 'How this affects Projection',
+      paragraphs: [
+        'In Projection, expenses are assumed to continue each month unless changed.',
+        'Lower expenses increase available cash every month, which compounds over time through:',
+      ],
+      bullets: [
+        'higher asset contributions',
+        'faster debt reduction',
+        'greater cash accumulation',
+      ],
+    },
+  ],
+};
+
+export default function ExpensesDetailScreen() {
+  const { state, setExpenseGroups, setExpenses } = useSnapshot();
+
+  const totalExpensesValue: number = useMemo(() => {
+    return selectSnapshotExpenses(state);
+  }, [state.expenses]);
+
+  const totalExpensesText: string = useMemo(() => {
+    return formatCurrencyFullSigned(-totalExpensesValue);
+  }, [totalExpensesValue]);
+
+  const createNewGroup = (): Group => ({ id: createId('expense-group'), name: 'New Group' });
+
+  return (
+    <GroupedListDetailScreen<ExpenseItem>
+      title="Expenses"
+      renderIntro={
+        <View>
+          <EducationBox lines={['Only active items are used in your Snapshot and projections. Inactive items are kept for reference.']} />
+        </View>
+      }
+      totalText={totalExpensesText}
+      subtextMain="Grouped monthly expenses"
+      subtextFootnote="If a bill isn't monthly, estimate its monthly equivalent."
+      allowGroups={false}
+      editorPlacement="top"
+      isItemLocked={item => item.id.startsWith('loan-interest:') || item.id.startsWith('loan-principal:')}
+      helpContent={expensesHelpContent}
+      emptyStateText="No expenses yet."
+      groups={state.expenseGroups}
+      setGroups={setExpenseGroups}
+      items={state.expenses}
+      setItems={setExpenses}
+      getItemId={item => item.id}
+      getItemName={item => item.name}
+      getItemAmount={item => item.monthlyAmount}
+      getItemGroupId={item => item.groupId}
+      makeNewItem={(groupId, name, amount) => ({
+        id: createId('expense'),
+        name,
+        monthlyAmount: amount,
+        groupId,
+        isActive: true,
+      })}
+      updateItem={(item, name, amount) => ({
+        ...item,
+        name,
+        monthlyAmount: amount,
+      })}
+      formatAmountText={amount => formatCurrencyFullSigned(-amount)}
+      formatGroupTotalText={total => formatCurrencyFullSigned(-total)}
+      createNewGroup={createNewGroup}
+      getItemIsActive={item => item.isActive !== false}
+      setItemIsActive={(item, isActive) => ({ ...item, isActive })}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+});
+
+

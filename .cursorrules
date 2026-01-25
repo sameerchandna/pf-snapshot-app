@@ -1,0 +1,163 @@
+# PF Snapshot App — Rules (Authoritative)
+
+## ⚠️ MANDATORY: Consult PRODUCT_SPEC.md First
+
+**Before proposing or implementing ANY changes:**
+1. **MUST** read and consult `PRODUCT_SPEC.md` (the canonical specification)
+2. **MUST** respect all LOCKED sections — these are non-negotiable
+3. **MUST NOT** update `PRODUCT_SPEC.md` unless explicitly instructed by the user
+4. When updating `PRODUCT_SPEC.md`, prefer append-only changes and record all changes in Section 12 (Change Log)
+
+The rules in `PRODUCT_SPEC.md` take precedence over these UI rules and any inferred behavior from code.
+
+---
+
+## UI System Rules
+
+These rules apply to **all new or modified code** in this project.
+They are mandatory and override local styling decisions.
+
+---
+
+## ❌ Disallowed
+
+### Hard-coded spacing values
+```ts
+padding: 16
+marginBottom: 12
+gap: 8
+paddingTop: 14
+```
+
+### Custom section title styles
+```ts
+<Text style={styles.sectionTitle}>Section</Text>
+
+<Text style={{ fontSize: 16, fontWeight: '700', color: '#2F5BEA' }}>
+  Title
+</Text>
+
+<Text style={{ fontSize: 12, letterSpacing: 0.6, color: '#666' }}>
+  ASSETS
+</Text>
+```
+
+### Local formatting helpers
+```ts
+function formatGBP(value: number): string {
+  return formatCurrency(value);
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
+
+function formatWithPlusMinus(amount: number): string {
+  if (amount > 0) return `+${formatCurrency(amount)}`;
+  return formatCurrencyWithSign(amount);
+}
+```
+
+---
+
+## ✅ Allowed
+
+### Spacing (Authoritative)
+
+All spacing must come from **`spacing.ts`** or **`layout.ts`**.
+
+```ts
+// Scale-based spacing (components)
+import { spacing } from '../spacing';
+
+padding: spacing.xl
+gap: spacing.sm
+marginBottom: spacing.base
+```
+
+```ts
+// Semantic layout spacing (preferred in screens)
+import { layout } from '../layout';
+
+padding: layout.screenPadding
+paddingTop: layout.screenPaddingTop
+marginBottom: layout.sectionGap
+paddingTop: layout.modalPaddingTop
+```
+
+**Rules**
+- Screens should prefer `layout.*` aliases
+- Reusable components may use `spacing.*` tokens
+- No new numeric spacing values may be introduced
+
+---
+
+### Section Headers (Authoritative)
+
+The app uses **exactly two** section header components.
+
+#### Primary financial sections
+```ts
+import SectionHeader from '../components/SectionHeader';
+
+<SectionHeader
+  title="Cash Flow"
+  subtitle="Average monthly flow (annual costs smoothed)"
+/>
+```
+
+#### Structural / grouping sections
+```ts
+import GroupHeader from '../components/GroupHeader';
+
+<GroupHeader title="Assets" />        // Renders as "ASSETS"
+<GroupHeader title="Derived" />       // Renders as "DERIVED"
+```
+
+**Rules**
+- `SectionHeader` → financial meaning (Snapshot, Projection)
+- `GroupHeader` → structural grouping (Accounts, Settings, A3, lists)
+- No custom section title styles are allowed
+- No inline header typography is allowed
+
+---
+
+### Number Formatting (Authoritative)
+
+All currency and percentage formatting must use shared formatters
+from **`formatters.ts`**.
+
+```ts
+// Currency formatting
+import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../formatters';
+
+formatCurrencyFull(1234567)           // £1,234,567
+formatCurrencyFullSigned(-1234567)   // -£1,234,567
+formatCurrencyCompact(1234567)        // £1.2m
+formatCurrencyCompactSigned(1234567)  // +£1.2m
+```
+
+```ts
+// Percentage formatting
+import { formatPercent } from '../formatters';
+
+formatPercent(1.5)                    // 1.5%
+formatPercent(1.5, { decimals: 2 })   // 1.50%
+formatPercent(undefined)               // 0%
+```
+
+**Rules**
+- Local formatting helpers (e.g. formatGBP, formatPercent, formatWithPlusMinus) are not allowed in new or modified code
+- All formatting must come from `formatters.ts`
+- Use appropriate formatter based on context (full vs compact, signed vs unsigned)
+- **Snapshot uses full currency. Projection uses compact currency. This is intentional and must not be mixed.**
+
+---
+
+## System Principles
+
+- Spacing is centrally controlled via `spacing.ts` and `layout.ts`
+- Section hierarchy is fixed and non-negotiable
+- Number formatting is centrally controlled via `formatters.ts`
+- Consistency overrides local optimisation
+- Visual drift is not permitted

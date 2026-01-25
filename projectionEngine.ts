@@ -1,0 +1,516 @@
+// Projection analytics engine (A1)
+//
+// - Pure + deterministic (no UI logic, no I/O)
+// - Force-based balance sheet model:
+//   - assets grow by their own annual growth rate (compounded monthly); missing -> 0%
+//   - non-loan liabilities accrue interest by their own annual interest rate (compounded monthly); missing -> 0%
+//   - loan liabilities amortise via the pure loan engine (unchanged)
+//   - explicit monthly contributions are applied by assetId (linked contributions)
+//   - monthlyDebtReduction is applied proportionally across non-loan liabilities
+//   - inflation adjustment applied once at the end (today's money)
+
+import { initLoan, stepLoanMonth } from './loanEngine';
+import { SYSTEM_CASH_ID } from './constants';
+
+export type ProjectionEngineInputs = {
+  // Today's instruments
+  assetsToday: Array<{
+    id: string;
+    name: string;
+    balance: number; // >= 0
+    annualGrowthRatePct?: number; // percent (5.0 = 5%); missing -> 0
+  }>;
+
+  liabilitiesToday: Array<{
+    id: string;
+    name: string;
+    balance: number; // >= 0
+    annualInterestRatePct?: number; // percent; missing -> 0
+    kind?: 'standard' | 'loan';
+    remainingTermYears?: number; // required if kind='loan'
+  }>;
+
+  // Time horizon
+  currentAge: number; // integer
+  endAge: number; // integer
+
+  inflationRatePct: number;
+
+  // Explicit user effort (monthly, >= 0)
+  assetContributionsMonthly: Array<{ assetId: string; amountMonthly: number }>;
+  monthlyDebtReduction: number;
+  liabilityOverpaymentsMonthly?: Array<{ liabilityId: string; amountMonthly: number }>;
+  
+  // Scenario transfers (explicit asset-to-asset transfers, e.g., SYSTEM_CASH -> target asset)
+  // 
+  // NOTE: scenarioTransfers is no longer used for FLOW scenarios (FLOW_TO_ASSET, FLOW_TO_DEBT).
+  // FLOW scenarios work through contribution deltas (assetContributionsMonthly, liabilityOverpaymentsMonthly).
+  // This field is retained for potential future use cases (e.g., lump-sum transfers, STOCK scenarios).
+  scenarioTransfers?: Array<{ fromAssetId: string; toAssetId: string; amountMonthly: number }>;
+};
+
+export type ProjectionSummary = {
+  endAssets: number;
+  endLiabilities: number;
+  endNetWorth: number;
+  totalContributions: number; // asset contributions + actual (capped) debt paydown
+  totalScheduledMortgagePayment: number; // interest + scheduled principal (full payment as expense)
+  totalMortgageOverpayments: number; // explicit overpayments only (liability reduction)
+};
+
+export type ProjectionSeriesPoint = {
+  age: number; // age at the sampled point (years)
+  assets: number; // real £ (today's money)
+  liabilities: number; // real £ (today's money, positive)
+  netWorth: number; // real £ (today's money, may be negative)
+};
+
+function annualPctToMonthlyRate(pct: number): number {
+  // rg = (1 + g)^(1/12) - 1
+  const g = pct / 100;
+  return Math.pow(1 + g, 1 / 12) - 1;
+}
+
+function isLoanLike(x: ProjectionEngineInputs['liabilitiesToday'][number]): x is ProjectionEngineInputs['liabilitiesToday'][number] & {
+  kind: 'loan';
+  annualInterestRatePct?: number;
+  remainingTermYears: number;
+} {
+  return x.kind === 'loan' && typeof x.remainingTermYears === 'number' && Number.isFinite(x.remainingTermYears) && x.remainingTermYears >= 1;
+}
+
+// Removed isCashAsset - now using SYSTEM_CASH_ID constant
+
+function computeMonthlyProjection(
+  inputs: ProjectionEngineInputs,
+  onMonth?: (ctx: { monthIndex: number; assets: number; liabilities: number }) => void,
+): { assets: number; liabilities: number; totalContributions: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
+  const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+
+  let totalContributions = 0;
+  let totalScheduledMortgagePayment = 0; // Full scheduled payment (interest + scheduled principal) - treated as expense
+  let totalMortgageOverpayments = 0; // Explicit overpayments only - treated as liability reduction
+
+  const assetStates: Array<{ id: string; name: string; balance: number; monthlyGrowthRate: number }> = inputs.assetsToday.map(a => {
+    const pct = typeof a.annualGrowthRatePct === 'number' && Number.isFinite(a.annualGrowthRatePct) ? a.annualGrowthRatePct : 0;
+    const monthlyGrowthRate = annualPctToMonthlyRate(pct);
+    return {
+      id: a.id,
+      name: a.name,
+      balance: Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0,
+      monthlyGrowthRate,
+    };
+  });
+
+  const nonLoanStates: Array<{ id: string; balance: number; monthlyRate: number }> = inputs.liabilitiesToday
+    .filter(l => !isLoanLike(l))
+    .map(l => {
+      const pct = typeof l.annualInterestRatePct === 'number' && Number.isFinite(l.annualInterestRatePct) ? l.annualInterestRatePct : 0;
+      return {
+        id: l.id,
+        balance: Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0,
+        monthlyRate: annualPctToMonthlyRate(pct),
+      };
+    });
+
+  if (horizonMonths <= 0) {
+    const assetsNow = assetStates.reduce((sum, a) => sum + a.balance, 0);
+    const nonLoanNow = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
+    const loanStart = inputs.liabilitiesToday
+      .filter(isLoanLike)
+      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+    return { 
+      assets: assetsNow, 
+      liabilities: nonLoanNow + loanStart, 
+      totalContributions, 
+      totalScheduledMortgagePayment: 0, 
+      totalMortgageOverpayments: 0, 
+      horizonMonths: 0,
+    };
+  }
+
+  // Mortgage payments are treated as expenses; overpayments are discretionary liability reductions.
+  // The full scheduled mortgage payment (interest + scheduled principal) is an expense.
+  // Only explicit overpayments appear as liability reductions.
+  const loanStates: Array<{
+    id: string;
+    balance: number;
+    monthlyPayment: number;
+    monthlyRate: number;
+    remainingMonths: number;
+  }> = inputs.liabilitiesToday.filter(isLoanLike).map(l => {
+    const init = initLoan({
+      balance: l.balance,
+      annualInterestRatePct: typeof l.annualInterestRatePct === 'number' && Number.isFinite(l.annualInterestRatePct) ? l.annualInterestRatePct : 0,
+      remainingTermYears: l.remainingTermYears,
+    });
+    return {
+      id: l.id,
+      balance: Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0,
+      monthlyPayment: init.monthlyPayment,
+      monthlyRate: init.monthlyRate,
+      remainingMonths: init.remainingMonths,
+    };
+  });
+
+  // Build lookup map for liability overpayments (only for loan-type liabilities)
+  const overpaymentMap = new Map<string, number>();
+  if (inputs.liabilityOverpaymentsMonthly && Array.isArray(inputs.liabilityOverpaymentsMonthly)) {
+    for (const op of inputs.liabilityOverpaymentsMonthly) {
+      if (typeof op.liabilityId === 'string' && typeof op.amountMonthly === 'number' && Number.isFinite(op.amountMonthly)) {
+        // Only apply to loan-type liabilities (validated by lookup during stepping)
+        const amount = Math.max(0, op.amountMonthly);
+        if (amount > 0) {
+          overpaymentMap.set(op.liabilityId, amount);
+        }
+      }
+    }
+  }
+
+  for (let monthIndex = 1; monthIndex <= horizonMonths; monthIndex++) {
+    // CORRECT MONTHLY MODEL: All money present in a period must compound together.
+    // Order: 1) Add contributions (baseline + scenario deltas), 2) Apply growth to entire balance
+    // This ensures contributions compound with the balance, maintaining compound growth invariants.
+    // 
+    // FLOW scenarios work through contribution deltas (assetContributionsMonthly, liabilityOverpaymentsMonthly).
+    // Scenario deltas are already merged into these arrays by applyScenarioToProjectionInputs().
+    // No scenarioTransfers are used for FLOW scenarios.
+    
+    // 1) Apply asset contributions (baseline + scenario deltas already merged)
+    // Contributions are added to balance, then the entire balance compounds together
+    // FLOW scenarios: scenario deltas are already merged into assetContributionsMonthly
+    // Cash is STOCK-only - FLOW scenarios do not mutate cash balance (enforced by guardrail in applyScenarioToInputs)
+    for (const c of inputs.assetContributionsMonthly) {
+      const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
+      if (amt <= 0) continue;
+      const idx = assetStates.findIndex(a => a.id === c.assetId);
+      if (idx >= 0) {
+        assetStates[idx].balance += amt;
+      } else {
+        // Contribution references a missing asset id. Ignore (state should prevent this).
+        // Keep it silent to avoid noisy logs on bad persisted states.
+      }
+    }
+
+    // 3) Apply per-asset growth forces to entire balance (missing -> 0%)
+    // Growth is applied AFTER transfers and contributions, so all money compounds together
+    for (const a of assetStates) {
+      a.balance = a.balance * (1 + a.monthlyGrowthRate);
+    }
+
+    // 3) Apply per-liability interest for non-loan liabilities (missing -> 0%)
+    for (const l of nonLoanStates) {
+      l.balance = l.balance * (1 + l.monthlyRate);
+    }
+
+    // 4) Amortise smart loans (payment computed once at start; principal clamped in final month)
+    // LOAN LIFECYCLE ENFORCEMENT:
+    // Once a loan balance reaches zero, the loan is inactive and must produce no cashflows.
+    // The continue check below prevents calling stepLoanMonth after payoff, ensuring:
+    // - No interest accumulation after payoff
+    // - No principal accumulation after payoff
+    // - No scheduled payment accumulation after payoff
+    // Step 1 guarantees that stepLoanMonth returns zeros after payoff, providing additional safety.
+    // Overpayments are only applied while balance > 0; after payoff, overpayments are ignored.
+    // 
+    // MORTGAGE MODEL: Full scheduled payment (interest + scheduled principal) is treated as an expense.
+    // Only explicit overpayments appear as liability reductions.
+    let loanScheduledInterestThisMonth = 0;
+    let loanScheduledPrincipalThisMonth = 0;
+    let loanOverpaymentThisMonth = 0;
+    
+    for (const loan of loanStates) {
+      // Skip paid-off loans to prevent ghost accumulation after payoff.
+      // This ensures loan-related totals stop accumulating once the loan balance reaches zero.
+      if (loan.balance <= 0) continue;
+      
+      // Get overpayment amount (if any) for this loan
+      const extraPrincipal = overpaymentMap.get(loan.id) ?? 0;
+      
+      // Compute scheduled payment (interest + scheduled principal) WITHOUT overpayment
+      // This gives us the scheduled payment components that are treated as expenses
+      const scheduled = stepLoanMonth({ 
+        balance: loan.balance, 
+        monthlyPayment: loan.monthlyPayment, 
+        monthlyRate: loan.monthlyRate
+        // NO extraPrincipal - this is the scheduled payment
+      });
+      
+      loanScheduledInterestThisMonth += scheduled.interest;
+      loanScheduledPrincipalThisMonth += scheduled.principal;
+      
+      // Apply overpayment separately (if any) - treated as liability reduction
+      if (extraPrincipal > 0) {
+        // Overpayment is applied on top of scheduled principal, capped by remaining balance
+        const remainingBalanceAfterScheduled = scheduled.newBalance;
+        const overpaymentApplied = Math.min(extraPrincipal, remainingBalanceAfterScheduled);
+        loanOverpaymentThisMonth += overpaymentApplied;
+        
+        // Update loan balance with overpayment applied
+        loan.balance = Math.max(0, remainingBalanceAfterScheduled - overpaymentApplied);
+      } else {
+        loan.balance = scheduled.newBalance;
+      }
+      
+      if (loan.remainingMonths > 0) loan.remainingMonths -= 1;
+    }
+    
+    // Accumulate scheduled mortgage payment (full payment as expense) and overpayments (liability reduction)
+    const scheduledMortgagePaymentThisMonth = loanScheduledInterestThisMonth + loanScheduledPrincipalThisMonth;
+    totalScheduledMortgagePayment += scheduledMortgagePaymentThisMonth;
+    totalMortgageOverpayments += loanOverpaymentThisMonth;
+
+    // A2: Monthly debt reduction input applies ONLY to non-loan debt, proportionally by balance.
+    const nonLoanTotal = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
+    const debtPaydownTotal = nonLoanTotal > 0 ? Math.min(inputs.monthlyDebtReduction, nonLoanTotal) : 0;
+    if (debtPaydownTotal > 0 && nonLoanTotal > 0) {
+      let remaining = debtPaydownTotal;
+      for (let i = 0; i < nonLoanStates.length; i++) {
+        const l = nonLoanStates[i];
+        if (l.balance <= 0) continue;
+        const isLast = i === nonLoanStates.length - 1;
+        const share = isLast ? remaining : debtPaydownTotal * (l.balance / nonLoanTotal);
+        const pay = Math.min(l.balance, share);
+        l.balance -= pay;
+        remaining -= pay;
+      }
+    }
+
+    // 3) Accumulate explicit effort
+    const contributionTotalThisMonth = inputs.assetContributionsMonthly.reduce((sum, c) => {
+      const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
+      return sum + (amt > 0 ? amt : 0);
+    }, 0);
+    // totalContributions includes asset contributions, non-loan debt paydown, and loan principal (scheduled + overpayments)
+    // Note: Scheduled principal is treated as expense, but still reduces liability balance
+    const totalLoanPrincipalThisMonth = loanScheduledPrincipalThisMonth + loanOverpaymentThisMonth;
+    totalContributions += contributionTotalThisMonth + debtPaydownTotal + totalLoanPrincipalThisMonth;
+
+    const assetsNow = assetStates.reduce((sum, a) => sum + a.balance, 0);
+    const nonLoanNow = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
+    const loanBalancesNow = loanStates.reduce((sum, l) => sum + l.balance, 0);
+    const liabilities = nonLoanNow + loanBalancesNow;
+
+    if (onMonth) onMonth({ monthIndex, assets: assetsNow, liabilities });
+  }
+
+  const finalLoanBalances = loanStates.reduce((sum, l) => sum + l.balance, 0);
+  const assetsEnd = assetStates.reduce((sum, a) => sum + a.balance, 0);
+  const nonLoanEnd = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
+
+  // Dev guardrails: SYSTEM_CASH invariants
+  // 
+  // Cash is STOCK-only: treated as a normal asset (opening balance, growth, optional contributions).
+  // FLOW scenarios do not mutate cash balance - they work through contribution deltas to other assets/liabilities.
+  // Cash balance is reserved for STOCK scenarios (lump-sum transfers via scenarioTransfers).
+  if (__DEV__) {
+    const systemCashAsset = assetStates.find(a => a.id === SYSTEM_CASH_ID);
+    if (!systemCashAsset) {
+      console.error('[Projection Engine] SYSTEM_CASH not found in asset states');
+    } else {
+      // Check that SYSTEM_CASH never went negative (for future STOCK scenarios with lump-sum transfers)
+      // This is a guardrail for scenarioTransfers, not for FLOW scenarios
+      if (systemCashAsset.balance < 0) {
+        console.error(
+          `[Projection Engine] SYSTEM_CASH balance went negative: ${systemCashAsset.balance}. ` +
+          `This should only happen with STOCK scenarios (lump-sum transfers), not FLOW scenarios.`
+        );
+      }
+    }
+  }
+
+  return { 
+    assets: assetsEnd, 
+    liabilities: nonLoanEnd + finalLoanBalances, 
+    totalContributions, 
+    totalScheduledMortgagePayment, 
+    totalMortgageOverpayments, 
+    horizonMonths,
+  };
+}
+
+function deflateToTodaysMoney(value: number, inflationRatePct: number, elapsedMonths: number): number {
+  if (elapsedMonths <= 0) return value;
+  const elapsedYears = elapsedMonths / 12;
+  const inflationRate = inflationRatePct / 100;
+  const deflator = Math.pow(1 + inflationRate, elapsedYears);
+  const safeDeflator = Number.isFinite(deflator) && deflator > 0 ? deflator : 1;
+  return value / safeDeflator;
+}
+
+export function computeProjectionSummary(inputs: ProjectionEngineInputs): ProjectionSummary {
+  // Horizon must come from top-level inputs (baseline & scenario safe)
+  // Normalize endAge: check top-level first, then fallback to settings if present
+  const currentAge = inputs.currentAge;
+  const endAge = inputs.endAge ?? (inputs as any).settings?.endAge;
+  
+  // Guardrail: for zero/invalid horizons, return today's values (no inflation adjustment).
+  const horizonMonthsRaw = (endAge - currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) && Number.isFinite(endAge) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+  if (horizonMonths <= 0 || !Number.isFinite(endAge) || endAge <= currentAge) {
+    const endAssets = inputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
+    const loanStart = inputs.liabilitiesToday
+      .filter(isLoanLike)
+      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+    const nonLoanStart = inputs.liabilitiesToday
+      .filter(l => !isLoanLike(l))
+      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+    const endLiabilities = nonLoanStart + loanStart;
+    const endNetWorth = endAssets - endLiabilities;
+    return { 
+      endAssets, 
+      endLiabilities, 
+      endNetWorth, 
+      totalContributions: 0, 
+      totalScheduledMortgagePayment: 0, 
+      totalMortgageOverpayments: 0,
+    };
+  }
+
+  // Create normalized inputs object with derived horizon values for computeMonthlyProjection
+  const normalizedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    currentAge,
+    endAge,
+  };
+
+  const { assets, liabilities, totalContributions, totalScheduledMortgagePayment, totalMortgageOverpayments } = computeMonthlyProjection(normalizedInputs);
+
+  const endAssets = deflateToTodaysMoney(assets, inputs.inflationRatePct, horizonMonths);
+  const endLiabilities = deflateToTodaysMoney(liabilities, inputs.inflationRatePct, horizonMonths);
+  const endNetWorth = endAssets - endLiabilities;
+  const endTotalContributions = deflateToTodaysMoney(totalContributions, inputs.inflationRatePct, horizonMonths);
+  const endScheduledMortgagePayment = deflateToTodaysMoney(totalScheduledMortgagePayment, inputs.inflationRatePct, horizonMonths);
+  const endMortgageOverpayments = deflateToTodaysMoney(totalMortgageOverpayments, inputs.inflationRatePct, horizonMonths);
+
+  return {
+    endAssets,
+    endLiabilities,
+    endNetWorth,
+    totalContributions: endTotalContributions,
+    totalScheduledMortgagePayment: endScheduledMortgagePayment,
+    totalMortgageOverpayments: endMortgageOverpayments,
+  };
+}
+
+export function computeProjectionSeries(inputs: ProjectionEngineInputs): ProjectionSeriesPoint[] {
+  // Horizon must come from top-level inputs (baseline & scenario safe)
+  // Normalize endAge: check top-level first, then fallback to settings if present
+  
+  // Normalize with Number() coercion to handle string/undefined/null
+  const currentAge = Number(inputs.currentAge);
+  const endAge = Number(inputs.endAge ?? (inputs as any).settings?.endAge);
+  
+  // DEV-only CRITICAL: Check for NaN/invalid values before proceeding
+  if (__DEV__) {
+    if (!Number.isFinite(currentAge) || !Number.isFinite(endAge)) {
+      console.error('[CRITICAL] ProjectionEngine: Non-finite horizon values:', {
+        currentAge,
+        endAge,
+        rawCurrentAge: inputs.currentAge,
+        rawEndAge: inputs.endAge,
+        rawSettingsEndAge: (inputs as any).settings?.endAge,
+        currentAgeIsFinite: Number.isFinite(currentAge),
+        endAgeIsFinite: Number.isFinite(endAge),
+        inputs,
+      });
+      return [];
+    }
+  }
+  
+  // Production guard: Return empty series if horizon is invalid (NaN or non-finite)
+  if (!Number.isFinite(currentAge) || !Number.isFinite(endAge)) {
+    console.error('[CRITICAL] Projection horizon invalid (non-finite values):', {
+      currentAge,
+      endAge,
+      rawCurrentAge: inputs.currentAge,
+      rawEndAge: inputs.endAge,
+    });
+    return [];
+  }
+  
+  // Compute horizonMonths from normalized values
+  const horizonMonthsRaw = (endAge - currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+  
+  // DEV-only CRITICAL: Check if endAge <= currentAge (invalid horizon)
+  if (__DEV__) {
+    if (endAge <= currentAge) {
+      console.error('[CRITICAL] ProjectionEngine: Invalid horizon (endAge <= currentAge):', {
+        currentAge,
+        endAge,
+        horizonMonths,
+        horizonYears: (endAge - currentAge),
+        rawCurrentAge: inputs.currentAge,
+        rawEndAge: inputs.endAge,
+        rawSettingsEndAge: (inputs as any).settings?.endAge,
+        inputs,
+      });
+      return [];
+    }
+  }
+  
+  // Production guard: Return empty series if horizon is invalid (endAge <= currentAge)
+  if (endAge <= currentAge) {
+    console.error('[CRITICAL] Projection horizon invalid (endAge <= currentAge):', {
+      currentAge,
+      endAge,
+      horizonMonths,
+    });
+    return [];
+  }
+  
+  // Use ONLY normalized values in the loop - do NOT read endAge from inputs.settings again
+
+  // Always include a start point at "today" (month 0).
+  const assetsToday = inputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
+  const loanStart = inputs.liabilitiesToday
+    .filter(isLoanLike)
+    .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+  const nonLoanStart = inputs.liabilitiesToday
+    .filter(l => !isLoanLike(l))
+    .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+  const startAssets = deflateToTodaysMoney(assetsToday, inputs.inflationRatePct, 0);
+  const startLiabilities = deflateToTodaysMoney(nonLoanStart + loanStart, inputs.inflationRatePct, 0);
+  const startNetWorth = startAssets - startLiabilities;
+
+  const points: ProjectionSeriesPoint[] = [
+    {
+      age: currentAge,
+      assets: startAssets,
+      liabilities: startLiabilities,
+      netWorth: startNetWorth,
+    },
+  ];
+
+  if (horizonMonths <= 0) return points;
+
+  // Create normalized inputs object with derived horizon values for computeMonthlyProjection
+  const normalizedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    currentAge,
+    endAge,
+  };
+
+  computeMonthlyProjection(normalizedInputs, ({ monthIndex, assets, liabilities }) => {
+    // Sample yearly points only (every 12 months).
+    if (monthIndex % 12 !== 0) return;
+
+    const age = currentAge + monthIndex / 12;
+    const realAssets = deflateToTodaysMoney(assets, inputs.inflationRatePct, monthIndex);
+    const realLiabilities = deflateToTodaysMoney(liabilities, inputs.inflationRatePct, monthIndex);
+    const realNetWorth = realAssets - realLiabilities;
+
+    points.push({
+      age,
+      assets: realAssets,
+      liabilities: realLiabilities,
+      netWorth: realNetWorth,
+    });
+  });
+
+  return points;
+}
+
+
