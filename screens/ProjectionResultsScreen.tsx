@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
+import SectionCard from '../components/SectionCard';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 
@@ -15,7 +16,7 @@ import { layout } from '../layout';
 const snapshotTypography = {
   sectionTitleSize: 16,
   cardTitleSize: 14,
-  primaryValueSize: 19,
+  primaryValueSize: 15,
   bodySize: 12,
   sectionTitleWeight: '600' as const,
   cardTitleWeight: '500' as const,
@@ -336,6 +337,112 @@ function buildTicks(min: number, max: number): number[] {
 }
 
 
+// Snapshot-compatible card component
+// Reuses Snapshot card structure exactly, with visual emphasis for scenario values
+function SnapshotComparisonCard({
+  title,
+  description,
+  baselineValue,
+  scenarioValue,
+  showScenario,
+  isOutcome = false,
+  isSubCard = false,
+}: {
+  title: string;
+  description: string;
+  baselineValue: number;
+  scenarioValue?: number;
+  showScenario: boolean;
+  isOutcome?: boolean;
+  isSubCard?: boolean;
+}) {
+  // Use unsigned formatting for all baseline and scenario values (no + or - signs)
+  // Use compact formatting (k/m) for Projected Snapshot
+  // Signs are only used for deltas
+  const formatValue = formatCurrencyCompact;
+
+  const delta = scenarioValue !== undefined ? scenarioValue - baselineValue : 0;
+  const hasDelta = Math.abs(delta) >= UI_TOLERANCE;
+
+  return (
+    <View style={[
+      styles.snapshotCard,
+      styles.cashflowCard,
+      isSubCard ? styles.cashflowSubCard : styles.cashflowPrimaryCard,
+      styles.cashflowMb,
+    ]}>
+      <View style={styles.cashflowCardRow}>
+        <View style={isSubCard ? styles.cashflowCardLeftIndented : styles.cashflowCardLeft}>
+          <Text style={[styles.snapshotCardTitle, isSubCard && styles.snapshotSubCardTitle]}>
+            {title}
+          </Text>
+          <Text style={styles.snapshotCardDescription}>
+            {description}
+          </Text>
+        </View>
+        <View style={styles.cashflowCardRight}>
+          {!showScenario || scenarioValue === undefined ? (
+            // Single value mode (matches Snapshot exactly)
+            <Text style={[
+              styles.snapshotPrimaryValue,
+              isOutcome && styles.snapshotPrimaryValueOutcome,
+              isSubCard && styles.snapshotSubCardValue,
+              styles.cashflowValueRight,
+            ]}>
+              {formatValue(baselineValue)}
+            </Text>
+          ) : (
+            // Baseline and Scenario side-by-side, Delta under Scenario (only if delta ≠ 0)
+            <View style={styles.comparisonValuesContainer}>
+              <View style={styles.comparisonValuesRow}>
+                {/* Baseline value (first column) - always black/neutral */}
+                <View style={styles.comparisonValueColumn}>
+                  <Text style={[
+                    styles.snapshotPrimaryValue,
+                    isSubCard && styles.snapshotSubCardValue,
+                    styles.cashflowValueRight,
+                  ]}>
+                    {formatValue(baselineValue)}
+                  </Text>
+                </View>
+                {/* Scenario value and Delta (second column, stacked) */}
+                <View style={styles.comparisonValueColumn}>
+                  {hasDelta ? (
+                    <>
+                      <Text style={[
+                        styles.snapshotPrimaryValue,
+                        styles.snapshotPrimaryValueScenario,
+                        styles.cashflowValueRight,
+                      ]}>
+                        {formatValue(scenarioValue)}
+                      </Text>
+                      <Text style={[
+                        styles.snapshotDeltaValue,
+                        styles.snapshotDeltaValueMuted,
+                        styles.cashflowValueRight,
+                      ]}>
+                        {formatCurrencyCompactSigned(delta)}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={[
+                      styles.snapshotPrimaryValue,
+                      { color: '#999' },
+                      styles.cashflowValueRight,
+                    ]}>
+                      -
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // Helper component for dual-column value display (Snapshot cards)
 function DualValueCard({ 
   title, 
@@ -352,9 +459,9 @@ function DualValueCard({
   showScenario: boolean;
   isOutcome?: boolean;
 }) {
-  // Use signed formatting for outcome values (surplus/deficit) to preserve sign
-  // Use unsigned formatting for absolute values (balances, amounts)
-  const formatValue = isOutcome ? formatCurrencyCompactSigned : formatCurrencyCompact;
+  // Use unsigned formatting for all baseline and scenario values (no + or - signs)
+  // Signs are only used for deltas
+  const formatValue = formatCurrencyCompact;
 
   if (!showScenario || scenarioValue === undefined) {
     return (
@@ -413,6 +520,7 @@ function DualValueCard({
 // Helper component for Balance Sheet cards with three-row structure
 function BalanceSheetCard({
   title,
+  description,
   baselineValue,
   scenarioValue,
   baselineAgeDelta,
@@ -424,6 +532,7 @@ function BalanceSheetCard({
   startingValueForScenario,
 }: {
   title: string;
+  description?: string;
   baselineValue: number;
   scenarioValue?: number;
   baselineAgeDelta: number; // baseline projected - today
@@ -454,26 +563,8 @@ function BalanceSheetCard({
     );
   }
 
-  // If baseline and scenario values are equal, render baseline-only layout
+  // Check if baseline and scenario values are equal
   const valuesEqual = Math.abs(baselineValue - scenarioValue) < UI_TOLERANCE;
-  if (valuesEqual) {
-    const ageDelta = baselineAgeDelta;
-    const hasAgeDelta = Math.abs(ageDelta) >= UI_TOLERANCE;
-    
-    return (
-      <View style={styles.projectedBalanceSheetCard}>
-        <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
-        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
-          {formatCurrencyCompact(baselineValue)}
-        </Text>
-        {hasAgeDelta && (
-          <Text style={[styles.projectedDelta, styles.projectedDeltaAge, styles.cashflowTextCentered]}>
-            {formatCurrencyCompactSigned(ageDelta)}
-          </Text>
-        )}
-      </View>
-    );
-  }
 
   // Two columns: baseline | scenario
   const delta = scenarioDelta ?? (scenarioValue - baselineValue);
@@ -507,17 +598,23 @@ function BalanceSheetCard({
         {/* RIGHT COLUMN: Scenario */}
         <View style={styles.balanceSheetColumn}>
           {/* Row 1: Values */}
-          <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered]}>
-            {formatCurrencyCompact(scenarioValue)}
-          </Text>
-          {/* Row 2: Scenario delta or placeholder - always reserve space */}
-          <View style={styles.balanceSheetDeltaRow}>
-            {hasScenarioDelta ? (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, styles.cashflowTextCentered]}>
-                {formatCurrencyCompactSigned(delta)}
+          {valuesEqual ? (
+            <Text style={[styles.projectedPrimaryValue, styles.projectedDelta, styles.cashflowTextCentered]}>
+              -
+            </Text>
+          ) : (
+            <>
+              <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered]}>
+                {formatCurrencyCompact(scenarioValue)}
               </Text>
-            ) : null}
-          </View>
+              {/* Row 2: Scenario delta (baseline → scenario) */}
+              {hasScenarioDelta && (
+                <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, styles.cashflowTextCentered]}>
+                  {formatCurrencyCompactSigned(delta)}
+                </Text>
+              )}
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -2461,9 +2558,9 @@ export default function ProjectionResultsScreen() {
       const values = [...baselineValues, ...scenarioValues];
       const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
       
-      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.05-1.10)
-      // Use 5-10% headroom so the line doesn't touch the top
-      const headroom = 0.075; // 7.5% headroom (middle of 5-10% range)
+      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.03-1.05)
+      // Use 3-5% headroom so the line doesn't touch the top
+      const headroom = 0.04; // 4% headroom
       const domainMin = 0; // Always 0, do NOT auto-scale Y-min
       const domainMax = roundNice(visibleMax * (1 + headroom));
       const yTicks = buildTicks(domainMin, domainMax);
@@ -2489,9 +2586,9 @@ export default function ProjectionResultsScreen() {
       const values = [...baselineValues, ...scenarioValues];
       const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
       
-      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.05-1.10)
-      // Use 5-10% headroom so the line doesn't touch the top
-      const headroom = 0.075; // 7.5% headroom (middle of 5-10% range)
+      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.03-1.05)
+      // Use 3-5% headroom so the line doesn't touch the top
+      const headroom = 0.04; // 4% headroom
       const domainMin = 0; // Always 0, do NOT auto-scale Y-min
       const domainMax = roundNice(visibleMax * (1 + headroom));
       const yTicks = buildTicks(domainMin, domainMax);
@@ -2504,7 +2601,7 @@ export default function ProjectionResultsScreen() {
   // Keep this visually dominant, but give enough vertical space for Victory's top/bounds + labels.
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
   // Explicit chart padding: left for £ tick labels, bottom for x-axis labels + legend, top keeps line off border
-  const chartPadding = { top: 12, bottom: 48, left: 44, right: 16 } as const;
+  const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
 
   // Primary legend: Net Worth (dominant)
   const legendPrimary = useMemo(() => {
@@ -2658,76 +2755,31 @@ export default function ProjectionResultsScreen() {
 
     return {
       keyDriversRows: [
-        makeRow('Investment growth over time', v.growth, (val) => val > 0 ? `+${formatCurrencyFull(val)}` : formatCurrencyFullSigned(val), (val) => {
-          if (Math.abs(val) < UI_TOLERANCE) return '—';
-          if (val > 0) {
-            const abs = Math.abs(val);
-            if (abs >= 1_000_000) return `+£${(abs / 1_000_000).toFixed(1)}m`;
-            if (abs >= 1_000) return `+£${Math.round(abs / 1_000)}k`;
-            return `+${formatCurrencyFull(val)}`;
-          }
-          return formatCurrencyCompactSigned(val);
-        }, false, true), // Use extraGrowth only
-        makeRow('Money you regularly add', v.contributions, (val) => val > 0 ? `+${formatCurrencyFull(val)}` : formatCurrencyFullSigned(val), (val) => {
-          if (Math.abs(val) < UI_TOLERANCE) return '—';
-          if (val > 0) {
-            const abs = Math.abs(val);
-            if (abs >= 1_000_000) return `+£${(abs / 1_000_000).toFixed(1)}m`;
-            if (abs >= 1_000) return `+£${Math.round(abs / 1_000)}k`;
-            return `+${formatCurrencyFull(val)}`;
-          }
-          return formatCurrencyCompactSigned(val);
-        }),
-        makeRow('Cost of borrowing', v.interestPaid, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
+        makeRow('Investment growth over time', v.growth, formatCurrencyFull, formatCurrencyCompact, false, true), // Use extraGrowth only
+        makeRow('Money you regularly add', v.contributions, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Cost of borrowing', v.interestPaid, formatCurrencyFull, formatCurrencyCompact),
       ],
       cashflowRows: [
-        makeRow('Total money you earn (before tax)', v.grossIncome, (val) => val > 0 ? `+${formatCurrencyFull(val)}` : formatCurrencyFullSigned(val), (val) => {
-          if (Math.abs(val) < UI_TOLERANCE) return '—';
-          if (val > 0) {
-            const abs = Math.abs(val);
-            if (abs >= 1_000_000) return `+£${(abs / 1_000_000).toFixed(1)}m`;
-            if (abs >= 1_000) return `+£${Math.round(abs / 1_000)}k`;
-            return `+${formatCurrencyFull(val)}`;
-          }
-          return formatCurrencyCompactSigned(val);
-        }),
-        makeRow('Contribution to pension (pre-tax)', v.pensionContributions, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Money paid in tax', v.taxes, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Everyday spending and loan interest', v.livingExpenses, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Money left after expenses', v.netSurplus, (val) => val > 0 ? `+${formatCurrencyFull(val)}` : formatCurrencyFullSigned(val), (val) => {
-          if (Math.abs(val) < UI_TOLERANCE) return '—';
-          if (val > 0) {
-            const abs = Math.abs(val);
-            if (abs >= 1_000_000) return `+£${(abs / 1_000_000).toFixed(1)}m`;
-            if (abs >= 1_000) return `+£${Math.round(abs / 1_000)}k`;
-            return `+${formatCurrencyFull(val)}`;
-          }
-          return formatCurrencyCompactSigned(val);
-        }, true),
-        makeRow('Money you invest (post-tax)', v.postTaxContributions, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Money used to pay down debt', v.debtRepayment, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
+        makeRow('Total money you earn (before tax)', v.grossIncome, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Contribution to pension (pre-tax)', v.pensionContributions, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Money paid in tax', v.taxes, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Everyday spending and loan interest', v.livingExpenses, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Money left after expenses', v.netSurplus, formatCurrencyFull, formatCurrencyCompact, true),
+        makeRow('Money you invest (post-tax)', v.postTaxContributions, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Money used to pay down debt', v.debtRepayment, formatCurrencyFull, formatCurrencyCompact),
         // Phase 3.3: Use selector for baseline monthly surplus (single source of truth, no clamping)
-        makeRow('Unallocated cash', selectMonthlySurplus(state), (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
+        makeRow('Unallocated cash', selectMonthlySurplus(state), formatCurrencyFull, formatCurrencyCompact),
       ],
       debtRows: [
-        makeRow('Interest you pay over time', v.interestPaid, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Debt you pay back', v.principalRepaid, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
+        makeRow('Interest you pay over time', v.interestPaid, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Debt you pay back', v.principalRepaid, formatCurrencyFull, formatCurrencyCompact),
         makeRow('Debt left at the end', v.remainingDebt, formatCurrencyFull, formatCurrencyCompact),
       ],
       assetRows: [
         makeRow('What you start with', v.startingAssets, formatCurrencyFull, formatCurrencyCompact),
         makeRow('Money you add over time', v.contributions, formatCurrencyFull, formatCurrencyCompact),
         // CRITICAL: Investment growth baseline stays unchanged; scenario shows baseline + extraGrowth only
-        makeRow(selectedAge >= state.projection.endAge ? 'Investment growth' : 'Investment growth so far', v.growth, (val) => val > 0 ? `+${formatCurrencyFull(val)}` : formatCurrencyFullSigned(val), (val) => {
-          if (Math.abs(val) < UI_TOLERANCE) return '—';
-          if (val > 0) {
-            const abs = Math.abs(val);
-            if (abs >= 1_000_000) return `+£${(abs / 1_000_000).toFixed(1)}m`;
-            if (abs >= 1_000) return `+£${Math.round(abs / 1_000)}k`;
-            return `+${formatCurrencyFull(val)}`;
-          }
-          return formatCurrencyCompactSigned(val);
-        }, false, true),
+        makeRow(selectedAge >= state.projection.endAge ? 'Investment growth' : 'Investment growth so far', v.growth, formatCurrencyFull, formatCurrencyCompact, false, true),
         makeRow('What you end up with', v.assets, formatCurrencyFull, formatCurrencyCompact),
       ],
       startLiabilities,
@@ -3049,7 +3101,7 @@ export default function ProjectionResultsScreen() {
         ) : null}
 
         <View style={styles.innerContent}>
-          <View style={styles.sectionContainer}>
+          <SectionCard>
             {/* Section Header with Toggle */}
             <View style={styles.sectionHeaderRow}>
               <SectionHeader title="Projected Net Worth" />
@@ -3178,12 +3230,12 @@ export default function ProjectionResultsScreen() {
               </Text>
             ) : null}
           </View>
-          </View>
+          </SectionCard>
 
           {/* Phase Four: Scenario Impact Section (only when scenario is active and deltas are valid) */}
           {effectiveScenarioActive && scenarioDeltas && scenarioValuesAtAge && deltasValid ? (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.projectedMainTitle}>Scenario Impact</Text>
+            <SectionCard>
+              <SectionHeader title="Scenario Impact" />
               <View style={styles.insightsList}>
                 {(() => {
                   // Calculate net worth change
@@ -3312,257 +3364,126 @@ export default function ProjectionResultsScreen() {
                   );
                 })()}
               </View>
-            </View>
+            </SectionCard>
           ) : null}
 
-          {/* Projected Snapshot Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.projectedMainTitle}>
-              Projected Snapshot (Age {selectedAge})
-            </Text>
+          {/* Projected Cash Flow Section */}
+          <SectionCard>
+            <SectionHeader title="Projected Cash Flow" subtitle={`Age ${selectedAge}`} />
 
-            {/* Cash Flow Section */}
             <View style={[styles.column, styles.cashflowColumn, { marginTop: layout.md }]}>
-              <Text style={styles.projectedSubHeading}>Cash Flow</Text>
-
-              <View style={styles.cashflowCentered}>
+              <View style={styles.cashflowCardStack}>
+                <View style={styles.cashflowSpine} />
+                <View style={styles.cashflowCentered}>
                 {/* Gross Income */}
-                <DualValueCard
+                <SnapshotComparisonCard
                   title="Gross Income"
+                  description="Total earnings over the period"
                   baselineValue={valuesAtAge.grossIncome}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.grossIncome : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.grossIncome - valuesAtAge.grossIncome : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
                 />
 
                 {/* Pension + Other Deductions */}
                 <View style={styles.cashflowSubGroup}>
-                  <View style={styles.cashflowSubRow}>
-                    <View
-                      style={[
-                        styles.projectedCardMinimal,
-                        styles.cashflowCard,
-                        styles.cashflowSubCard,
-                        styles.cashflowSubCardHalf,
-                        styles.cashflowSubCardHalfLeft,
-                        styles.cashflowMb,
-                      ]}
-                    >
-                      <Text style={[styles.projectedCardTitle, styles.projectedSubCardTitle, styles.cashflowTextCentered]}>Pension</Text>
-                      {effectiveScenarioActive && scenarioValuesAtAge && Math.abs(valuesAtAge.pensionContributions - scenarioValuesAtAge.pensionContributions) >= UI_TOLERANCE ? (
-                        <View style={styles.dualValueRow}>
-                          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, { textAlign: 'right' }]}>
-                              {formatCurrencyCompact(valuesAtAge.pensionContributions)}
-                            </Text>
-                          </View>
-                          <View style={styles.dualValueDivider} />
-                          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
-                            <View style={{ alignItems: 'flex-start' }}>
-                              <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-                                {formatCurrencyCompact(scenarioValuesAtAge.pensionContributions)}
-                              </Text>
-                              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2, fontSize: 10 }]}>
-                                {formatCurrencyCompactSigned(scenarioValuesAtAge.pensionContributions - valuesAtAge.pensionContributions)}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      ) : (
-                        <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.cashflowTextCentered]}>
-                          {formatCurrencyCompact(valuesAtAge.pensionContributions)}
-                        </Text>
-                      )}
-                    </View>
-
-                    <View
-                      style={[styles.projectedCardMinimal, styles.cashflowCard, styles.cashflowSubCard, styles.cashflowSubCardHalf, styles.cashflowMb]}
-                    >
-                      <Text style={[styles.projectedCardTitle, styles.projectedSubCardTitle, styles.cashflowTextCentered]}>
-                        Other Deductions
-                      </Text>
-                      {effectiveScenarioActive && scenarioValuesAtAge && Math.abs(valuesAtAge.taxes - scenarioValuesAtAge.taxes) >= UI_TOLERANCE ? (
-                        <View style={styles.dualValueRow}>
-                          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, { textAlign: 'right' }]}>
-                              {formatCurrencyCompact(valuesAtAge.taxes)}
-                            </Text>
-                          </View>
-                          <View style={styles.dualValueDivider} />
-                          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
-                            <View style={{ alignItems: 'flex-start' }}>
-                              <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-                                {formatCurrencyCompact(scenarioValuesAtAge.taxes)}
-                              </Text>
-                              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2, fontSize: 10 }]}>
-                                {formatCurrencyCompactSigned(scenarioValuesAtAge.taxes - valuesAtAge.taxes)}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      ) : (
-                        <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.cashflowTextCentered]}>
-                          {formatCurrencyCompact(valuesAtAge.taxes)}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  <SnapshotComparisonCard
+                    title="Pension"
+                    description="Total pension contributions"
+                    baselineValue={valuesAtAge.pensionContributions}
+                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.pensionContributions : undefined}
+                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
+                    isSubCard={true}
+                  />
+                  <SnapshotComparisonCard
+                    title="Other Deductions"
+                    description="Tax and other deductions"
+                    baselineValue={valuesAtAge.taxes}
+                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.taxes : undefined}
+                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
+                    isSubCard={true}
+                  />
                 </View>
 
                 {/* Net Income */}
-                <DualValueCard
+                <SnapshotComparisonCard
                   title="Net Income"
+                  description="Income after deductions"
                   baselineValue={valuesAtAge.grossIncome - valuesAtAge.pensionContributions - valuesAtAge.taxes}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge 
                     ? scenarioValuesAtAge.grossIncome - scenarioValuesAtAge.pensionContributions - scenarioValuesAtAge.taxes
-                    : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge
-                    ? (scenarioValuesAtAge.grossIncome - scenarioValuesAtAge.pensionContributions - scenarioValuesAtAge.taxes) - 
-                      (valuesAtAge.grossIncome - valuesAtAge.pensionContributions - valuesAtAge.taxes)
                     : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
                 />
 
                 {/* Expenses */}
                 <View style={styles.cashflowSubGroup}>
-                  <View style={[styles.projectedCardMinimal, styles.cashflowCard, styles.cashflowSubCard, styles.cashflowMb]}>
-                    <Text style={[styles.projectedCardTitle, styles.projectedSubCardTitle, styles.cashflowTextCentered]}>Expenses</Text>
-                    {isScenarioActive && scenarioValuesAtAge && Math.abs(valuesAtAge.livingExpenses - scenarioValuesAtAge.livingExpenses) >= UI_TOLERANCE ? (
-                      <View style={styles.dualValueRow}>
-                        <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
-                          <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, { textAlign: 'right' }]}>
-                            {formatCurrencyCompact(valuesAtAge.livingExpenses)}
-                          </Text>
-                        </View>
-                        <View style={styles.dualValueDivider} />
-                        <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
-                          <View style={{ alignItems: 'flex-start' }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-                              {formatCurrencyCompact(scenarioValuesAtAge.livingExpenses)}
-                            </Text>
-                            <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2, fontSize: 10 }]}>
-                              {formatCurrencyCompactSigned(scenarioValuesAtAge.livingExpenses - valuesAtAge.livingExpenses)}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ) : (
-                      <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.cashflowTextCentered]}>
-                        {formatCurrencyCompact(valuesAtAge.livingExpenses)}
-                      </Text>
-                    )}
-                  </View>
+                  <SnapshotComparisonCard
+                    title="Expenses"
+                    description="Total spending over time"
+                    baselineValue={valuesAtAge.livingExpenses}
+                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.livingExpenses : undefined}
+                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
+                    isSubCard={true}
+                  />
                 </View>
 
                 {/* Available Cash */}
-                <DualValueCard
+                <SnapshotComparisonCard
                   title="Available Cash"
+                  description="Cash remaining after expenses"
                   baselineValue={valuesAtAge.netSurplus}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus - valuesAtAge.netSurplus : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
                   isOutcome={true}
                 />
 
                 {/* Asset Contribution + Liability Reduction */}
                 <View style={styles.cashflowSubGroup}>
-                  <View style={styles.cashflowSubRow}>
-                    <View
-                      style={[
-                        styles.projectedCardMinimal,
-                        styles.cashflowCard,
-                        styles.cashflowSubCard,
-                        styles.cashflowSubCardHalf,
-                        styles.cashflowSubCardHalfLeft,
-                        styles.cashflowMb,
-                      ]}
-                    >
-                      <Text style={[styles.projectedCardTitle, styles.projectedSubCardTitle, styles.cashflowTextCentered]}>
-                        Asset Contribution
-                      </Text>
-                      {effectiveScenarioActive && scenarioValuesAtAge && Math.abs(valuesAtAge.postTaxContributions - scenarioValuesAtAge.postTaxContributions) >= UI_TOLERANCE ? (
-                        <View style={styles.dualValueRow}>
-                          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, { textAlign: 'right' }]}>
-                              {formatCurrencyCompact(valuesAtAge.postTaxContributions)}
-                            </Text>
-                          </View>
-                          <View style={styles.dualValueDivider} />
-                          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
-                            <View style={{ alignItems: 'flex-start' }}>
-                              <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-                                {formatCurrencyCompact(scenarioValuesAtAge.postTaxContributions)}
-                              </Text>
-                              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2, fontSize: 10 }]}>
-                                {formatCurrencyCompactSigned(scenarioValuesAtAge.postTaxContributions - valuesAtAge.postTaxContributions)}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      ) : (
-                        <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.cashflowTextCentered]}>
-                          {formatCurrencyCompact(valuesAtAge.postTaxContributions)}
-                        </Text>
-                      )}
-                    </View>
-
-                    <View
-                      style={[styles.projectedCardMinimal, styles.cashflowCard, styles.cashflowSubCard, styles.cashflowSubCardHalf, styles.cashflowMb]}
-                    >
-                      <Text style={[styles.projectedCardTitle, styles.projectedSubCardTitle, styles.cashflowTextCentered]}>
-                        Liability Reduction
-                      </Text>
-                      {effectiveScenarioActive && scenarioValuesAtAge && Math.abs(valuesAtAge.debtRepayment - scenarioValuesAtAge.debtRepayment) >= UI_TOLERANCE ? (
-                        <View style={styles.dualValueRow}>
-                          <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, { textAlign: 'right' }]}>
-                              {formatCurrencyCompact(valuesAtAge.debtRepayment)}
-                            </Text>
-                          </View>
-                          <View style={styles.dualValueDivider} />
-                          <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
-                            <View style={{ alignItems: 'flex-start' }}>
-                            <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-                              {formatCurrencyCompact(scenarioValuesAtAge.debtRepayment)}
-                            </Text>
-                              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2, fontSize: 10 }]}>
-                                {formatCurrencyCompactSigned(scenarioValuesAtAge.debtRepayment - valuesAtAge.debtRepayment)}
-                            </Text>
-                            </View>
-                          </View>
-                        </View>
-                      ) : (
-                        <Text style={[styles.projectedPrimaryValue, styles.projectedSubCardValue, styles.cashflowTextCentered]}>
-                          {formatCurrencyCompact(valuesAtAge.debtRepayment)}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  <SnapshotComparisonCard
+                    title="Asset Contribution"
+                    description="Total invested contributions"
+                    baselineValue={valuesAtAge.postTaxContributions}
+                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.postTaxContributions : undefined}
+                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
+                    isSubCard={true}
+                  />
+                  <SnapshotComparisonCard
+                    title="Liability Reduction"
+                    description="Debt repaid over time"
+                    baselineValue={valuesAtAge.debtRepayment}
+                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.debtRepayment : undefined}
+                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
+                    isSubCard={true}
+                  />
                 </View>
 
                 {/* Unallocated Cash */}
-                <DualValueCard
-                  title="Unallocated cash"
-                  baselineValue={selectMonthlySurplus(state)}
-                  scenarioValue={effectiveScenarioActive ? selectMonthlySurplusWithScenario(state, activeScenario) : undefined}
-                  scenarioDelta={isScenarioActive ? selectMonthlySurplusWithScenario(state, activeScenario) - selectMonthlySurplus(state) : undefined}
+                <SnapshotComparisonCard
+                  title="Monthly Surplus"
+                  description="Net surplus accumulated over time"
+                  baselineValue={valuesAtAge.netSurplus - valuesAtAge.postTaxContributions - valuesAtAge.debtRepayment}
+                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus - scenarioValuesAtAge.postTaxContributions - scenarioValuesAtAge.debtRepayment : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
                   isOutcome={true}
                 />
 
                 {/* End padding */}
                 <View style={styles.cashflowEndSpacer} />
+                </View>
               </View>
             </View>
+          </SectionCard>
 
-            {/* Balance Sheet Section */}
+          {/* Projected Balance Sheet Section */}
+          <SectionCard>
+            <SectionHeader title="Projected Balance Sheet" subtitle={`Age ${selectedAge}`} />
+
             <View style={styles.column}>
-              <Text style={styles.projectedSubHeading}>Balance Sheet</Text>
-
               <View style={styles.projectedBalanceSheetRow}>
                 {/* Assets */}
                 <BalanceSheetCard
                   title="Assets"
+                  description="Value at age 75"
                   baselineValue={valuesAtAge.assets}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.assets : undefined}
                   baselineAgeDelta={valuesAtAge.assets - valuesAtAge.startingAssets}
@@ -3582,6 +3503,7 @@ export default function ProjectionResultsScreen() {
                 {/* Liabilities */}
                 <BalanceSheetCard
                   title="Liabilities"
+                  description="Outstanding at age 75"
                   baselineValue={valuesAtAge.liabilities}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.liabilities : undefined}
                   baselineAgeDelta={valuesAtAge.liabilities - (series[0]?.liabilities ?? 0)}
@@ -3600,6 +3522,7 @@ export default function ProjectionResultsScreen() {
                 {/* Net Worth */}
                 <BalanceSheetCard
                   title="Net Worth"
+                  description="Assets minus liabilities"
                   baselineValue={valuesAtAge.netWorth}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netWorth : undefined}
                   baselineAgeDelta={valuesAtAge.netWorth - baselineA3Attribution.startingNetWorth}
@@ -3615,14 +3538,12 @@ export default function ProjectionResultsScreen() {
                 />
               </View>
             </View>
-          </View>
+          </SectionCard>
 
-          <View style={styles.sectionContainer}>
+          <SectionCard>
             {/* Section Header with Toggle */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.outcomeTitle}>
-                Net Worth Breakdown (Age {selectedAge})
-              </Text>
+              <SectionHeader title="Net Worth Breakdown" subtitle={`Age ${selectedAge}`} />
               {effectiveScenarioActive && scenarioValuesAtAge !== null ? (
                 <Pressable
                   style={[
@@ -3677,7 +3598,7 @@ export default function ProjectionResultsScreen() {
               />
             </View>
 
-            <View style={{ marginTop: layout.md }}>
+            <View style={styles.breakdownGroupContainer}>
               <AttributionCard
                 title="Cash flow over time"
                 subtitle=""
@@ -3688,7 +3609,7 @@ export default function ProjectionResultsScreen() {
               />
             </View>
 
-            <View style={{ marginTop: layout.md }}>
+            <View style={styles.breakdownGroupContainer}>
               <AttributionCard
                 title="Debt effects"
                 subtitle=""
@@ -3699,7 +3620,7 @@ export default function ProjectionResultsScreen() {
               />
             </View>
 
-            <View style={{ marginTop: layout.md }}>
+            <View style={styles.breakdownGroupContainer}>
               <AttributionCard
                 title="Asset growth"
                 subtitle=""
@@ -3709,7 +3630,7 @@ export default function ProjectionResultsScreen() {
                 showDelta={showDeltaColumn}
               />
             </View>
-          </View>
+          </SectionCard>
 
         </View>
       </ScrollView>
@@ -3907,7 +3828,7 @@ export default function ProjectionResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: layout.screenBackground,
   },
   scrollView: {
     flex: 1,
@@ -3917,17 +3838,17 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.base,
   },
   projectionStickyHeader: {
-    backgroundColor: '#fff',
     zIndex: 10,
+    backgroundColor: layout.screenBackground,
   },
   projectionToolbarContainer: {
     paddingBottom: spacing.sm,
   },
   projectionToolbarSurface: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -4246,11 +4167,6 @@ const styles = StyleSheet.create({
   block: {
     marginBottom: layout.lg,
   },
-  // Section container: consistent spacing for all sections
-  sectionContainer: {
-    marginTop: layout.lg,
-    marginBottom: layout.lg,
-  },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -4306,13 +4222,6 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   chartCard: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 10,
-    paddingTop: 4,
-    paddingBottom: 4,
-    marginBottom: spacing.xs,
     // Avoid clipping chart labels/legend.
     overflow: 'visible',
   },
@@ -4349,11 +4258,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#aaa',
     fontWeight: '400',
-  },
-  outcomeTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2F5BEA',
   },
   outcomeSubtitle: {
     fontSize: 13,
@@ -4475,8 +4379,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
     borderWidth: 1,
     borderColor: '#f0f0f0',
-    borderRadius: 24,
+    borderRadius: 12,
     padding: 12,
+  },
+  breakdownGroupContainer: {
+    marginTop: spacing.base,
   },
   attrTitle: {
     fontSize: 14,
@@ -4753,11 +4660,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     gap: spacing.base,
   },
-  projectedMainTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2F5BEA',
-  },
   headerQualifier: {
     color: '#999',
   },
@@ -4780,17 +4682,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   cashflowCentered: {
-    alignSelf: 'center',
     width: '100%',
-    maxWidth: 340,
-    paddingHorizontal: 8,
   },
   cashflowPrimaryCard: {
-    alignSelf: 'center',
-    width: '92%',
+    width: '100%',
+  },
+  cashflowCardStack: {
+    position: 'relative',
+    width: '100%',
+    paddingHorizontal: layout.inputPadding,
+  },
+  cashflowSpine: {
+    position: 'absolute',
+    left: spacing.xl + spacing.sm,
+    top: spacing.xs,
+    bottom: spacing.xs,
+    width: 1,
+    backgroundColor: '#f0f0f0',
+    zIndex: 0,
   },
   cashflowSubGroup: {
-    alignItems: 'center',
     marginTop: 0,
     marginBottom: 0,
   },
@@ -4798,7 +4709,7 @@ const styles = StyleSheet.create({
     // Spacing handled by cashflowMb* styles
   },
   cashflowMb: {
-    marginBottom: 4,
+    marginBottom: spacing.sm,
   },
   cashflowGapMd: {
     height: 4,
@@ -4819,8 +4730,8 @@ const styles = StyleSheet.create({
     height: 12,
   },
   cashflowSubCard: {
-    alignSelf: 'center',
-    width: '84%',
+    width: '90%',
+    alignSelf: 'flex-end',
   },
   cashflowSubRow: {
     flexDirection: 'row',
@@ -4837,6 +4748,33 @@ const styles = StyleSheet.create({
   },
   cashflowTextCentered: {
     textAlign: 'center',
+  },
+  // Snapshot card structure styles (reused from SnapshotScreen)
+  cashflowCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    gap: spacing.base,
+  },
+  cashflowCardLeft: {
+    flex: 1,
+    flexShrink: 1,
+    paddingRight: 100, // Reserve space for right-aligned value column
+  },
+  cashflowCardLeftIndented: {
+    flex: 1,
+    flexShrink: 1,
+    paddingRight: 100, // Reserve space for right-aligned value column
+  },
+  cashflowCardRight: {
+    position: 'absolute',
+    right: spacing.sm, // Align with card's right padding
+    top: spacing.tiny, // Visual centering offset
+    alignItems: 'flex-end',
+  },
+  cashflowValueRight: {
+    textAlign: 'right',
   },
   projectedCard: {
     padding: 8,
@@ -4918,7 +4856,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
     width: '100%',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   balanceSheetColumn: {
     flex: 1,
@@ -4954,7 +4892,7 @@ const styles = StyleSheet.create({
   projectedBalanceSheetCard: {
     flex: 1,
     minWidth: 90,
-    padding: 8,
+    padding: 4,
     borderRadius: 24,
     borderWidth: 0.5,
     borderColor: '#d8d8d8',
@@ -5043,6 +4981,74 @@ const styles = StyleSheet.create({
   bodyTextMuted: {
     color: '#999',
     opacity: 0.7,
+  },
+  // Snapshot card styles (reused from SnapshotScreen)
+  snapshotCard: {
+    backgroundColor: '#fff',
+    paddingVertical: spacing.tiny,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: spacing.xl,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    zIndex: 1,
+  },
+  snapshotCardTitle: {
+    fontSize: snapshotTypography.cardTitleSize,
+    fontWeight: snapshotTypography.cardTitleWeight,
+    marginBottom: 1,
+    color: '#000',
+  },
+  snapshotSubCardTitle: {
+    color: '#666',
+  },
+  snapshotSubCardValue: {
+    color: '#666',
+  },
+  snapshotPrimaryValue: {
+    fontSize: snapshotTypography.primaryValueSize,
+    fontWeight: snapshotTypography.primaryValueWeight,
+    marginBottom: 1,
+    color: '#000',
+  },
+  snapshotPrimaryValueOutcome: {
+    color: snapshotColors.focusBlue,
+  },
+  snapshotPrimaryValueScenario: {
+    color: snapshotColors.focusBlue,
+  },
+  snapshotCardDescription: {
+    fontSize: snapshotTypography.bodySize,
+    fontWeight: snapshotTypography.bodyWeight,
+    color: '#999',
+    marginTop: 1,
+  },
+  snapshotDeltaValue: {
+    fontSize: snapshotTypography.bodySize,
+    fontWeight: snapshotTypography.bodyWeight,
+    color: '#999',
+    marginTop: 1,
+  },
+  snapshotDeltaValueMuted: {
+    color: '#8FA8D4', // Muted blue
+  },
+  comparisonValuesContainer: {
+    alignItems: 'flex-end',
+  },
+  comparisonValuesRow: {
+    flexDirection: 'row',
+    gap: spacing.base,
+    alignItems: 'flex-start',
+  },
+  comparisonValueColumn: {
+    minWidth: 70,
+    alignItems: 'flex-end',
+  },
+  comparisonDeltaRow: {
+    flexDirection: 'row',
+    gap: spacing.base,
+    alignItems: 'flex-start',
+    marginTop: 2,
   },
   chartHelperText: {
     fontSize: 12,
