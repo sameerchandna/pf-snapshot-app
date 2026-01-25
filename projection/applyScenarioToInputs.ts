@@ -200,16 +200,8 @@ export function applyScenarioToProjectionInputs(
     // If surplusAfter < -UI_TOLERANCE, scenario is unaffordable → return baseline unchanged (fallback)
     // Equality at boundary (=== -UI_TOLERANCE) is allowed
     if (surplusAfter < -UI_TOLERANCE) {
-      // Phase 3.3: __DEV__ fail-fast enforcement for unaffordable scenarios
-      if (__DEV__) {
-        throw new Error(
-          `[FLOW_TO_ASSET Affordability] Scenario ${scenario.id} is unaffordable. ` +
-          `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
-          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}. ` +
-          `This indicates the scenario exceeds available cashflow.`
-        );
-      }
-      // Production: Log warning and return baseline unchanged (backward compatibility)
+      // Log warning and return baseline unchanged (fallback behavior)
+      // UI-level validation will show error message to user
       console.warn(
         `[FLOW_TO_ASSET Affordability] Scenario ${scenario.id} is unaffordable. ` +
         `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
@@ -229,16 +221,8 @@ export function applyScenarioToProjectionInputs(
     // If surplusAfter < -UI_TOLERANCE, scenario is unaffordable → return baseline unchanged (fallback)
     // Equality at boundary (=== -UI_TOLERANCE) is allowed
     if (surplusAfter < -UI_TOLERANCE) {
-      // Phase 3.3: __DEV__ fail-fast enforcement for unaffordable scenarios
-      if (__DEV__) {
-        throw new Error(
-          `[FLOW_TO_DEBT Affordability] Scenario ${scenario.id} is unaffordable. ` +
-          `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
-          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}. ` +
-          `This indicates the scenario exceeds available cashflow.`
-        );
-      }
-      // Production: Log warning and return baseline unchanged (backward compatibility)
+      // Log warning and return baseline unchanged (fallback behavior)
+      // UI-level validation will show error message to user
       console.warn(
         `[FLOW_TO_DEBT Affordability] Scenario ${scenario.id} is unaffordable. ` +
         `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +

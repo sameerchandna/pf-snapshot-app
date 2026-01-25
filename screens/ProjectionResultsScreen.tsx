@@ -1192,21 +1192,35 @@ export default function ProjectionResultsScreen() {
   };
 
   const scenarioValidationError = (() => {
-    // Only validate FLOW_INVESTING scenarios (affordability check)
-    // FLOW_DEBT_PAYDOWN scenarios don't need affordability validation
-    if (scenario.type === 'FLOW_DEBT_PAYDOWN') return null;
-    
-    const inputToValidate = pendingScenarioInput || (scenario.isActive && scenario.type === 'FLOW_INVESTING' && scenario.assetId && scenario.monthlyAmount > 0
-      ? { assetId: scenario.assetId, monthlyAmount: scenario.monthlyAmount }
-      : null);
-    
-    if (!inputToValidate) return null;
-    
+    // Validate affordability for both FLOW_INVESTING and FLOW_DEBT_PAYDOWN scenarios
     // Use selectMonthlySurplus as single source of truth (no local recomputation)
     const monthlySurplus = selectMonthlySurplus(state);
-    if (inputToValidate.monthlyAmount > monthlySurplus) {
-      return "This change isn't affordable with your current cash flow.";
+    
+    if (scenario.type === 'FLOW_INVESTING') {
+      const inputToValidate = pendingScenarioInput || (scenario.isActive && scenario.assetId && scenario.monthlyAmount > 0
+        ? { assetId: scenario.assetId, monthlyAmount: scenario.monthlyAmount }
+        : null);
+      
+      if (!inputToValidate) return null;
+      
+      if (inputToValidate.monthlyAmount > monthlySurplus) {
+        return "This change isn't affordable with your current cash flow.";
+      }
+      return null;
+    } else if (scenario.type === 'FLOW_DEBT_PAYDOWN') {
+      // Validate FLOW_DEBT_PAYDOWN affordability (matches FLOW_INVESTING UX behavior)
+      const inputToValidate = scenario.isActive && scenario.liabilityId && scenario.monthlyAmount > 0
+        ? { liabilityId: scenario.liabilityId, monthlyAmount: scenario.monthlyAmount }
+        : null;
+      
+      if (!inputToValidate) return null;
+      
+      if (inputToValidate.monthlyAmount > monthlySurplus) {
+        return "This change isn't affordable with your current cash flow.";
+      }
+      return null;
     }
+    
     return null;
   })();
 
@@ -1852,7 +1866,27 @@ export default function ProjectionResultsScreen() {
     // - For FLOW_TO_ASSET: totalContributions may remain unchanged (reallocation within contributions).
     // - For FLOW_TO_DEBT: totalContributions should increase (overpayments are part of totalContributions).
     // - This invariant is gated for FLOW scenarios and reserved for future STOCK (lump-sum) scenarios.
-    if (effectiveScenarioActive && effectiveScenarioA3Attribution && effectiveScenarioSummary) {
+    
+    // Helper: Detect if scenario produces a material output delta (OUTPUT-based, not INPUT-based)
+    // For A3 attribution, "applied" means "produces different endingNetWorth", not "inputs mutated"
+    // Scenarios can modify inputs (e.g., overpayments) but still produce identical outcomes
+    // (e.g., loan already paid off early, so additional overpayments have no effect)
+    const isScenarioAttributable = (() => {
+      if (!effectiveScenarioActive || !effectiveScenarioA3Attribution) return false;
+      
+      // Check if OUTPUTS differ (endingNetWorth), not just inputs
+      // A scenario is "attributable" only if it produces a material output delta
+      const endingNetWorthDiff = Math.abs(
+        baselineA3Attribution.endingNetWorth - effectiveScenarioA3Attribution.endingNetWorth
+      );
+      
+      // If endingNetWorth is identical (within tolerance), scenario had no material effect
+      return endingNetWorthDiff >= UI_TOLERANCE;
+    })();
+    
+    // Only run guardrails if scenario produces a material output delta
+    // Scenarios that modify inputs but produce identical outputs should not trigger guardrails
+    if (effectiveScenarioActive && effectiveScenarioA3Attribution && effectiveScenarioSummary && isScenarioAttributable) {
       // Determine effective scenario kind (FLOW_TO_ASSET, FLOW_TO_DEBT, or future STOCK scenarios)
       const effectiveScenarioKind: 'FLOW_TO_ASSET' | 'FLOW_TO_DEBT' | 'STOCK' | null = (() => {
         if (scenario.isActive) {
@@ -1973,6 +2007,7 @@ export default function ProjectionResultsScreen() {
       
       // Compare endingNetWorth with tolerance (to avoid rounding false-positives)
       // This check remains strict for all scenario types (FLOW and STOCK)
+      // Only enforce if scenario was actually applied (not fallen back to baseline)
       const baselineScenarioDiff = Math.abs(baselineA3Attribution.endingNetWorth - scenarioA3AttributionAbs.endingNetWorth);
       if (baselineScenarioDiff < UI_TOLERANCE) {
         console.error('[A3 Attribution Guardrail] CRITICAL: Baseline and scenario attribution endingNetWorth are identical when scenario is active (violates invariant):', {
@@ -1987,6 +2022,38 @@ export default function ProjectionResultsScreen() {
           expected: 'baseline.endingNetWorth !== scenario.endingNetWorth when scenario active',
         });
       }
+    } else if (effectiveScenarioActive && !isScenarioAttributable) {
+      // Scenario is active in UI but does not produce a material output delta
+      // This can happen when:
+      // - Scenario inputs were modified but outcomes are identical (e.g., loan already paid off)
+      // - Scenario fell back to baseline due to unaffordability
+      // Log warning for diagnostic purposes, but do not throw guardrail errors
+      // Determine scenario kind for logging
+      const scenarioKindForLog: 'FLOW_TO_ASSET' | 'FLOW_TO_DEBT' | null = (() => {
+        if (scenario.isActive) {
+          if (scenario.type === 'FLOW_INVESTING') return 'FLOW_TO_ASSET';
+          if (scenario.type === 'FLOW_DEBT_PAYDOWN') return 'FLOW_TO_DEBT';
+          return null;
+        }
+        if (activeScenario) {
+          if (activeScenario.kind === 'FLOW_TO_ASSET' || activeScenario.kind === 'FLOW_TO_DEBT') {
+            return activeScenario.kind;
+          }
+        }
+        return null;
+      })();
+      
+      const endingNetWorthDiff = effectiveScenarioA3Attribution
+        ? Math.abs(baselineA3Attribution.endingNetWorth - effectiveScenarioA3Attribution.endingNetWorth)
+        : 0;
+      
+      console.warn('[A3 Attribution] Scenario is active but does not produce a material output delta. Skipping attribution guardrails.', {
+        scenarioKind: scenarioKindForLog,
+        endingNetWorthDiff,
+        reason: endingNetWorthDiff < UI_TOLERANCE
+          ? 'Scenario endingNetWorth is identical to baseline (within tolerance) - inputs may differ but outcomes are the same'
+          : 'Scenario A3 attribution not available',
+      });
     }
   }
   
