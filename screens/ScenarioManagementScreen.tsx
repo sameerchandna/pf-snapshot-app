@@ -7,8 +7,10 @@ import { Feather } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import { useSnapshot } from '../SnapshotContext';
-import { formatCurrencyFull } from '../formatters';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
+import { UI_TOLERANCE } from '../constants';
+import { selectMonthlySurplus } from '../selectors';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { getScenarios, getActiveScenarioId, setActiveScenarioId, getActiveScenario, deleteScenario } from '../scenarioState';
@@ -39,6 +41,10 @@ export default function ScenarioManagementScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<ScenarioId | null>(null);
   const [openSwipeableId, setOpenSwipeableId] = useState<string | null>(null);
   const swipeableRefs = useRef<Map<string, Swipeable | null>>(new Map());
+
+  // Gate: Check if baseline surplus is negative (over-allocation)
+  const baselineSurplus = selectMonthlySurplus(state);
+  const isSurplusNegative = baselineSurplus < -UI_TOLERANCE;
 
   // Load scenarios whenever screen gains focus
   useFocusEffect(
@@ -83,11 +89,19 @@ export default function ScenarioManagementScreen() {
 
   // Handle scenario activation (persistence only, no local state updates)
   const handleActivateBaseline = async () => {
+    // Gate: Block activation if surplus is negative
+    if (isSurplusNegative) {
+      return;
+    }
     await setActiveScenarioId(undefined);
     navigation.goBack();
   };
 
   const handleActivateScenario = async (scenarioId: ScenarioId) => {
+    // Gate: Block activation if surplus is negative
+    if (isSurplusNegative) {
+      return;
+    }
     await setActiveScenarioId(scenarioId);
     navigation.goBack();
   };
@@ -182,6 +196,15 @@ export default function ScenarioManagementScreen() {
           setOpenSwipeableId(null);
         }}
       >
+        {/* Negative Surplus Banner */}
+        {isSurplusNegative && (
+          <View style={styles.warningBanner}>
+            <Text style={styles.warningBannerText}>
+              Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
+            </Text>
+          </View>
+        )}
+
         {/* Baseline Section */}
         <View style={styles.section}>
           <GroupHeader title="Baseline" />
@@ -189,7 +212,12 @@ export default function ScenarioManagementScreen() {
           <View style={styles.list}>
             <Pressable
               onPress={handleActivateBaseline}
-              style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+              disabled={isSurplusNegative}
+              style={({ pressed }) => [
+                styles.row, 
+                pressed ? styles.rowPressed : null,
+                isSurplusNegative ? styles.rowDisabled : null
+              ]}
             >
               <View style={styles.rowMain}>
                 <View style={styles.dotContainer}>
@@ -263,12 +291,17 @@ export default function ScenarioManagementScreen() {
                           <View style={styles.dotContainer}>
                             <Pressable
                               onPress={() => handleActivateScenario(scenario.id)}
+                              disabled={isSurplusNegative}
                               hitSlop={10}
-                              style={styles.dotPressable}
+                              style={[styles.dotPressable, isSurplusNegative ? styles.dotPressableDisabled : null]}
                               accessibilityRole="radio"
-                              accessibilityState={{ selected: isActive }}
+                              accessibilityState={{ selected: isActive, disabled: isSurplusNegative }}
                             >
-                              <View style={[styles.dot, isActive ? styles.dotActive : styles.dotInactive]} />
+                              <View style={[
+                                styles.dot, 
+                                isActive ? styles.dotActive : styles.dotInactive,
+                                isSurplusNegative ? styles.dotDisabled : null
+                              ]} />
                             </Pressable>
                           </View>
                           <View style={styles.rowBody}>
@@ -286,10 +319,21 @@ export default function ScenarioManagementScreen() {
 
           {/* Create Scenario Row */}
           <Pressable
-            onPress={() => navigation.navigate('ScenarioEditor', { scenarioId: undefined })}
-            style={({ pressed }) => [styles.createRow, pressed ? styles.rowPressed : null]}
+            onPress={() => {
+              if (!isSurplusNegative) {
+                navigation.navigate('ScenarioEditor', { scenarioId: undefined });
+              }
+            }}
+            disabled={isSurplusNegative}
+            style={({ pressed }) => [
+              styles.createRow, 
+              pressed ? styles.rowPressed : null,
+              isSurplusNegative ? styles.createRowDisabled : null
+            ]}
           >
-            <Text style={styles.createRowText}>+ Create Scenario</Text>
+            <Text style={[styles.createRowText, isSurplusNegative ? styles.createRowTextDisabled : null]}>
+              + Create Scenario
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -518,5 +562,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  warningBanner: {
+    marginTop: layout.sectionGap,
+    marginHorizontal: layout.screenPadding,
+    padding: layout.blockPadding,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  warningBannerText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  rowDisabled: {
+    opacity: 0.5,
+  },
+  dotPressableDisabled: {
+    opacity: 0.5,
+  },
+  dotDisabled: {
+    borderColor: '#ccc',
+    opacity: 0.5,
+  },
+  createRowDisabled: {
+    opacity: 0.5,
+  },
+  createRowTextDisabled: {
+    color: '#999',
   },
 });

@@ -264,8 +264,8 @@ export function selectMonthlySurplusWithScenario(state: SnapshotState, activeSce
   // This shows what monthly surplus would be if the scenario were applied
   if (activeScenario.kind === 'FLOW_TO_ASSET' || activeScenario.kind === 'FLOW_TO_DEBT') {
     const adjustedSurplus = baselineSurplus - activeScenario.amountMonthly;
-    // Clamp to 0 minimum (surplus cannot go negative in display)
-    return Math.max(0, adjustedSurplus);
+    // Return adjusted surplus directly (negative values must propagate for diagnostic correctness)
+    return adjustedSurplus;
   }
   
   // Unknown scenario kind, return baseline

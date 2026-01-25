@@ -336,8 +336,9 @@ export function computeA3Attribution({
   // FLOW semantics: monthlySurplus = netSurplus - postTaxContributions - debtOverpayments
   // This matches user intuition: money left after all allocations (FLOW concept)
   // Computed inline, not stored in attribution type
+  // Preserve sign for diagnostic display (negative surplus indicates over-allocation)
   const allocationsTotal = postTaxContributions + mortgageOverpayments;
-  const monthlySurplus = Math.max(0, netSurplus - allocationsTotal);
+  const monthlySurplus = netSurplus - allocationsTotal;
 
   // Asset attribution: assets = starting + contributions + growth
   // monthlySurplus is NOT part of asset roll-forward (display-only residual in cashflow table)

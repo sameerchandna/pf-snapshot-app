@@ -352,12 +352,16 @@ function DualValueCard({
   showScenario: boolean;
   isOutcome?: boolean;
 }) {
+  // Use signed formatting for outcome values (surplus/deficit) to preserve sign
+  // Use unsigned formatting for absolute values (balances, amounts)
+  const formatValue = isOutcome ? formatCurrencyCompactSigned : formatCurrencyCompact;
+
   if (!showScenario || scenarioValue === undefined) {
     return (
       <View style={[styles.projectedCardBordered, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowMb]}>
         <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
         <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
-          {formatCurrencyCompact(baselineValue)}
+          {formatValue(baselineValue)}
         </Text>
       </View>
     );
@@ -370,7 +374,7 @@ function DualValueCard({
       <View style={[styles.projectedCardBordered, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowMb]}>
         <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
         <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
-          {formatCurrencyCompact(baselineValue)}
+          {formatValue(baselineValue)}
         </Text>
       </View>
     );
@@ -385,14 +389,14 @@ function DualValueCard({
       <View style={styles.dualValueRow}>
         <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'flex-start', paddingRight: spacing.xs }}>
           <Text style={[styles.projectedPrimaryValue, { textAlign: 'right' }]}>
-            {formatCurrencyCompact(baselineValue)}
+            {formatValue(baselineValue)}
           </Text>
         </View>
         <View style={styles.dualValueDivider} />
         <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
           <View style={{ alignItems: 'flex-start' }}>
             <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
-              {formatCurrencyCompact(scenarioValue)}
+              {formatValue(scenarioValue)}
             </Text>
             {hasDelta && (
               <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2 }]}>
@@ -849,6 +853,10 @@ export default function ProjectionResultsScreen() {
     return selectMonthlySurplus(state);
   }, [state]);
 
+  // Gate: Check if baseline surplus is negative (over-allocation)
+  const baselineSurplus = selectMonthlySurplus(state);
+  const isSurplusNegative = baselineSurplus < -UI_TOLERANCE;
+
   // V1 Affordability: Track pending input for validation (what user is typing, not yet committed)
   const [pendingScenarioInput, setPendingScenarioInput] = useState<{ assetId: string | null; monthlyAmount: number } | null>(null);
 
@@ -965,6 +973,11 @@ export default function ProjectionResultsScreen() {
 
   // Phase Four: Handle scenario selection (deterministic, synchronous resolution)
   const handleScenarioSelect = async (scenarioId?: ScenarioId) => {
+    // Gate: Block scenario selection if surplus is negative
+    if (isSurplusNegative) {
+      return;
+    }
+
     // CRITICAL: Normalize undefined to BASELINE_SCENARIO_ID before persisting
     // Baseline must always be represented as BASELINE_SCENARIO_ID, never undefined
     const normalizedId: ScenarioId = scenarioId === undefined ? BASELINE_SCENARIO_ID : scenarioId;
@@ -1004,6 +1017,11 @@ export default function ProjectionResultsScreen() {
   };
 
   const handleQuickWhatIfToggle = () => {
+    // Gate: Block Quick What-If if surplus is negative
+    if (isSurplusNegative) {
+      return;
+    }
+
     const newExpanded = !quickWhatIfExpanded;
     setQuickWhatIfExpanded(newExpanded);
     if (newExpanded) {
@@ -2694,15 +2712,30 @@ export default function ProjectionResultsScreen() {
             }
           />
 
+          {/* Negative Surplus Banner */}
+          {isSurplusNegative && (
+            <View style={styles.warningBanner}>
+              <Text style={styles.warningBannerText}>
+                Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
+              </Text>
+            </View>
+          )}
+
           <View style={styles.projectionToolbarContainer}>
             <View style={styles.projectionToolbarSurface}>
               <View style={styles.toolbarRow}>
                 <View style={styles.toolbarLeftGroup}>
                   <Pressable 
-                    onPress={() => openLater(() => setScenarioSelectorOpen(true))}
+                    onPress={() => {
+                      if (!isSurplusNegative) {
+                        openLater(() => setScenarioSelectorOpen(true));
+                      }
+                    }}
+                    disabled={isSurplusNegative}
                     style={[
                       styles.toolbarPillButton,
                       activeScenarioSource === 'persisted' && styles.toolbarPillButtonActive,
+                      isSurplusNegative && styles.toolbarPillButtonDisabled,
                     ]}
                   >
                     <Text style={[
@@ -2719,12 +2752,16 @@ export default function ProjectionResultsScreen() {
 
                   <Pressable 
                     onPress={() => {
-                      handleQuickWhatIfToggle();
-                      // Scrolling is handled by onLayout in the expanded section
+                      if (!isSurplusNegative) {
+                        handleQuickWhatIfToggle();
+                        // Scrolling is handled by onLayout in the expanded section
+                      }
                     }}
+                    disabled={isSurplusNegative}
                     style={[
                       styles.toolbarPillButton,
                       activeScenarioSource === 'quick' && styles.toolbarPillButtonActive,
+                      isSurplusNegative && styles.toolbarPillButtonDisabled,
                     ]}
                   >
                     <Feather 
@@ -3739,9 +3776,24 @@ export default function ProjectionResultsScreen() {
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Select scenario</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
+              {/* Negative Surplus Banner in Modal */}
+              {isSurplusNegative && (
+                <View style={styles.modalWarningBanner}>
+                  <Text style={styles.modalWarningBannerText}>
+                    Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
+                  </Text>
+                </View>
+              )}
               <Pressable
                 onPress={() => handleScenarioSelect(BASELINE_SCENARIO_ID)}
-                style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1, backgroundColor: (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? '#f5f5f5' : 'transparent' }]}
+                disabled={isSurplusNegative}
+                style={({ pressed }) => [
+                  styles.modalOption, 
+                  { 
+                    opacity: pressed ? 0.85 : (isSurplusNegative ? 0.5 : 1), 
+                    backgroundColor: (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? '#f5f5f5' : 'transparent' 
+                  }
+                ]}
               >
                 <Text style={[styles.modalOptionText, (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) && { color: '#2F5BEA' }]}>
                   Baseline
@@ -3750,16 +3802,23 @@ export default function ProjectionResultsScreen() {
               {savedScenarios
                 .filter(s => s.id !== BASELINE_SCENARIO_ID) // Exclude baseline from scenarios list
                 .map(s => (
-                <Pressable
-                  key={s.id}
-                  onPress={() => handleScenarioSelect(s.id)}
-                  style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1, backgroundColor: activeScenarioId === s.id ? '#f5f5f5' : 'transparent' }]}
-                >
-                  <Text style={[styles.modalOptionText, activeScenarioId === s.id && { color: '#2F5BEA' }]}>
-                    {s.name}
-                  </Text>
-                </Pressable>
-              ))}
+                  <Pressable
+                    key={s.id}
+                    onPress={() => handleScenarioSelect(s.id)}
+                    disabled={isSurplusNegative}
+                    style={({ pressed }) => [
+                      styles.modalOption, 
+                      { 
+                        opacity: pressed ? 0.85 : (isSurplusNegative ? 0.5 : 1), 
+                        backgroundColor: activeScenarioId === s.id ? '#f5f5f5' : 'transparent' 
+                      }
+                    ]}
+                  >
+                    <Text style={[styles.modalOptionText, activeScenarioId === s.id && { color: '#2F5BEA' }]}>
+                      {s.name}
+                    </Text>
+                  </Pressable>
+                ))}
               <View style={styles.modalDivider} />
               <Pressable
                 onPress={() => {
@@ -5000,6 +5059,36 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#991b1b',
     fontFamily: 'monospace',
+  },
+  warningBanner: {
+    marginTop: layout.sectionGap,
+    marginHorizontal: layout.screenPadding,
+    padding: layout.blockPadding,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  warningBannerText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  toolbarPillButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalWarningBanner: {
+    marginBottom: 12,
+    padding: layout.blockPadding,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  modalWarningBannerText: {
+    fontSize: 13,
+    color: '#856404',
+    lineHeight: 18,
   },
 });
 

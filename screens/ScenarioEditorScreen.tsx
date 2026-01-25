@@ -7,8 +7,10 @@ import GroupHeader from '../components/GroupHeader';
 import EducationBox from '../components/EducationBox';
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
-import { formatCurrencyFull } from '../formatters';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
+import { UI_TOLERANCE } from '../constants';
+import { selectMonthlySurplus } from '../selectors';
 import type { Scenario, ScenarioId, ScenarioKind, FlowToAssetScenario, FlowToDebtScenario } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { validateScenario } from '../domain/scenario/validation';
@@ -95,6 +97,10 @@ export default function ScenarioEditorScreen() {
   // Lock kind after initial selection (for edit mode)
   const kindLocked = isEdit && existingScenario !== null;
 
+  // Gate: Check if baseline surplus is negative (over-allocation)
+  const baselineSurplus = selectMonthlySurplus(state);
+  const isSurplusNegative = baselineSurplus < -UI_TOLERANCE;
+
   // Filter to only loan liabilities
   const loanLiabilities = useMemo(() => {
     return state.liabilities.filter(l => l.kind === 'loan');
@@ -171,7 +177,8 @@ export default function ScenarioEditorScreen() {
     try {
       await saveScenario(scenario);
       // Auto-activate and navigate back (only on create, preserve active on edit)
-      if (!isEdit) {
+      // Gate: Do not auto-activate if baseline surplus is negative
+      if (!isEdit && !isSurplusNegative) {
         await setActiveScenarioId(scenario.id);
       }
       navigation.navigate('ProjectionResults');
@@ -196,6 +203,15 @@ export default function ScenarioEditorScreen() {
             'They modify how you allocate available cash each month.',
           ]}
         />
+
+        {/* Negative Surplus Banner */}
+        {isSurplusNegative && (
+          <View style={styles.warningBanner}>
+            <Text style={styles.warningBannerText}>
+              Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
+            </Text>
+          </View>
+        )}
 
         {/* Scenario Type Selection */}
         <View style={styles.section}>
@@ -616,5 +632,19 @@ const styles = StyleSheet.create({
     color: '#777',
     fontStyle: 'italic',
     paddingVertical: 12,
+  },
+  warningBanner: {
+    marginTop: layout.sectionGap,
+    marginHorizontal: layout.screenPadding,
+    padding: layout.blockPadding,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  warningBannerText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
   },
 });
