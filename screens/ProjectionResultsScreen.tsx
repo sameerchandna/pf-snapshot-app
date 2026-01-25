@@ -604,14 +604,14 @@ function BalanceSheetCard({
             </Text>
           ) : (
             <>
-              <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered]}>
-                {formatCurrencyCompact(scenarioValue)}
-              </Text>
+          <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered]}>
+            {formatCurrencyCompact(scenarioValue)}
+          </Text>
               {/* Row 2: Scenario delta (baseline → scenario) */}
               {hasScenarioDelta && (
-                <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, styles.cashflowTextCentered]}>
-                  {formatCurrencyCompactSigned(delta)}
-                </Text>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, styles.cashflowTextCentered]}>
+                {formatCurrencyCompactSigned(delta)}
+              </Text>
               )}
             </>
           )}
@@ -2642,18 +2642,9 @@ export default function ProjectionResultsScreen() {
     const startLiabilities = series[0]?.liabilities ?? 0;
     const endLiabilities = series[series.length - 1]?.liabilities ?? 0;
 
-    // Calculate extraGrowth for scenario attribution (incremental only)
-    let extraGrowth: number | null = null;
-    if (showScenario && sv) {
-      const netWorthIncrease = sv.netWorth - v.netWorth;
-      const baselineTotalContributions = v.pensionContributions + v.postTaxContributions;
-      const scenarioTotalContributions = sv.pensionContributions + sv.postTaxContributions;
-      const extraContributions = scenarioTotalContributions - baselineTotalContributions;
-      extraGrowth = netWorthIncrease - extraContributions;
-      
-      // Note: Golden Rule validation (extraContributions vs extraGrowth vs netWorthIncrease)
-      // belongs to wiring validation, not A3. A3 treats projectionSeries as ground truth.
-    }
+    // Asset-only growth calculation (for Asset A3 only, not used for investment growth row)
+    // Investment growth row now uses sv.growth directly (asset-only: endingAssets - startingAssets - contributions)
+    // This ensures Asset A3 is not polluted by liability or net worth effects
 
     // Centralized delta computation helper
     // ALWAYS: delta = scenario - baseline (no exceptions, no sign flipping)
@@ -2665,13 +2656,15 @@ export default function ProjectionResultsScreen() {
     const isCostRow = (label: string): boolean => {
       return label.includes('Cost of borrowing') ||
              label.includes('Interest you pay') ||
+             label.includes('Interest saved') ||
              label.includes('Contribution to pension') ||
              label.includes('Money paid in tax') ||
              label.includes('Everyday spending') ||
              label.includes('Money you invest') ||
              label.includes('Money used to pay down debt') ||
              label.includes('Money kept as cash') ||
-             label.includes('Debt you pay back');
+             label.includes('Debt you pay back') ||
+             label.includes('Extra debt payments');
     };
 
     // Helper to compute delta and format scenario/delta values
@@ -2687,28 +2680,82 @@ export default function ProjectionResultsScreen() {
       // Use compact formatting when scenario is active, full formatting otherwise
       const baselineFormatFn = showScenario ? (formatFnCompact || formatFn) : formatFn;
       
+      // Special handling for debt effect rows with custom bindings
+      const isDebtEffectRow = label === 'Extra debt payments' || 
+                              label === 'Interest saved' || 
+                              label === 'Net worth improvement' ||
+                              label === 'Debt remaining at end';
+      
       // For display, negate cost rows (but keep raw values for delta calculation)
-      const baselineDisplayValue = isCostRow(label) ? -baselineValue : baselineValue;
+      let baselineDisplayValue: number;
+      let baselineRawValue: number;
+      
+      if (isDebtEffectRow) {
+        if (label === 'Extra debt payments') {
+          // Baseline: v.debtRepayment, Scenario: sv.debtRepayment
+          baselineRawValue = v.debtRepayment;
+          baselineDisplayValue = v.debtRepayment;
+        } else if (label === 'Interest saved') {
+          // Baseline: v.interestPaid, Scenario: sv.interestPaid
+          baselineRawValue = v.interestPaid;
+          baselineDisplayValue = isCostRow(label) ? -v.interestPaid : v.interestPaid;
+        } else if (label === 'Net worth improvement') {
+          // Baseline: — (0), Scenario: liability reduction only (v.liabilities - sv.liabilities)
+          // This isolates Debt A3 from asset changes
+          baselineRawValue = 0;
+          baselineDisplayValue = 0;
+        } else if (label === 'Debt remaining at end') {
+          // Baseline: v.remainingDebt, Scenario: sv.remainingDebt
+          baselineRawValue = v.remainingDebt;
+          baselineDisplayValue = v.remainingDebt;
+        } else {
+          baselineRawValue = baselineValue;
+          baselineDisplayValue = isCostRow(label) ? -baselineValue : baselineValue;
+        }
+      } else {
+        baselineRawValue = baselineValue;
+        baselineDisplayValue = isCostRow(label) ? -baselineValue : baselineValue;
+      }
+      
+      // Special handling for "Net worth improvement" baseline (show "—" instead of £0)
+      let baselineText: string;
+      if (label === 'Net worth improvement' && Math.abs(baselineDisplayValue) < UI_TOLERANCE) {
+        baselineText = '—';
+      } else {
+        baselineText = baselineFormatFn(baselineDisplayValue);
+      }
       
       const row: Row = {
         label,
-        valueText: baselineFormatFn(baselineDisplayValue),
+        valueText: baselineText,
         showDividerAfter,
       };
       if (showScenario && sv) {
         const scenarioRawValue = (() => {
-          // For investment growth rows, use extraGrowth only (incremental effect)
-          if (useExtraGrowthForScenario && extraGrowth !== null) {
-            return baselineValue + extraGrowth;
+          // Special handling for debt effect rows
+          if (isDebtEffectRow) {
+            if (label === 'Extra debt payments') {
+              return sv.debtRepayment;
+            } else if (label === 'Interest saved') {
+              return sv.interestPaid;
+            } else if (label === 'Net worth improvement') {
+              // Debt-driven net worth improvement = liability reduction only
+              // This isolates Debt A3 from asset changes
+              return v.liabilities - sv.liabilities;
+            } else if (label === 'Debt remaining at end') {
+              return sv.remainingDebt;
+            }
           }
+          
+          // Standard mapping for other rows
           // Map baseline field to scenario field (use raw values, no sign manipulation)
           if (label.includes('Investment growth')) {
-            // CRITICAL: For investment growth, scenario should show baseline + extraGrowth only
-            // Never show total scenario growth as it includes baseline growth
-            return extraGrowth !== null ? baselineValue + extraGrowth : baselineValue;
+            // Use asset-only growth directly from sv.growth (already calculated as endingAssets - startingAssets - contributions)
+            // This ensures Asset A3 is not polluted by liability or net worth effects
+            return sv.growth;
           }
           if (label.includes('Money you regularly add') || label.includes('Money you add over time')) return sv.contributions;
-          if (label.includes('Cost of borrowing') || label.includes('Interest you pay')) return sv.interestPaid; // Raw value
+          if (label.includes('Cost of borrowing') || label.includes('Interest you pay') || label.includes('Interest saved')) return sv.interestPaid; // Raw value
           if (label.includes('Total money you earn')) return sv.grossIncome;
           if (label.includes('Contribution to pension')) return sv.pensionContributions; // Raw value
           if (label.includes('Money paid in tax')) return sv.taxes; // Raw value
@@ -2719,14 +2766,32 @@ export default function ProjectionResultsScreen() {
           // Phase 3.3: Use selector for scenario-adjusted monthly surplus (single source of truth)
           if (label.includes('Unallocated cash')) return selectMonthlySurplusWithScenario(state, activeScenario);
           if (label.includes('Debt you pay back')) return sv.principalRepaid; // Raw value
-          if (label.includes('Debt left at the end')) return sv.remainingDebt;
+          if (label.includes('Extra debt payments')) return sv.debtRepayment; // Raw value
+          if (label.includes('Debt left at the end') || label.includes('Debt remaining at end')) return sv.remainingDebt;
           if (label.includes('What you start with')) return sv.startingAssets;
           if (label.includes('What you end up with')) return sv.assets;
-          return baselineValue; // Fallback: no change
+          return baselineRawValue; // Fallback: no change
         })();
         
-        // CRITICAL: Delta = scenario - baseline (using RAW values, always)
-        const delta = computeDelta(baselineValue, scenarioRawValue);
+        // Special delta calculation for debt effect rows
+        let delta: number;
+        if (isDebtEffectRow) {
+          if (label === 'Interest saved') {
+            // Delta: Baseline - Scenario (positive saving)
+            delta = baselineRawValue - scenarioRawValue;
+          } else if (label === 'Net worth improvement') {
+            // Delta: liability reduction only (debt-driven net worth improvement)
+            // This isolates Debt A3 from asset changes
+            delta = v.liabilities - sv.liabilities;
+          } else {
+            // Delta: Scenario - Baseline (standard)
+            delta = computeDelta(baselineRawValue, scenarioRawValue);
+          }
+        } else {
+          // CRITICAL: Delta = scenario - baseline (using RAW values, always)
+          delta = computeDelta(baselineRawValue, scenarioRawValue);
+        }
+        
         const valuesDiffer = Math.abs(delta) >= UI_TOLERANCE;
         
         // For display, negate cost rows (but delta uses raw values)
@@ -2771,15 +2836,17 @@ export default function ProjectionResultsScreen() {
         makeRow('Unallocated cash', selectMonthlySurplus(state), formatCurrencyFull, formatCurrencyCompact),
       ],
       debtRows: [
-        makeRow('Interest you pay over time', v.interestPaid, formatCurrencyFull, formatCurrencyCompact),
-        makeRow('Debt you pay back', v.principalRepaid, formatCurrencyFull, formatCurrencyCompact),
-        makeRow('Debt left at the end', v.remainingDebt, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Extra debt payments', v.debtRepayment, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Interest saved', v.interestPaid, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Net worth improvement', 0, formatCurrencyFull, formatCurrencyCompact),
+        makeRow('Debt remaining at end', v.remainingDebt, formatCurrencyFull, formatCurrencyCompact),
       ],
       assetRows: [
         makeRow('What you start with', v.startingAssets, formatCurrencyFull, formatCurrencyCompact),
         makeRow('Money you add over time', v.contributions, formatCurrencyFull, formatCurrencyCompact),
-        // CRITICAL: Investment growth baseline stays unchanged; scenario shows baseline + extraGrowth only
-        makeRow(selectedAge >= state.projection.endAge ? 'Investment growth' : 'Investment growth so far', v.growth, formatCurrencyFull, formatCurrencyCompact, false, true),
+        // Investment growth: asset-only calculation (endingAssets - startingAssets - contributions)
+        // Scenario uses sv.growth directly (already asset-only, not polluted by liability effects)
+        makeRow(selectedAge >= state.projection.endAge ? 'Investment growth' : 'Investment growth so far', v.growth, formatCurrencyFull, formatCurrencyCompact),
         makeRow('What you end up with', v.assets, formatCurrencyFull, formatCurrencyCompact),
       ],
       startLiabilities,
@@ -2789,7 +2856,7 @@ export default function ProjectionResultsScreen() {
       endNetWorthScenario,
       endNetWorthDelta,
     };
-  }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state, activeScenario]);
+  }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state, activeScenario, scenarioDeltas]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -3374,7 +3441,7 @@ export default function ProjectionResultsScreen() {
             <View style={[styles.column, styles.cashflowColumn, { marginTop: layout.md }]}>
               <View style={styles.cashflowCardStack}>
                 <View style={styles.cashflowSpine} />
-                <View style={styles.cashflowCentered}>
+              <View style={styles.cashflowCentered}>
                 {/* Gross Income */}
                 <SnapshotComparisonCard
                   title="Gross Income"
@@ -3469,8 +3536,8 @@ export default function ProjectionResultsScreen() {
 
                 {/* End padding */}
                 <View style={styles.cashflowEndSpacer} />
-                </View>
               </View>
+            </View>
             </View>
           </SectionCard>
 
@@ -3585,18 +3652,6 @@ export default function ProjectionResultsScreen() {
                 ) : null}
               </View>
             ) : null}
-
-            <View style={!effectiveScenarioActive || scenarioValuesAtAge === null ? { marginTop: layout.md } : undefined}>
-              <KeyDriversCard 
-                rows={a3.keyDriversRows} 
-                showScenario={isScenarioActive && scenarioValuesAtAge !== null}
-                showDelta={showDeltaColumn}
-                scenarioResult={a3.scenarioResult || null}
-                endNetWorthBaseline={a3.endNetWorthBaseline}
-                endNetWorthScenario={a3.endNetWorthScenario}
-                endNetWorthDelta={a3.endNetWorthDelta}
-              />
-            </View>
 
             <View style={styles.breakdownGroupContainer}>
               <AttributionCard

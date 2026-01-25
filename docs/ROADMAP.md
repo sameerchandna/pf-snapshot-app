@@ -39,7 +39,7 @@ Only unchecked items may be worked on.
 ---
 
 ## Phase 4 — UI System Foundation
-- [ ] Make Prjection Screen same look as Snapshot (Section Cards etc)
+- [x] Make Prjection Screen same look as Snapshot (Section Cards etc)
 - [ ] UI audit (tokens, components, duplication)
 - [ ] Central theme file (light/dark)
 - [ ] Central component style definitions
