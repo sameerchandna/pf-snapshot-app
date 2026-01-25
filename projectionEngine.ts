@@ -219,7 +219,11 @@ function computeMonthlyProjection(
     }
 
     // 3) Apply per-liability interest for non-loan liabilities (missing -> 0%)
+    // NON-LOAN LIFECYCLE ENFORCEMENT:
+    // Once a non-loan liability balance reaches zero, it is inactive and must not accrue interest.
+    // Skip paid-off liabilities to prevent unnecessary processing and maintain lifecycle consistency.
     for (const l of nonLoanStates) {
+      if (l.balance <= 0) continue; // Skip paid-off liabilities
       l.balance = l.balance * (1 + l.monthlyRate);
     }
 
@@ -292,6 +296,8 @@ function computeMonthlyProjection(
         const share = isLast ? remaining : debtPaydownTotal * (l.balance / nonLoanTotal);
         const pay = Math.min(l.balance, share);
         l.balance -= pay;
+        // Clamp to prevent negative residue from rounding or ordering issues
+        l.balance = Math.max(0, l.balance);
         remaining -= pay;
       }
     }
@@ -310,6 +316,19 @@ function computeMonthlyProjection(
     const nonLoanNow = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
     const loanBalancesNow = loanStates.reduce((sum, l) => sum + l.balance, 0);
     const liabilities = nonLoanNow + loanBalancesNow;
+
+    // Dev-time assertion: Verify no non-loan liability has negative balance after monthly processing
+    if (__DEV__) {
+      for (const l of nonLoanStates) {
+        if (l.balance < 0) {
+          throw new Error(
+            `[Projection Engine] Non-loan liability balance went negative: ` +
+            `liabilityId=${l.id}, balance=${l.balance}, monthIndex=${monthIndex}. ` +
+            `This indicates a calculation error in debt reduction or interest accrual logic.`
+          );
+        }
+      }
+    }
 
     if (onMonth) onMonth({ monthIndex, assets: assetsNow, liabilities });
   }

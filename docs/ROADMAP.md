@@ -34,7 +34,7 @@ Only unchecked items may be worked on.
 - [x] Projection determinism verification
 - [x] Attribution zero-reconciliation enforcement
 - [x] Negative surplus diagnostic handling
-- [ ] Paid-off liability edge case audit
+- [x] Paid-off liability edge case audit
 
 ---
 
