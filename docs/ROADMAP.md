@@ -31,9 +31,9 @@ Only unchecked items may be worked on.
 ---
 
 ## Phase 3 — Projection & Attribution Integrity
-- [ ] Projection determinism verification
-- [ ] Attribution zero-reconciliation enforcement
-- [ ] Negative surplus diagnostic handling
+- [x] Projection determinism verification
+- [x] Attribution zero-reconciliation enforcement
+- [x] Negative surplus diagnostic handling
 - [ ] Paid-off liability edge case audit
 
 ---

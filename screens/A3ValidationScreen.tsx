@@ -10,16 +10,10 @@ import { computeA3Attribution } from '../computeA3Attribution';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { ATTRIBUTION_TOLERANCE } from '../constants';
+import { selectMonthlySurplus } from '../selectors';
 
-/**
- * Computes monthlySurplus as a pure residual (display-only, NOT part of asset roll-forward).
- * 
- * FLOW semantics: monthlySurplus = netSurplus - postTaxContributions - debtOverpayments
- * This matches user intuition: money left after all allocations (FLOW concept).
- */
-function computeMonthlySurplus(netSurplus: number, postTaxContributions: number, debtOverpayments: number): number {
-  return Math.max(0, netSurplus - postTaxContributions - debtOverpayments);
-}
+// Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() instead
+// Monthly surplus is now single-sourced from selector (no manual computation, no clamping)
 
 function fmtBalance(v: number): string {
   return formatCurrencyFull(v);
@@ -84,7 +78,8 @@ export default function A3ValidationScreen() {
           <Row label="Net surplus" value={fmtInflow(a3.cashflow.netSurplus)} />
           <Row label="Post-tax contributions" value={fmtOutflow(a3.cashflow.postTaxContributions)} />
           <Row label="Debt repayment (loan principal)" value={fmtOutflow(a3.cashflow.debtRepayment)} />
-          <Row label="Unallocated cash" value={fmtOutflow(computeMonthlySurplus(a3.cashflow.netSurplus, a3.cashflow.postTaxContributions, a3.cashflow.debtRepayment))} />
+          {/* Phase 3.3: Use selector for monthly surplus (single source of truth, no clamping) */}
+          <Row label="Unallocated cash" value={fmtOutflow(selectMonthlySurplus(state))} />
         </View>
 
         <View style={styles.section}>

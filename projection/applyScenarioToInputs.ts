@@ -200,13 +200,21 @@ export function applyScenarioToProjectionInputs(
     // If surplusAfter < -UI_TOLERANCE, scenario is unaffordable → return baseline unchanged (fallback)
     // Equality at boundary (=== -UI_TOLERANCE) is allowed
     if (surplusAfter < -UI_TOLERANCE) {
+      // Phase 3.3: __DEV__ fail-fast enforcement for unaffordable scenarios
       if (__DEV__) {
-        console.warn(
+        throw new Error(
           `[FLOW_TO_ASSET Affordability] Scenario ${scenario.id} is unaffordable. ` +
           `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
-          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}. ` +
+          `This indicates the scenario exceeds available cashflow.`
         );
       }
+      // Production: Log warning and return baseline unchanged (backward compatibility)
+      console.warn(
+        `[FLOW_TO_ASSET Affordability] Scenario ${scenario.id} is unaffordable. ` +
+        `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
+        `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+      );
       return baseline;
     }
   }
@@ -221,13 +229,21 @@ export function applyScenarioToProjectionInputs(
     // If surplusAfter < -UI_TOLERANCE, scenario is unaffordable → return baseline unchanged (fallback)
     // Equality at boundary (=== -UI_TOLERANCE) is allowed
     if (surplusAfter < -UI_TOLERANCE) {
+      // Phase 3.3: __DEV__ fail-fast enforcement for unaffordable scenarios
       if (__DEV__) {
-        console.warn(
+        throw new Error(
           `[FLOW_TO_DEBT Affordability] Scenario ${scenario.id} is unaffordable. ` +
           `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
-          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+          `surplus after: ${surplusAfter} < -${UI_TOLERANCE}. ` +
+          `This indicates the scenario exceeds available cashflow.`
         );
       }
+      // Production: Log warning and return baseline unchanged (backward compatibility)
+      console.warn(
+        `[FLOW_TO_DEBT Affordability] Scenario ${scenario.id} is unaffordable. ` +
+        `Baseline surplus: ${baselineSurplus}, scenario amount: ${scenario.amountMonthly}, ` +
+        `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+      );
       return baseline;
     }
   }
@@ -299,11 +315,27 @@ export function applyScenarioToProjectionInputs(
     delta.assetContributionsDelta
   );
 
+  // Phase 3.1: Deterministic ordering - sort merged contributions by assetId, then amountMonthly
+  mergedAssetContributions.sort((a, b) => {
+    const idCompare = a.assetId.localeCompare(b.assetId);
+    if (idCompare !== 0) return idCompare;
+    return a.amountMonthly - b.amountMonthly;
+  });
+
   // Merge liability overpayments
   const mergedLiabilityOverpayments = mergeLiabilityOverpayments(
     baseline.liabilityOverpaymentsMonthly,
     delta.liabilityOverpaymentsDelta
   );
+
+  // Phase 3.1: Deterministic ordering - sort merged overpayments by liabilityId, then amountMonthly
+  if (mergedLiabilityOverpayments) {
+    mergedLiabilityOverpayments.sort((a, b) => {
+      const idCompare = a.liabilityId.localeCompare(b.liabilityId);
+      if (idCompare !== 0) return idCompare;
+      return a.amountMonthly - b.amountMonthly;
+    });
+  }
 
   // Construct scenario inputs with merged values
   const scenarioInputs: ProjectionEngineInputs = {

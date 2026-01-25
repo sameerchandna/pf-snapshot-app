@@ -34,7 +34,7 @@ import { initLoan, stepLoanMonth } from '../loanEngine';
 import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../formatters';
 import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
-import { selectPension, selectMonthlySurplus, selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
+import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE } from '../constants';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
@@ -43,17 +43,8 @@ import { getScenarios, getActiveScenarioId, setActiveScenarioId as persistActive
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
 
-/**
- * Computes monthlySurplus as a pure residual (display-only, NOT part of asset roll-forward).
- * 
- * FLOW semantics: monthlySurplus = netSurplus - postTaxContributions - debtOverpayments
- * This matches user intuition: money left after all allocations (FLOW concept).
- * 
- * Note: This is a FLOW concept (what happens per month), not a STOCK concept (asset balance).
- */
-function computeMonthlySurplus(netSurplus: number, postTaxContributions: number, debtOverpayments: number): number {
-  return Math.max(0, netSurplus - postTaxContributions - debtOverpayments);
-}
+// Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() or selectMonthlySurplusWithScenario() instead
+// Monthly surplus is now single-sourced from selectors (no manual computation, no clamping)
 
 // Note: Golden Rule validation (extraContributions vs extraGrowth vs netWorthIncrease) 
 // belongs to wiring validation, not A3. A3 treats projectionSeries as ground truth.
@@ -1325,16 +1316,7 @@ export default function ProjectionResultsScreen() {
     if (scenario.type === 'FLOW_INVESTING') {
       if (!scenario.assetId) return null;
 
-      // Affordability validation: Check if Quick What-If amount exceeds available cash
-      // Use selectMonthlySurplus as single source of truth (no local recomputation)
-      // Mirror the persisted scenario affordability guard to prevent unaffordable contributions
-      // from reaching Projection and A3 attribution
-      const monthlySurplus = selectMonthlySurplus(state);
-      if (scenario.monthlyAmount > monthlySurplus) {
-        console.warn(`Quick What-If amount (${scenario.monthlyAmount}) exceeds available cash (${monthlySurplus}), falling back to baseline`);
-        return null; // Return null to use baseline projection
-      }
-
+      // Phase 3.3: Removed shadow affordability check - rely on applyScenarioToProjectionInputs() for authoritative validation
       // Convert to domain Scenario format
       domainScenario = {
         id: '__QUICK_WHAT_IF__',
@@ -1409,21 +1391,7 @@ export default function ProjectionResultsScreen() {
       return null;
     }
     
-    // Affordability validation: Check if persisted scenario is affordable
-    // This provides early feedback, but engine-level validation in applyScenarioToProjectionInputs is authoritative
-    // Only validate FLOW_TO_ASSET scenarios (matches Quick What-If behavior)
-    if (activeScenario.kind === 'FLOW_TO_ASSET') {
-      const monthlySurplus = selectMonthlySurplus(state);
-      const surplusAfter = monthlySurplus - activeScenario.amountMonthly;
-      // If surplusAfter < -UI_TOLERANCE, scenario is unaffordable (engine will also reject it)
-      if (surplusAfter < -UI_TOLERANCE) {
-        if (__DEV__) {
-          console.warn(`Scenario ${activeScenario.id} amount (${activeScenario.amountMonthly}) would make surplus negative (${surplusAfter} < -${UI_TOLERANCE}), falling back to baseline`);
-        }
-        return null;
-      }
-    }
-    
+    // Phase 3.3: Removed shadow affordability check - rely on applyScenarioToProjectionInputs() for authoritative validation
     // Get scenario adjustments (only scenario-specific fields, not full ProjectionInputs)
     // Pass state for affordability validation (Phase 2.1) - engine-level validation is authoritative
     // If scenario is unaffordable, applyScenarioToProjectionInputs returns baseline unchanged
@@ -2566,7 +2534,8 @@ export default function ProjectionResultsScreen() {
           if (label.includes('Money left after expenses')) return sv.netSurplus;
           if (label.includes('Money you invest')) return sv.postTaxContributions; // Raw value
           if (label.includes('Money used to pay down debt')) return sv.debtRepayment; // Raw value
-          if (label.includes('Unallocated cash')) return computeMonthlySurplus(sv.netSurplus, sv.postTaxContributions, sv.debtRepayment); // Derived
+          // Phase 3.3: Use selector for scenario-adjusted monthly surplus (single source of truth)
+          if (label.includes('Unallocated cash')) return selectMonthlySurplusWithScenario(state, activeScenario);
           if (label.includes('Debt you pay back')) return sv.principalRepaid; // Raw value
           if (label.includes('Debt left at the end')) return sv.remainingDebt;
           if (label.includes('What you start with')) return sv.startingAssets;
@@ -2652,7 +2621,8 @@ export default function ProjectionResultsScreen() {
         }, true),
         makeRow('Money you invest (post-tax)', v.postTaxContributions, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
         makeRow('Money used to pay down debt', v.debtRepayment, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
-        makeRow('Unallocated cash', computeMonthlySurplus(v.netSurplus, v.postTaxContributions, v.debtRepayment), (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
+        // Phase 3.3: Use selector for baseline monthly surplus (single source of truth, no clamping)
+        makeRow('Unallocated cash', selectMonthlySurplus(state), (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
       ],
       debtRows: [
         makeRow('Interest you pay over time', v.interestPaid, (val) => formatCurrencyFullSigned(val), (val) => formatCurrencyCompactSigned(val)),
@@ -2682,7 +2652,7 @@ export default function ProjectionResultsScreen() {
       endNetWorthScenario,
       endNetWorthDelta,
     };
-  }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state.projection.endAge]);
+  }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state, activeScenario]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -3469,9 +3439,9 @@ export default function ProjectionResultsScreen() {
                 {/* Unallocated Cash */}
                 <DualValueCard
                   title="Unallocated cash"
-                  baselineValue={computeMonthlySurplus(valuesAtAge.netSurplus, valuesAtAge.postTaxContributions, valuesAtAge.debtRepayment)}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? computeMonthlySurplus(scenarioValuesAtAge.netSurplus, scenarioValuesAtAge.postTaxContributions, scenarioValuesAtAge.debtRepayment) : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge ? computeMonthlySurplus(scenarioValuesAtAge.netSurplus, scenarioValuesAtAge.postTaxContributions, scenarioValuesAtAge.debtRepayment) - computeMonthlySurplus(valuesAtAge.netSurplus, valuesAtAge.postTaxContributions, valuesAtAge.debtRepayment) : undefined}
+                  baselineValue={selectMonthlySurplus(state)}
+                  scenarioValue={effectiveScenarioActive ? selectMonthlySurplusWithScenario(state, activeScenario) : undefined}
+                  scenarioDelta={isScenarioActive ? selectMonthlySurplusWithScenario(state, activeScenario) - selectMonthlySurplus(state) : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
                   isOutcome={true}
                 />

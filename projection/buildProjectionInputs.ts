@@ -43,16 +43,31 @@ export function buildProjectionInputsFromState(state: SnapshotState): Projection
     annualGrowthRatePct: a.annualGrowthRatePct,
   }));
 
+  // Phase 3.1: Deterministic ordering - sort by id for consistent iteration order
+  assetsToday.sort((a, b) => a.id.localeCompare(b.id));
+
+  const liabilitiesToday = activeLiabilities.map(l => ({
+    id: l.id,
+    name: l.name,
+    balance: l.balance,
+    annualInterestRatePct: l.annualInterestRatePct,
+    kind: l.kind,
+    remainingTermYears: l.remainingTermYears,
+  }));
+
+  // Phase 3.1: Deterministic ordering - sort by id for consistent iteration order
+  liabilitiesToday.sort((a, b) => a.id.localeCompare(b.id));
+
+  // Phase 3.1: Deterministic ordering - sort contributions by assetId, then amountMonthly (stable secondary key)
+  activeContributions.sort((a, b) => {
+    const idCompare = a.assetId.localeCompare(b.assetId);
+    if (idCompare !== 0) return idCompare;
+    return a.amountMonthly - b.amountMonthly;
+  });
+
   return {
     assetsToday,
-    liabilitiesToday: activeLiabilities.map(l => ({
-      id: l.id,
-      name: l.name,
-      balance: l.balance,
-      annualInterestRatePct: l.annualInterestRatePct,
-      kind: l.kind,
-      remainingTermYears: l.remainingTermYears,
-    })),
+    liabilitiesToday,
     currentAge: state.projection.currentAge,
     endAge: state.projection.endAge,
     inflationRatePct: state.projection.inflationPct,

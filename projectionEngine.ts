@@ -103,6 +103,10 @@ function computeMonthlyProjection(
     };
   });
 
+  // Phase 3.1: Deterministic ordering - sort by id immediately after creation
+  // This ensures consistent iteration order, especially for proportional debt reduction
+  assetStates.sort((a, b) => a.id.localeCompare(b.id));
+
   const nonLoanStates: Array<{ id: string; balance: number; monthlyRate: number }> = inputs.liabilitiesToday
     .filter(l => !isLoanLike(l))
     .map(l => {
@@ -113,6 +117,10 @@ function computeMonthlyProjection(
         monthlyRate: annualPctToMonthlyRate(pct),
       };
     });
+
+  // Phase 3.1: Deterministic ordering - sort by id immediately after creation
+  // CRITICAL: This ensures proportional debt reduction remainder logic is deterministic
+  nonLoanStates.sort((a, b) => a.id.localeCompare(b.id));
 
   if (horizonMonths <= 0) {
     const assetsNow = assetStates.reduce((sum, a) => sum + a.balance, 0);
@@ -154,6 +162,9 @@ function computeMonthlyProjection(
     };
   });
 
+  // Phase 3.1: Deterministic ordering - sort by id immediately after creation
+  loanStates.sort((a, b) => a.id.localeCompare(b.id));
+
   // Build lookup map for liability overpayments (only for loan-type liabilities)
   const overpaymentMap = new Map<string, number>();
   if (inputs.liabilityOverpaymentsMonthly && Array.isArray(inputs.liabilityOverpaymentsMonthly)) {
@@ -168,6 +179,14 @@ function computeMonthlyProjection(
     }
   }
 
+  // Phase 3.1: Deterministic ordering - sort contributions by assetId, then amountMonthly
+  // This ensures consistent processing order even if input order varies
+  const sortedContributions = [...inputs.assetContributionsMonthly].sort((a, b) => {
+    const idCompare = a.assetId.localeCompare(b.assetId);
+    if (idCompare !== 0) return idCompare;
+    return a.amountMonthly - b.amountMonthly;
+  });
+
   for (let monthIndex = 1; monthIndex <= horizonMonths; monthIndex++) {
     // CORRECT MONTHLY MODEL: All money present in a period must compound together.
     // Order: 1) Add contributions (baseline + scenario deltas), 2) Apply growth to entire balance
@@ -181,7 +200,7 @@ function computeMonthlyProjection(
     // Contributions are added to balance, then the entire balance compounds together
     // FLOW scenarios: scenario deltas are already merged into assetContributionsMonthly
     // Cash is STOCK-only - FLOW scenarios do not mutate cash balance (enforced by guardrail in applyScenarioToInputs)
-    for (const c of inputs.assetContributionsMonthly) {
+    for (const c of sortedContributions) {
       const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
       if (amt <= 0) continue;
       const idx = assetStates.findIndex(a => a.id === c.assetId);
@@ -278,7 +297,7 @@ function computeMonthlyProjection(
     }
 
     // 3) Accumulate explicit effort
-    const contributionTotalThisMonth = inputs.assetContributionsMonthly.reduce((sum, c) => {
+    const contributionTotalThisMonth = sortedContributions.reduce((sum, c) => {
       const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
       return sum + (amt > 0 ? amt : 0);
     }, 0);
@@ -340,20 +359,30 @@ function deflateToTodaysMoney(value: number, inflationRatePct: number, elapsedMo
 }
 
 export function computeProjectionSummary(inputs: ProjectionEngineInputs): ProjectionSummary {
+  // Phase 3.1: Defensive copying - clone input arrays and shallow-clone objects to prevent mutation
+  const clonedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    assetsToday: inputs.assetsToday.map(a => ({ ...a })),
+    liabilitiesToday: inputs.liabilitiesToday.map(l => ({ ...l })),
+    assetContributionsMonthly: inputs.assetContributionsMonthly.map(c => ({ ...c })),
+    liabilityOverpaymentsMonthly: inputs.liabilityOverpaymentsMonthly?.map(o => ({ ...o })),
+    scenarioTransfers: inputs.scenarioTransfers?.map(t => ({ ...t })),
+  };
+
   // Horizon must come from top-level inputs (baseline & scenario safe)
   // Normalize endAge: check top-level first, then fallback to settings if present
-  const currentAge = inputs.currentAge;
-  const endAge = inputs.endAge ?? (inputs as any).settings?.endAge;
+  const currentAge = clonedInputs.currentAge;
+  const endAge = clonedInputs.endAge ?? (clonedInputs as any).settings?.endAge;
   
   // Guardrail: for zero/invalid horizons, return today's values (no inflation adjustment).
   const horizonMonthsRaw = (endAge - currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) && Number.isFinite(endAge) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
   if (horizonMonths <= 0 || !Number.isFinite(endAge) || endAge <= currentAge) {
-    const endAssets = inputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
-    const loanStart = inputs.liabilitiesToday
+    const endAssets = clonedInputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
+    const loanStart = clonedInputs.liabilitiesToday
       .filter(isLoanLike)
       .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
-    const nonLoanStart = inputs.liabilitiesToday
+    const nonLoanStart = clonedInputs.liabilitiesToday
       .filter(l => !isLoanLike(l))
       .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
     const endLiabilities = nonLoanStart + loanStart;
@@ -370,19 +399,19 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
 
   // Create normalized inputs object with derived horizon values for computeMonthlyProjection
   const normalizedInputs: ProjectionEngineInputs = {
-    ...inputs,
+    ...clonedInputs,
     currentAge,
     endAge,
   };
 
   const { assets, liabilities, totalContributions, totalScheduledMortgagePayment, totalMortgageOverpayments } = computeMonthlyProjection(normalizedInputs);
 
-  const endAssets = deflateToTodaysMoney(assets, inputs.inflationRatePct, horizonMonths);
-  const endLiabilities = deflateToTodaysMoney(liabilities, inputs.inflationRatePct, horizonMonths);
+  const endAssets = deflateToTodaysMoney(assets, clonedInputs.inflationRatePct, horizonMonths);
+  const endLiabilities = deflateToTodaysMoney(liabilities, clonedInputs.inflationRatePct, horizonMonths);
   const endNetWorth = endAssets - endLiabilities;
-  const endTotalContributions = deflateToTodaysMoney(totalContributions, inputs.inflationRatePct, horizonMonths);
-  const endScheduledMortgagePayment = deflateToTodaysMoney(totalScheduledMortgagePayment, inputs.inflationRatePct, horizonMonths);
-  const endMortgageOverpayments = deflateToTodaysMoney(totalMortgageOverpayments, inputs.inflationRatePct, horizonMonths);
+  const endTotalContributions = deflateToTodaysMoney(totalContributions, clonedInputs.inflationRatePct, horizonMonths);
+  const endScheduledMortgagePayment = deflateToTodaysMoney(totalScheduledMortgagePayment, clonedInputs.inflationRatePct, horizonMonths);
+  const endMortgageOverpayments = deflateToTodaysMoney(totalMortgageOverpayments, clonedInputs.inflationRatePct, horizonMonths);
 
   return {
     endAssets,
@@ -395,12 +424,22 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
 }
 
 export function computeProjectionSeries(inputs: ProjectionEngineInputs): ProjectionSeriesPoint[] {
+  // Phase 3.1: Defensive copying - clone input arrays and shallow-clone objects to prevent mutation
+  const clonedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    assetsToday: inputs.assetsToday.map(a => ({ ...a })),
+    liabilitiesToday: inputs.liabilitiesToday.map(l => ({ ...l })),
+    assetContributionsMonthly: inputs.assetContributionsMonthly.map(c => ({ ...c })),
+    liabilityOverpaymentsMonthly: inputs.liabilityOverpaymentsMonthly?.map(o => ({ ...o })),
+    scenarioTransfers: inputs.scenarioTransfers?.map(t => ({ ...t })),
+  };
+
   // Horizon must come from top-level inputs (baseline & scenario safe)
   // Normalize endAge: check top-level first, then fallback to settings if present
   
   // Normalize with Number() coercion to handle string/undefined/null
-  const currentAge = Number(inputs.currentAge);
-  const endAge = Number(inputs.endAge ?? (inputs as any).settings?.endAge);
+  const currentAge = Number(clonedInputs.currentAge);
+  const endAge = Number(clonedInputs.endAge ?? (clonedInputs as any).settings?.endAge);
   
   // DEV-only CRITICAL: Check for NaN/invalid values before proceeding
   if (__DEV__) {
@@ -408,12 +447,12 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
       console.error('[CRITICAL] ProjectionEngine: Non-finite horizon values:', {
         currentAge,
         endAge,
-        rawCurrentAge: inputs.currentAge,
-        rawEndAge: inputs.endAge,
-        rawSettingsEndAge: (inputs as any).settings?.endAge,
+        rawCurrentAge: clonedInputs.currentAge,
+        rawEndAge: clonedInputs.endAge,
+        rawSettingsEndAge: (clonedInputs as any).settings?.endAge,
         currentAgeIsFinite: Number.isFinite(currentAge),
         endAgeIsFinite: Number.isFinite(endAge),
-        inputs,
+        inputs: clonedInputs,
       });
       return [];
     }
@@ -424,8 +463,8 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
     console.error('[CRITICAL] Projection horizon invalid (non-finite values):', {
       currentAge,
       endAge,
-      rawCurrentAge: inputs.currentAge,
-      rawEndAge: inputs.endAge,
+      rawCurrentAge: clonedInputs.currentAge,
+      rawEndAge: clonedInputs.endAge,
     });
     return [];
   }
@@ -442,10 +481,10 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
         endAge,
         horizonMonths,
         horizonYears: (endAge - currentAge),
-        rawCurrentAge: inputs.currentAge,
-        rawEndAge: inputs.endAge,
-        rawSettingsEndAge: (inputs as any).settings?.endAge,
-        inputs,
+        rawCurrentAge: clonedInputs.currentAge,
+        rawEndAge: clonedInputs.endAge,
+        rawSettingsEndAge: (clonedInputs as any).settings?.endAge,
+        inputs: clonedInputs,
       });
       return [];
     }
@@ -464,15 +503,15 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
   // Use ONLY normalized values in the loop - do NOT read endAge from inputs.settings again
 
   // Always include a start point at "today" (month 0).
-  const assetsToday = inputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
-  const loanStart = inputs.liabilitiesToday
+  const assetsToday = clonedInputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
+  const loanStart = clonedInputs.liabilitiesToday
     .filter(isLoanLike)
     .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
-  const nonLoanStart = inputs.liabilitiesToday
+  const nonLoanStart = clonedInputs.liabilitiesToday
     .filter(l => !isLoanLike(l))
     .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
-  const startAssets = deflateToTodaysMoney(assetsToday, inputs.inflationRatePct, 0);
-  const startLiabilities = deflateToTodaysMoney(nonLoanStart + loanStart, inputs.inflationRatePct, 0);
+  const startAssets = deflateToTodaysMoney(assetsToday, clonedInputs.inflationRatePct, 0);
+  const startLiabilities = deflateToTodaysMoney(nonLoanStart + loanStart, clonedInputs.inflationRatePct, 0);
   const startNetWorth = startAssets - startLiabilities;
 
   const points: ProjectionSeriesPoint[] = [
@@ -488,7 +527,7 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
 
   // Create normalized inputs object with derived horizon values for computeMonthlyProjection
   const normalizedInputs: ProjectionEngineInputs = {
-    ...inputs,
+    ...clonedInputs,
     currentAge,
     endAge,
   };
@@ -498,8 +537,8 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
     if (monthIndex % 12 !== 0) return;
 
     const age = currentAge + monthIndex / 12;
-    const realAssets = deflateToTodaysMoney(assets, inputs.inflationRatePct, monthIndex);
-    const realLiabilities = deflateToTodaysMoney(liabilities, inputs.inflationRatePct, monthIndex);
+    const realAssets = deflateToTodaysMoney(assets, clonedInputs.inflationRatePct, monthIndex);
+    const realLiabilities = deflateToTodaysMoney(liabilities, clonedInputs.inflationRatePct, monthIndex);
     const realNetWorth = realAssets - realLiabilities;
 
     points.push({
@@ -511,6 +550,97 @@ export function computeProjectionSeries(inputs: ProjectionEngineInputs): Project
   });
 
   return points;
+}
+
+/**
+ * Phase 3.1: Optional __DEV__ determinism assertion helper.
+ * 
+ * Runs projection twice on deep-cloned normalized inputs and asserts outputs match within tolerance.
+ * This helps detect non-deterministic behavior during development.
+ * 
+ * @param inputs - Projection inputs to test
+ * @param tolerance - Tolerance for numeric comparison (defaults to UI_TOLERANCE)
+ * @returns true if outputs match within tolerance, false otherwise
+ */
+export function assertProjectionDeterminism(
+  inputs: ProjectionEngineInputs,
+  tolerance: number = 0.01 // UI_TOLERANCE default
+): boolean {
+  if (!__DEV__) {
+    console.warn('[assertProjectionDeterminism] Only available in __DEV__ mode');
+    return true;
+  }
+
+  // Deep clone inputs for both runs
+  const deepClone = (inp: ProjectionEngineInputs): ProjectionEngineInputs => ({
+    ...inp,
+    assetsToday: inp.assetsToday.map(a => ({ ...a })),
+    liabilitiesToday: inp.liabilitiesToday.map(l => ({ ...l })),
+    assetContributionsMonthly: inp.assetContributionsMonthly.map(c => ({ ...c })),
+    liabilityOverpaymentsMonthly: inp.liabilityOverpaymentsMonthly?.map(o => ({ ...o })),
+    scenarioTransfers: inp.scenarioTransfers?.map(t => ({ ...t })),
+  });
+
+  const inputs1 = deepClone(inputs);
+  const inputs2 = deepClone(inputs);
+
+  // Run projection twice
+  const summary1 = computeProjectionSummary(inputs1);
+  const summary2 = computeProjectionSummary(inputs2);
+  const series1 = computeProjectionSeries(inputs1);
+  const series2 = computeProjectionSeries(inputs2);
+
+  // Compare summaries
+  const summaryMatches = 
+    Math.abs(summary1.endAssets - summary2.endAssets) <= tolerance &&
+    Math.abs(summary1.endLiabilities - summary2.endLiabilities) <= tolerance &&
+    Math.abs(summary1.endNetWorth - summary2.endNetWorth) <= tolerance &&
+    Math.abs(summary1.totalContributions - summary2.totalContributions) <= tolerance &&
+    Math.abs(summary1.totalScheduledMortgagePayment - summary2.totalScheduledMortgagePayment) <= tolerance &&
+    Math.abs(summary1.totalMortgageOverpayments - summary2.totalMortgageOverpayments) <= tolerance;
+
+  // Compare series (length and values)
+  const seriesLengthMatches = series1.length === series2.length;
+  let seriesValuesMatch = true;
+  if (seriesLengthMatches) {
+    for (let i = 0; i < series1.length; i++) {
+      const p1 = series1[i];
+      const p2 = series2[i];
+      if (
+        Math.abs(p1.age - p2.age) > tolerance ||
+        Math.abs(p1.assets - p2.assets) > tolerance ||
+        Math.abs(p1.liabilities - p2.liabilities) > tolerance ||
+        Math.abs(p1.netWorth - p2.netWorth) > tolerance
+      ) {
+        seriesValuesMatch = false;
+        break;
+      }
+    }
+  } else {
+    seriesValuesMatch = false;
+  }
+
+  const allMatch = summaryMatches && seriesLengthMatches && seriesValuesMatch;
+
+  if (!allMatch) {
+    console.error('[Projection Determinism] Outputs do not match within tolerance:', {
+      summary1,
+      summary2,
+      summaryDiffs: {
+        endAssets: Math.abs(summary1.endAssets - summary2.endAssets),
+        endLiabilities: Math.abs(summary1.endLiabilities - summary2.endLiabilities),
+        endNetWorth: Math.abs(summary1.endNetWorth - summary2.endNetWorth),
+        totalContributions: Math.abs(summary1.totalContributions - summary2.totalContributions),
+        totalScheduledMortgagePayment: Math.abs(summary1.totalScheduledMortgagePayment - summary2.totalScheduledMortgagePayment),
+        totalMortgageOverpayments: Math.abs(summary1.totalMortgageOverpayments - summary2.totalMortgageOverpayments),
+      },
+      seriesLength1: series1.length,
+      seriesLength2: series2.length,
+      tolerance,
+    });
+  }
+
+  return allMatch;
 }
 
 

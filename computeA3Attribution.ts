@@ -388,12 +388,27 @@ export function computeA3Attribution({
   out.reconciliation.rhs = rhs;
   out.reconciliation.delta = delta;
 
+  // Phase 3.2: __DEV__-only enforcement for primary reconciliation
+  // Fail fast in development if reconciliation is outside tolerance
+  // Production behavior unchanged: still log and return attribution object
+  if (__DEV__) {
+    if (Math.abs(delta) > ATTRIBUTION_TOLERANCE) {
+      throw new Error(
+        `[A3 Attribution] Balance-sheet reconciliation failed: ` +
+        `endNetWorth (${projectionSummary.endNetWorth}) != endAssets (${projectionSummary.endAssets}) - endLiabilities (${projectionSummary.endLiabilities}). ` +
+        `Delta: ${delta}, tolerance: £${ATTRIBUTION_TOLERANCE}. ` +
+        `This indicates a calculation error in projection or attribution logic.`
+      );
+    }
+  }
+
   // ---- Diagnostics (log-only)
   const logIfBad = (label: string, d: number, extra?: Record<string, unknown>) => {
     if (Math.abs(d) <= ATTRIBUTION_TOLERANCE) return;
     console.error(`[A3 Attribution] ${label} delta is out of tolerance (|delta| > £${ATTRIBUTION_TOLERANCE}): ${d}`, extra);
   };
 
+  // Production: Log reconciliation failures (diagnostic only, no enforcement)
   logIfBad('Balance-sheet reconciliation (endNetWorth vs endAssets - endLiabilities)', delta, {
     endAssets: projectionSummary.endAssets,
     endLiabilities: projectionSummary.endLiabilities,
