@@ -291,6 +291,9 @@ export async function deleteScenario(
 /**
  * Loads the active scenario ID from storage.
  * 
+ * Phase 2.4: Validates that active ID exists in scenarios list.
+ * If active ID is stale (doesn't exist), returns BASELINE_SCENARIO_ID.
+ * 
  * V1: Uses ProfilesState when available, falls back to legacy AsyncStorage.
  */
 export async function getActiveScenarioId(): Promise<ScenarioId | undefined> {
@@ -298,11 +301,26 @@ export async function getActiveScenarioId(): Promise<ScenarioId | undefined> {
   if (profilesStateProvider) {
     const profilesState = profilesStateProvider();
     if (profilesState) {
-      return getActiveScenarioIdFromProfile(profilesState);
+      const activeId = getActiveScenarioIdFromProfile(profilesState);
+      const scenarios = getScenariosFromProfile(profilesState);
+      
+      // Phase 2.4: Validate active ID exists in scenarios list
+      // If activeId is not baseline and doesn't exist, return baseline
+      if (activeId && activeId !== BASELINE_SCENARIO_ID) {
+        const exists = scenarios.some(s => s.id === activeId);
+        if (!exists) {
+          if (__DEV__) {
+            console.warn(`Stale activeScenarioId detected: ${activeId}, returning baseline`);
+          }
+          return BASELINE_SCENARIO_ID;
+        }
+      }
+      
+      return activeId;
     }
   }
 
-  // Fallback to legacy AsyncStorage
+  // Fallback to legacy AsyncStorage (already has validation in loadActiveScenarioId)
   return loadActiveScenarioId();
 }
 
@@ -310,19 +328,52 @@ export async function getActiveScenarioId(): Promise<ScenarioId | undefined> {
  * Sets the active scenario ID.
  * Pass undefined to clear the active scenario (baseline).
  * 
+ * Phase 2.4: Idempotent - if requested id equals current active id, no-op (no writes).
+ * 
  * Validates that the scenario exists before setting it as active.
  * If a non-baseline scenario ID is provided and doesn't exist, falls back to baseline.
  * 
  * V1: Uses ProfilesState when available, falls back to legacy AsyncStorage.
  */
 export async function setActiveScenarioId(id?: ScenarioId): Promise<void> {
+  // Phase 2.4: Normalize undefined to BASELINE_SCENARIO_ID for comparison
+  const normalizedId = id === undefined ? BASELINE_SCENARIO_ID : id;
+  
+  // Phase 2.4: Idempotence check - read current active id from same backing store
+  let currentActiveId: ScenarioId | undefined;
+  if (profilesStateProvider) {
+    const profilesState = profilesStateProvider();
+    if (profilesState) {
+      currentActiveId = getActiveScenarioIdFromProfile(profilesState);
+    }
+  }
+  
+  // If not found in ProfilesState, check legacy storage
+  if (currentActiveId === undefined) {
+    currentActiveId = await loadActiveScenarioId();
+  }
+  
+  // Normalize current active id for comparison
+  const normalizedCurrentId = currentActiveId === undefined ? BASELINE_SCENARIO_ID : currentActiveId;
+  
+  // Phase 2.4: If requested id equals current active id, no-op (idempotent)
+  if (normalizedId === normalizedCurrentId) {
+    return; // No writes, no updates
+  }
+  
   // If setting a specific non-baseline ID, validate it exists
-  if (id !== undefined && id !== BASELINE_SCENARIO_ID) {
+  let finalId = normalizedId;
+  if (normalizedId !== BASELINE_SCENARIO_ID) {
     const scenarios = await getScenarios();
-    const exists = scenarios.some(s => s.id === id);
+    const exists = scenarios.some(s => s.id === normalizedId);
     if (!exists) {
-      console.warn(`Cannot set active scenario: scenario ${id} does not exist, falling back to baseline`);
-      id = BASELINE_SCENARIO_ID;
+      console.warn(`Cannot set active scenario: scenario ${normalizedId} does not exist, falling back to baseline`);
+      finalId = BASELINE_SCENARIO_ID;
+      
+      // If falling back to baseline and current is already baseline, no-op
+      if (normalizedCurrentId === BASELINE_SCENARIO_ID) {
+        return; // Already baseline, no write needed
+      }
     }
   }
 
@@ -330,13 +381,13 @@ export async function setActiveScenarioId(id?: ScenarioId): Promise<void> {
   if (profilesStateProvider && profilesStateUpdater) {
     const profilesState = profilesStateProvider();
     if (profilesState) {
-      profilesStateUpdater(prev => updateActiveScenarioIdInProfile(prev, id));
+      profilesStateUpdater(prev => updateActiveScenarioIdInProfile(prev, finalId));
       return;
     }
   }
 
   // Fallback to legacy AsyncStorage
-  await saveActiveScenarioId(id);
+  await saveActiveScenarioId(finalId);
 }
 
 /**

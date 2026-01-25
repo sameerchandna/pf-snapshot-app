@@ -23,10 +23,10 @@ Only unchecked items may be worked on.
 ---
 
 ## Phase 2 — Scenario Correctness
-- [ ] FLOW_TO_ASSET scenario affordability validation
-- [ ] FLOW_TO_DEBT scenario affordability validation
-- [ ] Scenario delta reconciliation assertions
-- [ ] Scenario activation / rollback robustness
+- [x] FLOW_TO_ASSET scenario affordability validation
+- [x] FLOW_TO_DEBT scenario affordability validation
+- [x] Scenario delta reconciliation assertions
+- [x] Scenario activation / rollback robustness
 
 ---
 
