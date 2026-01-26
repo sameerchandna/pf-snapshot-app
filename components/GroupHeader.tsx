@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { spacing } from '../spacing';
+import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
   title: string;
@@ -14,9 +15,10 @@ type Props = {
  * Matches existing styles in AccountsScreen, LoanDetailScreen, etc.
  */
 export default function GroupHeader({ title }: Props) {
+  const { theme } = useTheme();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title.toUpperCase()}</Text>
+      <Text style={[styles.title, { color: theme.colors.text.secondary }]}>{title.toUpperCase()}</Text>
     </View>
   );
 }
@@ -28,7 +30,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#666',
     letterSpacing: 0.6,
     marginBottom: spacing.sm, // 8 - matches AccountsScreen pattern (most common for group headers)
   },

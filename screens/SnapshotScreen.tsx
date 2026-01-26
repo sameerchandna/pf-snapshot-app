@@ -14,6 +14,7 @@ import { formatCurrencyFull, formatCurrencyFullSigned, formatPercent } from '../
 import { getActiveScenario } from '../scenarioState';
 import type { Scenario } from '../domain/scenario/types';
 import { UI_TOLERANCE } from '../constants';
+import { useTheme } from '../ui/theme/useTheme';
 
 const snapshotTypography = {
   headerTitleSize: 20,
@@ -29,11 +30,8 @@ const snapshotTypography = {
   equationWeight: '500' as const, // medium
 };
 
-const snapshotColors = {
-  focusBlue: '#2F5BEA',
-};
-
 export default function SnapshotScreen() {
+  const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const { state } = useSnapshot();
   const [activeScenario, setActiveScenario] = useState<Scenario | undefined>(undefined);
@@ -122,7 +120,7 @@ export default function SnapshotScreen() {
   })();
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <StatusBar style="auto" />
       <ScreenHeader title="Snapshot" subtitle="Your current financial position" />
 
@@ -132,159 +130,159 @@ export default function SnapshotScreen() {
           <SectionHeader title="Cash Flow" subtitle="Average monthly flow (annual costs smoothed)" />
 
           <View style={styles.cashflowCardStack}>
-            <View style={styles.cashflowSpine} />
+            <View style={[styles.cashflowSpine, { backgroundColor: theme.colors.border.subtle }]} />
             <View style={styles.cashflowCentered}>
             <Pressable
               onPress={() => navigation.navigate('GrossIncomeDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeft}>
-                  <Text style={styles.cardTitle}>Gross Income</Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Gross Income</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Money you earn before Tax & Deductions
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.cashflowValueRight]}>{grossIncomeText}</Text>
+                  <Text style={[styles.primaryValue, styles.cashflowValueRight, { color: theme.colors.text.primary }]}>{grossIncomeText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('PensionDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle]}>Pension</Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardTitle, styles.subCardTitle, { color: theme.colors.text.secondary }]}>Pension</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Money towards pension
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight]}>{pensionText}</Text>
+                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, { color: theme.colors.text.secondary }]}>{pensionText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('DeductionsDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle]}>
+                  <Text style={[styles.cardTitle, styles.subCardTitle, { color: theme.colors.text.secondary }]}>
                     Other Deductions
                   </Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Money taken off pay
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight]}>{deductionsText}</Text>
+                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, { color: theme.colors.text.secondary }]}>{deductionsText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('NetIncomeDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeft}>
-                  <Text style={styles.cardTitle}>Net Income</Text>
-                  <Text style={styles.cardDescription}>Money you actually take home</Text>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Net Income</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>Money you actually take home</Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.cashflowValueRight]}>{netIncomeText}</Text>
+                  <Text style={[styles.primaryValue, styles.cashflowValueRight, { color: theme.colors.text.primary }]}>{netIncomeText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('ExpensesDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle]}>Expenses</Text>
-                  <Text style={styles.cardDescription}>Money you spend each month</Text>
+                  <Text style={[styles.cardTitle, styles.subCardTitle, { color: theme.colors.text.secondary }]}>Expenses</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>Money you spend each month</Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight]}>{expensesText}</Text>
+                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, { color: theme.colors.text.secondary }]}>{expensesText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('AvailableCashDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeft}>
-                  <Text style={styles.cardTitle}>Available Cash</Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Available Cash</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Money left after expenses
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight]}>{availableCashText}</Text>
+                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, { color: theme.colors.brand.primary }]}>{availableCashText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('AssetContributionDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle]}>
+                  <Text style={[styles.cardTitle, styles.subCardTitle, { color: theme.colors.text.secondary }]}>
                     Asset Contribution
                   </Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Savings & Investments
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight]}>{assetContributionText}</Text>
+                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, { color: theme.colors.text.secondary }]}>{assetContributionText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('LiabilityReductionDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle]}>
+                  <Text style={[styles.cardTitle, styles.subCardTitle, { color: theme.colors.text.secondary }]}>
                     Liability Reduction
                   </Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Debts & Loans
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight]}>{liabilityReductionText}</Text>
+                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, { color: theme.colors.text.secondary }]}>{liabilityReductionText}</Text>
                 </View>
               </View>
             </Pressable>
 
             <Pressable
               onPress={() => navigation.navigate('MonthlySurplusDetail')}
-              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowLastCard]}
+              style={[styles.card, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowLastCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
             >
               <View style={styles.cashflowCardRow}>
                 <View style={styles.cashflowCardLeft}>
-                  <Text style={styles.cardTitle}>Monthly Surplus</Text>
-                  <Text style={styles.cardDescription}>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Monthly Surplus</Text>
+                  <Text style={[styles.cardDescription, { color: theme.colors.text.muted }]}>
                     Money left after all allocations
                   </Text>
                 </View>
                 <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight]}>{monthlySurplusText}</Text>
+                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, { color: theme.colors.brand.primary }]}>{monthlySurplusText}</Text>
                 </View>
               </View>
             </Pressable>
@@ -300,25 +298,25 @@ export default function SnapshotScreen() {
           <SectionHeader title="Balance Sheet" subtitle="What you own vs what you owe today" />
 
           <View style={styles.balanceSheetCentered}>
-            <Pressable onPress={() => navigation.navigate('AssetsDetail')} style={styles.balanceSheetPrimaryCard}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered]}>Assets</Text>
-              <Text style={[styles.primaryValue, styles.cashflowTextCentered]}>{totalAssetsText}</Text>
-              <Text style={[styles.subtext, styles.cashflowTextCentered]}>What you own</Text>
+            <Pressable onPress={() => navigation.navigate('AssetsDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+              <Text style={[styles.cardTitle, styles.cashflowTextCentered, { color: theme.colors.text.primary }]}>Assets</Text>
+              <Text style={[styles.primaryValue, styles.cashflowTextCentered, { color: theme.colors.text.primary }]}>{totalAssetsText}</Text>
+              <Text style={[styles.subtext, styles.cashflowTextCentered, { color: theme.colors.text.muted }]}>What you own</Text>
             </Pressable>
 
             <Text style={styles.equationText}>−</Text>
 
-            <Pressable onPress={() => navigation.navigate('LiabilitiesDetail')} style={styles.balanceSheetPrimaryCard}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered]}>Liabilities</Text>
-              <Text style={[styles.primaryValue, styles.cashflowTextCentered]}>{totalLiabilitiesText}</Text>
-              <Text style={[styles.subtext, styles.cashflowTextCentered]}>What you owe</Text>
+            <Pressable onPress={() => navigation.navigate('LiabilitiesDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+              <Text style={[styles.cardTitle, styles.cashflowTextCentered, { color: theme.colors.text.primary }]}>Liabilities</Text>
+              <Text style={[styles.primaryValue, styles.cashflowTextCentered, { color: theme.colors.text.primary }]}>{totalLiabilitiesText}</Text>
+              <Text style={[styles.subtext, styles.cashflowTextCentered, { color: theme.colors.text.muted }]}>What you owe</Text>
             </Pressable>
 
             <Text style={styles.equationText}>=</Text>
 
-            <Pressable onPress={() => navigation.navigate('NetWorthDetail')} style={styles.balanceSheetPrimaryCard}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered]}>Net Worth</Text>
-              <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowTextCentered]}>{netWorthText}</Text>
+            <Pressable onPress={() => navigation.navigate('NetWorthDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+              <Text style={[styles.cardTitle, styles.cashflowTextCentered, { color: theme.colors.text.primary }]}>Net Worth</Text>
+              <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowTextCentered, { color: theme.colors.brand.primary }]}>{netWorthText}</Text>
             </Pressable>
           </View>
         </SectionCard>
@@ -329,7 +327,7 @@ export default function SnapshotScreen() {
             <SectionHeader title="Insights" />
             <View style={styles.insightsList}>
               {insights.map((line, idx) => (
-                <Text key={`${idx}-${line}`} style={styles.bodyText}>
+                <Text key={`${idx}-${line}`} style={[styles.bodyText, { color: theme.colors.text.secondary }]}>
                   • {line}
                 </Text>
               ))}
@@ -344,7 +342,6 @@ export default function SnapshotScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: layout.screenBackground,
   },
   scrollView: {
     flex: 1,
@@ -363,6 +360,7 @@ const styles = StyleSheet.create({
   },
   dot: {
     fontSize: snapshotTypography.bodySize,
+    // TODO Phase 4.1: no clear semantic theme token
     color: '#ccc',
   },
   horizontalRow: {
@@ -371,18 +369,17 @@ const styles = StyleSheet.create({
   equationText: {
     fontSize: 14,
     fontWeight: '400',
+    // TODO Phase 4.1: no clear semantic theme token
     color: '#bbb',
     textAlign: 'center',
     marginHorizontal: layout.micro,
   },
   card: {
-    backgroundColor: '#fff',
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
     borderRadius: spacing.xl,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
     zIndex: 1,
   },
   cashflowCardStack: {
@@ -396,7 +393,6 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     bottom: spacing.xs,
     width: 1,
-    backgroundColor: '#f0f0f0',
     zIndex: 0,
   },
   cashflowCentered: {
@@ -421,11 +417,9 @@ const styles = StyleSheet.create({
   balanceSheetPrimaryCard: {
     flex: 1,
     minWidth: 90,
-    backgroundColor: '#fff',
     padding: spacing.sm,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 80,
@@ -458,6 +452,7 @@ const styles = StyleSheet.create({
   },
   cashflowChevron: {
     fontSize: 16,
+    // TODO Phase 4.1: no clear semantic theme token
     color: '#bbb',
     fontWeight: '400',
   },
@@ -501,34 +496,27 @@ const styles = StyleSheet.create({
     fontSize: snapshotTypography.cardTitleSize,
     fontWeight: snapshotTypography.cardTitleWeight,
     marginBottom: 1,
-    color: '#000',
   },
   subCardTitle: {
     // Subtle cue on label only; values remain equally prominent.
-    color: '#666',
   },
   subCardValue: {
-    color: '#666',
   },
   primaryValue: {
     fontSize: snapshotTypography.primaryValueSize,
     fontWeight: snapshotTypography.primaryValueWeight,
     marginBottom: 1,
-    color: '#000',
   },
   primaryValueOutcome: {
-    color: snapshotColors.focusBlue,
   },
   cardDescription: {
     fontSize: snapshotTypography.bodySize,
     fontWeight: snapshotTypography.bodyWeight,
-    color: '#999',
     marginTop: 1,
   },
   subtext: {
     fontSize: snapshotTypography.bodySize,
     fontWeight: snapshotTypography.bodyWeight,
-    color: '#999',
   },
   insightsList: {
     marginTop: layout.micro,
@@ -536,7 +524,6 @@ const styles = StyleSheet.create({
   bodyText: {
     fontSize: 13,
     fontWeight: snapshotTypography.bodyWeight,
-    color: '#666',
     marginBottom: spacing.xs,
     lineHeight: 18,
   },

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import ScreenHeader from './ScreenHeader';
 import { HelpContent } from '../screens/GroupedListDetailScreen';
+import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
   title: string;
@@ -22,11 +23,12 @@ export default function DetailScreenShell({
   helpContent,
   children,
 }: Props) {
+  const { theme } = useTheme();
   const [isHintOpen, setIsHintOpen] = useState(false);
   const hasHints = Boolean(helpContent);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader
         title={title}
         totalText={totalText}
@@ -40,7 +42,7 @@ export default function DetailScreenShell({
               accessibilityRole="button"
               accessibilityLabel="Help"
             >
-              <Feather name="help-circle" size={18} color="#333" />
+              <Feather name="help-circle" size={18} color={theme.colors.text.tertiary} />
             </Pressable>
           ) : null
         }
@@ -58,37 +60,37 @@ export default function DetailScreenShell({
           onRequestClose={() => setIsHintOpen(false)}
         >
           <>
-            <Pressable style={styles.hintBackdrop} onPress={() => setIsHintOpen(false)} />
-            <View style={styles.hintSheet}>
+            <Pressable style={[styles.hintBackdrop, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setIsHintOpen(false)} />
+            <View style={[styles.hintSheet, { backgroundColor: theme.colors.bg.card }]}>
               {helpContent ? (
                 <>
-                  <Text style={styles.hintTitle}>{helpContent.title}</Text>
+                  <Text style={[styles.hintTitle, { color: theme.colors.text.primary }]}>{helpContent.title}</Text>
                   <ScrollView style={styles.hintScroll} contentContainerStyle={styles.hintScrollContent} showsVerticalScrollIndicator={false}>
                     {helpContent.sections.map((section, sectionIdx) => (
-                      <View key={sectionIdx} style={sectionIdx > 0 ? styles.helpSectionDivider : null}>
+                      <View key={sectionIdx} style={sectionIdx > 0 ? [styles.helpSectionDivider, { borderTopColor: theme.colors.border.default }] : null}>
                         {section.heading ? (
-                          <Text style={styles.helpSectionHeading}>{section.heading}</Text>
+                          <Text style={[styles.helpSectionHeading, { color: theme.colors.text.primary }]}>{section.heading}</Text>
                         ) : null}
                         {section.paragraphs?.map((para, paraIdx) => (
-                          <Text key={paraIdx} style={styles.helpParagraph}>{para}</Text>
+                          <Text key={paraIdx} style={[styles.helpParagraph, { color: theme.colors.text.tertiary }]}>{para}</Text>
                         ))}
                         {section.example ? (
-                          <Text style={styles.helpExample}>
+                          <Text style={[styles.helpExample, { color: theme.colors.text.tertiary }]}>
                             {section.example.text}
-                            <Text style={styles.helpExampleBold}>{section.example.boldValue}</Text>
+                            <Text style={[styles.helpExampleBold, { color: theme.colors.text.primary }]}>{section.example.boldValue}</Text>
                           </Text>
                         ) : null}
                         {section.bullets ? (
                           <View style={styles.helpBulletsContainer}>
                             {section.bullets.map((bullet, bulletIdx) => (
-                              <Text key={bulletIdx} style={styles.helpBullet}>
+                              <Text key={bulletIdx} style={[styles.helpBullet, { color: theme.colors.text.tertiary }]}>
                                 • {bullet}
                               </Text>
                             ))}
                           </View>
                         ) : null}
                         {section.paragraphsAfter?.map((para, paraIdx) => (
-                          <Text key={`after-${paraIdx}`} style={styles.helpParagraph}>{para}</Text>
+                          <Text key={`after-${paraIdx}`} style={[styles.helpParagraph, { color: theme.colors.text.tertiary }]}>{para}</Text>
                         ))}
                       </View>
                     ))}
@@ -106,7 +108,6 @@ export default function DetailScreenShell({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
@@ -120,11 +121,9 @@ const styles = StyleSheet.create({
   },
   hintBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'flex-end',
   },
   hintSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 16,
@@ -133,7 +132,6 @@ const styles = StyleSheet.create({
   hintTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 6,
   },
   hintScroll: {
@@ -144,19 +142,16 @@ const styles = StyleSheet.create({
   },
   helpSectionDivider: {
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
     marginTop: 16,
     paddingTop: 16,
   },
   helpSectionHeading: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 8,
   },
   helpParagraph: {
     fontSize: 13,
-    color: '#333',
     lineHeight: 20,
     marginBottom: 10,
   },
@@ -166,20 +161,17 @@ const styles = StyleSheet.create({
   },
   helpBullet: {
     fontSize: 13,
-    color: '#333',
     lineHeight: 20,
     marginBottom: 6,
   },
   helpExample: {
     fontSize: 13,
-    color: '#333',
     lineHeight: 20,
     marginTop: 4,
     marginBottom: 10,
   },
   helpExampleBold: {
     fontWeight: '600',
-    color: '#000',
   },
 });
 

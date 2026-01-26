@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
   title: string;
@@ -14,12 +15,13 @@ type Props = {
  * Matches the existing "detail/card" header pattern: fixed header, iOS spacing, bottom divider.
  */
 export default function ScreenHeader({ title, totalText, subtitle, subtitleFootnote, rightAccessory }: Props) {
+  const { theme } = useTheme();
   return (
-    <View style={[styles.header, styles.safeHeader]}>
-      <Text style={styles.title}>{title}</Text>
-      {totalText ? <Text style={styles.headerTotal}>{totalText}</Text> : null}
-      {subtitle ? <Text style={[styles.subtitle, totalText ? styles.subtitleAfterTotal : null]}>{subtitle}</Text> : null}
-      {subtitleFootnote ? <Text style={styles.subtitleFootnote}>{subtitleFootnote}</Text> : null}
+    <View style={[styles.header, styles.safeHeader, { borderBottomColor: theme.colors.border.default }]}>
+      <Text style={[styles.title, { color: theme.colors.text.primary }]}>{title}</Text>
+      {totalText ? <Text style={[styles.headerTotal, { color: theme.colors.text.primary }]}>{totalText}</Text> : null}
+      {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.text.muted }, totalText ? styles.subtitleAfterTotal : null]}>{subtitle}</Text> : null}
+      {subtitleFootnote ? <Text style={[styles.subtitleFootnote, { color: theme.colors.text.disabled }]}>{subtitleFootnote}</Text> : null}
       {rightAccessory ? <View style={styles.rightAccessory}>{rightAccessory}</View> : null}
     </View>
   );
@@ -29,7 +31,6 @@ const styles = StyleSheet.create({
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   safeHeader: {
     marginTop: Platform.OS === 'ios' ? 10 : 0,
@@ -37,25 +38,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 12,
-    color: '#888',
   },
   subtitleAfterTotal: {
     marginTop: 8,
   },
   subtitleFootnote: {
     fontSize: 12,
-    color: '#aaa',
     marginTop: 2,
   },
   headerTotal: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
   },
   rightAccessory: {
     position: 'absolute',

@@ -38,12 +38,36 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 4 — UI System Foundation
-- [x] Make Prjection Screen same look as Snapshot (Section Cards etc)
-- [ ] UI audit (tokens, components, duplication)
-- [ ] Central theme file (light/dark)
-- [ ] Central component style definitions
-- [ ] Remove component-local visual decisions
+## Phase 4 — UI System Foundation & Dark Mode Readiness
+- [x] Make Projection Screen same look as Snapshot (Section Cards etc)
+- [x] UI audit (tokens, components, duplication)
+- [x] Central theme file (light/dark)
+- [x] Central component style definitions (Button v1)
+- [x] Remove component-local visual decisions (components verified clean)
+
+### Phase 4.1 — Screen Color Tokenization
+- [x] Replace screen-level hardcoded colors with existing theme tokens
+- [x] SnapshotScreen color safety (no redesign)
+- [x] ProjectionResultsScreen color safety (no redesign)
+
+### Phase 4.2 — Interactive State Normalization
+- [x] Remove opacity-based pressed states in screens
+- [x] Ensure pressed/selected states are theme-aware
+
+### Phase 4.3 — Background & Container Hierarchy
+- [x] Enforce bg.app vs bg.card usage in screens
+- [x] Eliminate implicit light-mode background assumptions
+
+### Phase 4.4 — Chart Color Strategy (Projection)
+- [x] Centralize chart color palettes
+- [x] Define light/dark-safe chart colors
+- [x] Apply to ProjectionResultsScreen only
+
+### Phase 4.5 — Dark Mode Verification
+- [x] Enable system dark mode
+- [x] SnapshotScreen dark mode smoke test
+- [x] ProjectionResultsScreen dark mode smoke test
+- [x] Log visual issues (no polish yet)
 
 ---
 

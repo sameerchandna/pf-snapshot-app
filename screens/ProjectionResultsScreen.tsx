@@ -9,8 +9,10 @@ import * as Clipboard from 'expo-clipboard';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
+import Button from '../components/Button';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
+import { useTheme } from '../ui/theme/useTheme';
 
 // Snapshot visual language constants (reused for Projected Snapshot)
 const snapshotTypography = {
@@ -24,9 +26,6 @@ const snapshotTypography = {
   bodyWeight: '400' as const,
 };
 
-const snapshotColors = {
-  focusBlue: '#2F5BEA',
-};
 import { useSnapshot } from '../SnapshotContext';
 import { computeProjectionSeries, computeProjectionSummary, type ProjectionEngineInputs } from '../projectionEngine';
 import { computeA3Attribution, type A3Attribution } from '../computeA3Attribution';
@@ -43,12 +42,38 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { getScenarios, getActiveScenarioId, setActiveScenarioId as persistActiveScenarioId, getActiveScenario } from '../scenarioState';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
+import type { Theme } from '../ui/theme/theme';
 
 // Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() or selectMonthlySurplusWithScenario() instead
 // Monthly surplus is now single-sourced from selectors (no manual computation, no clamping)
 
 // Note: Golden Rule validation (extraContributions vs extraGrowth vs netWorthIncrease) 
 // belongs to wiring validation, not A3. A3 treats projectionSeries as ground truth.
+
+// Phase 4.4: Centralized chart color palette
+// All chart colors are derived from theme tokens to ensure light/dark mode safety
+function getChartPalette(theme: Theme) {
+  return {
+    // Baseline and scenario lines use the same brand color
+    // Visual distinction is enforced via strokeWidth / opacity, not color (structural, not chromatic)
+    baselineLine: theme.colors.brand.primary,
+    scenarioLine: theme.colors.brand.primary,
+    // Assets and liabilities use the same muted color
+    // Distinction is via existing opacity / stroke logic (intentional for Phase 4.4)
+    assetsLine: theme.colors.text.muted,
+    liabilitiesLine: theme.colors.text.muted,
+    // Marker line uses brand color
+    markerLine: theme.colors.brand.primary,
+    // Axis and grid use border colors
+    axis: theme.colors.border.default,
+    grid: theme.colors.border.subtle,
+    // Tick labels use secondary text color
+    tickLabels: theme.colors.text.secondary,
+    // Legend text colors
+    legendText: theme.colors.text.tertiary,
+    legendTextMuted: theme.colors.text.disabled,
+  };
+}
 
 // Helper to convert annual percentage to monthly rate (mirrors projectionEngine logic)
 function annualPctToMonthlyRate(pct: number): number {
@@ -356,6 +381,7 @@ function SnapshotComparisonCard({
   isOutcome?: boolean;
   isSubCard?: boolean;
 }) {
+  const { theme } = useTheme();
   // Use unsigned formatting for all baseline and scenario values (no + or - signs)
   // Use compact formatting (k/m) for Projected Snapshot
   // Signs are only used for deltas
@@ -388,6 +414,9 @@ function SnapshotComparisonCard({
               isOutcome && styles.snapshotPrimaryValueOutcome,
               isSubCard && styles.snapshotSubCardValue,
               styles.cashflowValueRight,
+              isOutcome && { color: theme.colors.brand.primary },
+              !isOutcome && { color: theme.colors.text.primary },
+              isSubCard && { color: theme.colors.text.secondary },
             ]}>
               {formatValue(baselineValue)}
             </Text>
@@ -413,6 +442,7 @@ function SnapshotComparisonCard({
                         styles.snapshotPrimaryValue,
                         styles.snapshotPrimaryValueScenario,
                         styles.cashflowValueRight,
+                        { color: theme.colors.brand.primary },
                       ]}>
                         {formatValue(scenarioValue)}
                       </Text>
@@ -459,6 +489,7 @@ function DualValueCard({
   showScenario: boolean;
   isOutcome?: boolean;
 }) {
+  const { theme } = useTheme();
   // Use unsigned formatting for all baseline and scenario values (no + or - signs)
   // Signs are only used for deltas
   const formatValue = formatCurrencyCompact;
@@ -467,7 +498,7 @@ function DualValueCard({
     return (
       <View style={[styles.projectedCardBordered, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowMb]}>
         <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
-        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
+        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered, isOutcome && { color: theme.colors.brand.primary }, !isOutcome && { color: theme.colors.text.primary }]}>
           {formatValue(baselineValue)}
         </Text>
       </View>
@@ -480,7 +511,7 @@ function DualValueCard({
     return (
       <View style={[styles.projectedCardBordered, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowMb]}>
         <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
-        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
+        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered, isOutcome && { color: theme.colors.brand.primary }, !isOutcome && { color: theme.colors.text.primary }]}>
           {formatValue(baselineValue)}
         </Text>
       </View>
@@ -502,7 +533,7 @@ function DualValueCard({
         <View style={styles.dualValueDivider} />
         <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
           <View style={{ alignItems: 'flex-start' }}>
-            <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, { textAlign: 'left' }]}>
+            <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, { textAlign: 'left', color: theme.colors.brand.primary }]}>
               {formatValue(scenarioValue)}
             </Text>
             {hasDelta && (
@@ -543,6 +574,7 @@ function BalanceSheetCard({
   startingValue: number; // today's value for age delta calculation
   startingValueForScenario?: number; // today's value for scenario age delta (usually same as startingValue)
 }) {
+  const { theme } = useTheme();
   if (!showScenario || scenarioValue === undefined) {
     // Single column: baseline only
     const ageDelta = baselineAgeDelta;
@@ -793,7 +825,7 @@ function ReconciliationOverlay({
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>Reconciles:</Text>
-        <Text style={[styles.reconciliationValue, reconciles ? styles.reconciliationPass : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, reconciles ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
           {reconciles ? '✓ YES' : '✕ NO'}
         </Text>
       </View>
@@ -830,28 +862,28 @@ function ReconciliationOverlay({
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = scenario − baseline:</Text>
-        <Text style={[styles.reconciliationValue, invariant1 ? styles.reconciliationPass : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant1 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
           {invariant1 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = extraContributions + extraGrowth:</Text>
-        <Text style={[styles.reconciliationValue, invariant2 ? styles.reconciliationPass : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant2 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
           {invariant2 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = sum(attribution):</Text>
-        <Text style={[styles.reconciliationValue, invariant3 ? styles.reconciliationPass : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant3 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
           {invariant3 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>Growth = residual (not total):</Text>
-        <Text style={[styles.reconciliationValue, invariant4 ? styles.reconciliationPass : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant4 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
           {invariant4 ? '✓' : '✕'}
         </Text>
       </View>
@@ -913,6 +945,8 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
 }
 
 export default function ProjectionResultsScreen() {
+  const { theme } = useTheme();
+  const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const { state, setProjection, isProfileSwitching } = useSnapshot();
@@ -2610,12 +2644,12 @@ export default function ProjectionResultsScreen() {
       const monthlyAmount = activeScenario ? activeScenario.amountMonthly : scenario.monthlyAmount;
       const formattedAmount = formatCurrencyFull(monthlyAmount);
       return [
-        { label: 'Net worth', color: '#2F5BEA' },
-        { label: `+ ${formattedAmount} / month`, color: '#2F5BEA' },
+        { label: 'Net worth', color: theme.colors.brand.primary },
+        { label: `+ ${formattedAmount} / month`, color: theme.colors.brand.primary },
       ] as const;
     } else {
       return [
-        { label: 'Net worth', color: '#2F5BEA' },
+        { label: 'Net worth', color: theme.colors.brand.primary },
       ] as const;
     }
   }, [effectiveScenarioActive, activeScenario, scenario, effectiveScenarioSeries]);
@@ -2624,16 +2658,16 @@ export default function ProjectionResultsScreen() {
   const legendSecondary = useMemo(() => {
     if (showLiquidOnly) {
       return [
-        { label: 'Assets', color: '#888' },
-        { label: 'Liabilities', color: '#bbb' },
+        { label: 'Assets', color: chartPalette.assetsLine },
+        { label: 'Liabilities', color: chartPalette.liabilitiesLine },
       ] as const;
     } else {
       return [
-        { label: 'Assets', color: '#888' },
-        { label: 'Liabilities', color: '#bbb' },
+        { label: 'Assets', color: chartPalette.assetsLine },
+        { label: 'Liabilities', color: chartPalette.liabilitiesLine },
       ] as const;
     }
-  }, [showLiquidOnly]);
+  }, [showLiquidOnly, chartPalette]);
 
   const a3 = useMemo(() => {
     const v = valuesAtAge;
@@ -2859,7 +2893,7 @@ export default function ProjectionResultsScreen() {
   }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state, activeScenario, scenarioDeltas]);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <ScrollView 
         ref={scrollViewRef}
         style={styles.scrollView} 
@@ -2868,7 +2902,7 @@ export default function ProjectionResultsScreen() {
       >
         <View 
           ref={stickyHeaderRef}
-          style={styles.projectionStickyHeader}
+          style={[styles.projectionStickyHeader, { backgroundColor: theme.colors.bg.app }]}
           onLayout={(event) => {
             stickyHeaderHeight.current = event.nativeEvent.layout.height;
           }}
@@ -2885,14 +2919,13 @@ export default function ProjectionResultsScreen() {
                       paddingHorizontal: spacing.sm,
                       paddingVertical: spacing.xs,
                       borderRadius: 4,
-                      backgroundColor: '#f0f0f0',
-                      opacity: pressed ? 0.7 : 1,
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
                     },
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel="Export debug JSON"
                 >
-                  <Text style={{ fontSize: 12, color: '#666' }}>Export JSON</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
                 </Pressable>
               ) : null
             }
@@ -2927,12 +2960,14 @@ export default function ProjectionResultsScreen() {
                     <Text style={[
                       styles.toolbarPillButtonText,
                       activeScenarioSource === 'persisted' && styles.toolbarPillButtonTextActive,
+                      activeScenarioSource === 'persisted' && { color: theme.colors.brand.primary },
                     ]}>
                       {activeScenario ? activeScenario.name : 'Baseline'}
                     </Text>
                     <Text style={[
                       styles.toolbarPillChevron,
                       activeScenarioSource === 'persisted' && styles.toolbarPillButtonTextActive,
+                      activeScenarioSource === 'persisted' && { color: theme.colors.brand.primary },
                     ]}>▼</Text>
                   </Pressable>
 
@@ -2953,12 +2988,13 @@ export default function ProjectionResultsScreen() {
                     <Feather 
                       name="zap" 
                       size={16} 
-                      color={activeScenarioSource === 'quick' ? snapshotColors.focusBlue : '#777'} 
+                      color={activeScenarioSource === 'quick' ? theme.colors.brand.primary : theme.colors.text.secondary} 
                     />
                     <Text
                       style={[
                         styles.toolbarPillButtonText,
                         activeScenarioSource === 'quick' && styles.toolbarPillButtonTextActive,
+                        activeScenarioSource === 'quick' && { color: theme.colors.brand.primary },
                       ]}
                     >
                       Quick what-if
@@ -3015,7 +3051,9 @@ export default function ProjectionResultsScreen() {
             {/* Scenario Type Toggle */}
             <View style={styles.quickRow}>
               <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
-                <Pressable
+                <Button
+                  variant={scenarioTypeToggle === 'FLOW_INVESTING' ? 'primary' : 'secondary'}
+                  size="md"
                   onPress={() => {
                     const currentAmount = parseFloat(localAmountInput) || 0;
                     setScenarioTypeToggle('FLOW_INVESTING');
@@ -3030,31 +3068,13 @@ export default function ProjectionResultsScreen() {
                     });
                     // Preserve amount input when switching types
                   }}
-                  style={({ pressed }) => [
-                    {
-                      flex: 1,
-                      paddingVertical: 10,
-                      paddingHorizontal: 16,
-                      borderRadius: 8,
-                      backgroundColor: scenarioTypeToggle === 'FLOW_INVESTING' ? '#2F5BEA' : '#F5F5F5',
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Invest more"
+                  style={{ flex: 1 }}
                 >
-                  <Text
-                    style={{
-                      color: scenarioTypeToggle === 'FLOW_INVESTING' ? '#FFFFFF' : '#666',
-                      fontSize: 14,
-                      fontWeight: '600',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Invest more
-                  </Text>
-                </Pressable>
-                <Pressable
+                  Invest more
+                </Button>
+                <Button
+                  variant={scenarioTypeToggle === 'FLOW_DEBT_PAYDOWN' ? 'primary' : 'secondary'}
+                  size="md"
                   onPress={() => {
                     const currentAmount = parseFloat(localAmountInput) || 0;
                     setScenarioTypeToggle('FLOW_DEBT_PAYDOWN');
@@ -3069,30 +3089,10 @@ export default function ProjectionResultsScreen() {
                     });
                     // Preserve amount input when switching types
                   }}
-                  style={({ pressed }) => [
-                    {
-                      flex: 1,
-                      paddingVertical: 10,
-                      paddingHorizontal: 16,
-                      borderRadius: 8,
-                      backgroundColor: scenarioTypeToggle === 'FLOW_DEBT_PAYDOWN' ? '#2F5BEA' : '#F5F5F5',
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Pay down debt"
+                  style={{ flex: 1 }}
                 >
-                  <Text
-                    style={{
-                      color: scenarioTypeToggle === 'FLOW_DEBT_PAYDOWN' ? '#FFFFFF' : '#666',
-                      fontSize: 14,
-                      fontWeight: '600',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Pay down debt
-                  </Text>
-                </Pressable>
+                  Pay down debt
+                </Button>
               </View>
             </View>
 
@@ -3102,7 +3102,7 @@ export default function ProjectionResultsScreen() {
               <Text style={styles.quickLabel}>Apply to</Text>
               <Pressable
                 onPress={() => openLater(() => setAssetPickerOpen(true))}
-                style={({ pressed }) => [styles.quickWhatIfSelector, { opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                style={({ pressed }) => [styles.quickWhatIfSelector, { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, flex: 1 }]}
                 accessibilityRole="button"
                 accessibilityLabel="Select asset"
               >
@@ -3122,7 +3122,7 @@ export default function ProjectionResultsScreen() {
                 <Text style={styles.quickLabel}>Apply to</Text>
                 <Pressable
                   onPress={() => openLater(() => setMortgagePickerOpen(true))}
-                  style={({ pressed }) => [styles.quickWhatIfSelector, { opacity: pressed ? 0.85 : 1, flex: 1 }]}
+                  style={({ pressed }) => [styles.quickWhatIfSelector, { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, flex: 1 }]}
                   accessibilityRole="button"
                   accessibilityLabel="Select mortgage"
                 >
@@ -3156,14 +3156,14 @@ export default function ProjectionResultsScreen() {
             ) : null}
 
             {/* Clear Scenario */}
-            <Pressable
+            <Button
+              variant="text"
+              size="sm"
               onPress={handleClearScenario}
-              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Clear scenario"
+              style={{ marginTop: 8, alignSelf: 'flex-start' }}
             >
-              <Text style={styles.clearScenarioText}>Clear scenario</Text>
-            </Pressable>
+              Clear scenario
+            </Button>
           </View>
         ) : null}
 
@@ -3203,8 +3203,8 @@ export default function ProjectionResultsScreen() {
                 tickFormat={t => `${Number(t)}`}
                 tickLabelComponent={<VictoryLabel dy={6} />}
                 style={{
-                  axis: { stroke: '#ddd' },
-                  tickLabels: { fontSize: 11, fill: '#666' },
+                  axis: { stroke: chartPalette.axis },
+                  tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
                   grid: { stroke: 'transparent' },
                 }}
               />
@@ -3214,27 +3214,27 @@ export default function ProjectionResultsScreen() {
                 tickValues={chartData.yTicks}
                 tickFormat={t => formatCurrencyCompact(Number(t))}
                 style={{
-                  axis: { stroke: '#ddd' },
-                  tickLabels: { fontSize: 10, fill: '#666' },
-                  grid: { stroke: '#eee' },
+                  axis: { stroke: chartPalette.axis },
+                  tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                  grid: { stroke: chartPalette.grid },
                 }}
               />
 
               {/* Chart rule: Baseline line renders iff baselineSeries.length > 0 */}
               {baselineSeries.length > 0 && (
-                <VictoryLine data={chartData.netWorth} style={{ data: { stroke: '#2F5BEA', strokeWidth: 2.6, opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0 } }} />
+                <VictoryLine data={chartData.netWorth} style={{ data: { stroke: chartPalette.baselineLine, strokeWidth: 2.6, opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0 } }} />
               )}
               {/* Chart rule: Scenario line renders iff effectiveScenarioSeries.length > 0 */}
               {/* Do NOT gate on scenarioDeltas, scenarioA3Delta, or attribution presence */}
               {effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && chartData.scenarioNetWorth && (
-                <VictoryLine data={chartData.scenarioNetWorth} style={{ data: { stroke: '#2F5BEA', strokeWidth: 3.0, opacity: 0.85 } }} />
+                <VictoryLine data={chartData.scenarioNetWorth} style={{ data: { stroke: chartPalette.scenarioLine, strokeWidth: 3.0, opacity: 0.85 } }} />
               )}
               {/* Phase Three Final Polish: Reduce visual weight of assets/liabilities when scenario is active */}
               <VictoryLine
                 data={chartData.assets}
                 style={{
                 data: {
-                  stroke: '#888',
+                  stroke: chartPalette.assetsLine,
                   strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
                   opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
                 },
@@ -3244,7 +3244,7 @@ export default function ProjectionResultsScreen() {
                 data={chartData.liabilities}
                 style={{
                   data: {
-                    stroke: '#bbb',
+                    stroke: chartPalette.liabilitiesLine,
                     strokeWidth: activeScenarioSource !== 'baseline' ? 1.2 : 1.4,
                     opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
                   },
@@ -3258,7 +3258,7 @@ export default function ProjectionResultsScreen() {
                 ]}
                 style={{
                   data: {
-                    stroke: '#2F5BEA',
+                    stroke: chartPalette.markerLine,
                     strokeWidth: 1.5,
                     strokeDasharray: '4,4',
                     opacity: 0.6,
@@ -3272,7 +3272,7 @@ export default function ProjectionResultsScreen() {
               {legendPrimary.map(it => (
                 <View key={it.label} style={styles.legendItem}>
                   <View style={[styles.legendSwatch, { backgroundColor: it.color }]} />
-                  <Text style={styles.legendText}>
+                  <Text style={[styles.legendText, { color: chartPalette.legendText }]}>
                     {it.label}
                   </Text>
                 </View>
@@ -3284,7 +3284,7 @@ export default function ProjectionResultsScreen() {
               {legendSecondary.map(it => (
                 <View key={it.label} style={styles.legendItem}>
                   <View style={[styles.legendSwatch, { backgroundColor: it.color }]} />
-                  <Text style={styles.legendTextMuted}>
+                  <Text style={[styles.legendTextMuted, { color: chartPalette.legendTextMuted }]}>
                     {it.label}
                   </Text>
                 </View>
@@ -3699,8 +3699,8 @@ export default function ProjectionResultsScreen() {
         onRequestClose={() => setAssetPickerOpen(false)}
       >
         <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdropFlex} onPress={() => setAssetPickerOpen(false)} />
-          <View style={styles.modalSheet}>
+          <Pressable style={[styles.modalBackdropFlex, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setAssetPickerOpen(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={styles.modalTitle}>Select asset</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {state.assets.map(asset => {
@@ -3718,7 +3718,7 @@ export default function ProjectionResultsScreen() {
                   <Pressable
                     key={asset.id}
                     onPress={() => handleSelectAsset(asset.id)}
-                    style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{asset.name}</Text>
@@ -3746,7 +3746,7 @@ export default function ProjectionResultsScreen() {
       >
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdropFlex} onPress={() => setMortgagePickerOpen(false)} />
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={styles.modalTitle}>Select mortgage</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {availableLoans.map(loan => {
@@ -3764,7 +3764,7 @@ export default function ProjectionResultsScreen() {
                   <Pressable
                     key={loan.id}
                     onPress={() => handleSelectLiability(loan.id)}
-                    style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{loan.name}</Text>
@@ -3787,7 +3787,7 @@ export default function ProjectionResultsScreen() {
       <Modal transparent={true} visible={ageSelectorOpen} animationType="slide" onRequestClose={() => setAgeSelectorOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdropFlex} onPress={() => setAgeSelectorOpen(false)} />
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={styles.modalTitle}>Select age</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {Array.from({ length: state.projection.endAge - state.projection.currentAge + 1 }, (_, i) => {
@@ -3799,9 +3799,9 @@ export default function ProjectionResultsScreen() {
                       setSelectedAge(age);
                       setAgeSelectorOpen(false);
                     }}
-                    style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1, backgroundColor: selectedAge === age ? '#f5f5f5' : 'transparent' }]}
+                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : (selectedAge === age ? theme.colors.bg.subtle : 'transparent') }]}
                   >
-                    <Text style={[styles.modalOptionText, selectedAge === age && { color: '#2F5BEA' }]}>
+                    <Text style={[styles.modalOptionText, selectedAge === age && { color: theme.colors.brand.primary }]}>
                       Age {age}
                     </Text>
                   </Pressable>
@@ -3816,7 +3816,7 @@ export default function ProjectionResultsScreen() {
       <Modal transparent={true} visible={scenarioSelectorOpen} animationType="slide" onRequestClose={() => setScenarioSelectorOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdropFlex} onPress={() => setScenarioSelectorOpen(false)} />
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={styles.modalTitle}>Select scenario</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {/* Negative Surplus Banner in Modal */}
@@ -3833,12 +3833,12 @@ export default function ProjectionResultsScreen() {
                 style={({ pressed }) => [
                   styles.modalOption, 
                   { 
-                    opacity: pressed ? 0.85 : (isSurplusNegative ? 0.5 : 1), 
-                    backgroundColor: (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? '#f5f5f5' : 'transparent' 
+                    opacity: isSurplusNegative ? 0.5 : 1,
+                    backgroundColor: pressed && !isSurplusNegative ? theme.colors.bg.subtle : ((!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? theme.colors.bg.subtle : 'transparent')
                   }
                 ]}
               >
-                <Text style={[styles.modalOptionText, (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) && { color: '#2F5BEA' }]}>
+                <Text style={[styles.modalOptionText, (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) && { color: theme.colors.brand.primary }]}>
                   Baseline
                 </Text>
               </Pressable>
@@ -3852,12 +3852,12 @@ export default function ProjectionResultsScreen() {
                     style={({ pressed }) => [
                       styles.modalOption, 
                       { 
-                        opacity: pressed ? 0.85 : (isSurplusNegative ? 0.5 : 1), 
-                        backgroundColor: activeScenarioId === s.id ? '#f5f5f5' : 'transparent' 
+                        opacity: isSurplusNegative ? 0.5 : 1,
+                        backgroundColor: pressed && !isSurplusNegative ? theme.colors.bg.subtle : (activeScenarioId === s.id ? theme.colors.bg.subtle : 'transparent')
                       }
                     ]}
                   >
-                    <Text style={[styles.modalOptionText, activeScenarioId === s.id && { color: '#2F5BEA' }]}>
+                    <Text style={[styles.modalOptionText, activeScenarioId === s.id && { color: theme.colors.brand.primary }]}>
                       {s.name}
                     </Text>
                   </Pressable>
@@ -3868,7 +3868,7 @@ export default function ProjectionResultsScreen() {
                   setScenarioSelectorOpen(false);
                   navigation.navigate('ScenarioManagement');
                 }}
-                style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
               >
                 <Text style={styles.modalOptionTextSecondary}>Manage scenarios…</Text>
               </Pressable>
@@ -3883,7 +3883,6 @@ export default function ProjectionResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: layout.screenBackground,
   },
   scrollView: {
     flex: 1,
@@ -3894,7 +3893,6 @@ const styles = StyleSheet.create({
   },
   projectionStickyHeader: {
     zIndex: 10,
-    backgroundColor: layout.screenBackground,
   },
   projectionToolbarContainer: {
     paddingBottom: spacing.sm,
@@ -3903,8 +3901,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    shadowColor: '#000', // TODO: shadow color - keep as-is
     shadowOffset: {
       width: 0,
       height: 2,
@@ -3933,7 +3930,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f2f2',
   },
   toolbarIconPill: {
     height: 28,
@@ -3941,12 +3937,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2f2f2',
   },
   pillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111',
   },
   scenarioStatus: {
     marginRight: spacing.base,
@@ -3954,19 +3948,16 @@ const styles = StyleSheet.create({
   scenarioPrimary: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111',
   },
   scenarioSecondary: {
     marginTop: layout.micro,
     fontSize: 11,
     fontWeight: '500',
-    color: '#777',
   },
   toolbarPillButton: {
     height: 28,
     paddingHorizontal: spacing.base,
     borderRadius: 14,
-    backgroundColor: '#f2f2f2',
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
@@ -3975,18 +3966,16 @@ const styles = StyleSheet.create({
   toolbarPillButtonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#333',
   },
   toolbarPillButtonActive: {
+    // TODO: brand tint — no theme token (intentional)
     backgroundColor: '#e8f0ff',
   },
   toolbarPillButtonTextActive: {
-    color: snapshotColors.focusBlue,
     fontWeight: '600',
   },
   toolbarPillChevron: {
     fontSize: 10,
-    color: '#777',
     marginLeft: spacing.tiny,
   },
   scenarioSelector: {
@@ -3996,22 +3985,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderRadius: 6,
-    backgroundColor: '#f2f2f2',
   },
   scenarioSelectorText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#111',
   },
   scenarioSelectorChevron: {
     fontSize: 10,
-    color: '#777',
   },
   agePill: {
     height: 28,
     paddingHorizontal: spacing.base,
     borderRadius: 14,
-    backgroundColor: '#f2f2f2',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -4019,12 +4004,10 @@ const styles = StyleSheet.create({
   agePillText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#333',
   },
   ageChevron: {
     marginLeft: spacing.xs,
     fontSize: 10,
-    color: '#999',
   },
   iconText: {
     fontSize: 14,
@@ -4033,7 +4016,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   activeZapIcon: {
-    color: '#2F5BEA',
     opacity: 0.8,
   },
   stickyToolbar: {
@@ -4044,9 +4026,7 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
     zIndex: 20,
   },
   toolbarLeftGroup: {
@@ -4071,7 +4051,6 @@ const styles = StyleSheet.create({
     gap: spacing.tiny,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#fafafa',
     borderRadius: 6,
     minHeight: 32,
     flexShrink: 1,
@@ -4133,7 +4112,6 @@ const styles = StyleSheet.create({
     color: '#777',
   },
   quickWhatIfSelector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 8,
@@ -4164,7 +4142,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   quickWhatIfAmountInput: {
-    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 8,
@@ -4306,12 +4283,10 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#333',
     fontWeight: '500',
   },
   legendTextMuted: {
     fontSize: 11,
-    color: '#aaa',
     fontWeight: '400',
   },
   outcomeSubtitle: {
@@ -4326,7 +4301,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   ageSelector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 8,
@@ -4644,10 +4618,8 @@ const styles = StyleSheet.create({
   },
   modalBackdropFlex: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   modalSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
     paddingHorizontal: layout.screenPadding,
@@ -4869,7 +4841,6 @@ const styles = StyleSheet.create({
     color: '#111',
   },
   projectedPrimaryValueOutcome: {
-    color: snapshotColors.focusBlue,
   },
   projectedSubCardValue: {
     color: '#999',
@@ -5039,7 +5010,6 @@ const styles = StyleSheet.create({
   },
   // Snapshot card styles (reused from SnapshotScreen)
   snapshotCard: {
-    backgroundColor: '#fff',
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
@@ -5067,10 +5037,8 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   snapshotPrimaryValueOutcome: {
-    color: snapshotColors.focusBlue,
   },
   snapshotPrimaryValueScenario: {
-    color: snapshotColors.focusBlue,
   },
   snapshotCardDescription: {
     fontSize: snapshotTypography.bodySize,
@@ -5165,7 +5133,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   reconciliationPass: {
-    color: '#22c55e',
   },
   reconciliationFail: {
     color: '#ef4444',

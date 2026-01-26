@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { layout } from '../layout';
+import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
   title: string;
@@ -15,10 +16,11 @@ type Props = {
  * Matches existing styles in SnapshotScreen, ProjectionResultsScreen.
  */
 export default function SectionHeader({ title, subtitle }: Props) {
+  const { theme } = useTheme();
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.sectionSubtext}>{subtitle}</Text> : null}
+      <Text style={[styles.sectionTitle, { color: theme.colors.brand.primary }]}>{title}</Text>
+      {subtitle ? <Text style={[styles.sectionSubtext, { color: theme.colors.text.muted }]}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -31,12 +33,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: layout.sectionTitleBottom, // 4 - matches SnapshotScreen pattern
-    color: '#2F5BEA',
   },
   sectionSubtext: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#888',
     marginBottom: layout.sectionSubtextBottom, // 12 - matches SnapshotScreen pattern
   },
 });
