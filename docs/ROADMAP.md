@@ -71,11 +71,66 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 5 — Insights & Guidance
-- [ ] Financial health summary definition
-- [ ] Observational nudges (non-prescriptive)
-- [ ] Savings vs investment explainer
-- [ ] Mortgage trade-off explainer
+## Phase 5 — Insights, Explanation & Visual Intuition
+
+Turn projections into learning through observational insight and read-only interaction.
+No optimisation, no advice, no user-driven assumption changes.
+
+### Phase 5.1 — Financial Health Summary
+- [x] Define structural health dimensions (income, expenses, assets, liabilities, time)
+- [x] Generate neutral, descriptive statements (no scoring or judgement)
+- [x] Derived read-only from Snapshot + Projection summaries
+
+### Phase 5.2 — Interactive Projection Chart (Read-Only)
+- [ ] Draggable age cursor on projection chart
+- [ ] Live display of point-in-time values (assets, liabilities, net worth)
+- [ ] No modification of projection inputs
+- [ ] Immediate visual + numeric feedback only
+
+### Phase 5.3 — Structural Chart Layers
+- [ ] Toggle visibility of net worth / assets / liabilities
+- [ ] Optional breakdown layers where already available (contributions, growth)
+- [ ] No re-simulation or new assumptions
+
+### Phase 5.4 — Key Moment Detection & Highlighting
+- [ ] Detect key projection events (debt payoff, contribution vs growth crossover, net worth zero-crossing)
+- [ ] Visually annotate events on the chart
+- [ ] Provide short observational explanations
+- [ ] Link explanations to highlighted chart regions
+
+### Phase 5.5 — Observational Hero Insights
+- [ ] Define insight templates (purely descriptive)
+- [ ] Activate only when conditions are met
+- [ ] Every insight must be visually provable on the chart
+- [ ] No recommendations, alternatives, or rankings
+
+### Phase 5.6 — Savings Deep Dive (Read-Only)
+- [ ] Dedicated savings breakdown screen
+- [ ] Selectable savings asset from Snapshot
+- [ ] Time-based balance projection
+- [ ] Visual split between contributions and interest/growth
+- [ ] Stacked charts using existing projection outputs
+- [ ] Educational framing only
+
+### Phase 5.7 — Mortgage Deep Dive (Read-Only)
+- [ ] Dedicated mortgage breakdown screen
+- [ ] Selectable liability from Snapshot
+- [ ] Amortisation over time
+- [ ] Explicit split between principal and interest
+- [ ] Balance over time vs equity buildup
+- [ ] Payoff moment highlighted visually
+
+### Phase 5.8 — Explain-the-Chart Mode
+- [ ] Optional overlay explaining how to read charts
+- [ ] Labels for growth, contributions, and interest drag
+- [ ] No interaction beyond toggling explanations
+
+### Phase 5.9 — Insight ↔ Chart Linking
+- [ ] Tapping insights highlights supporting chart regions
+- [ ] Preserve chart context when navigating between screens
+- [ ] Maintain read-only guarantees throughout
+
+**Note:** User-driven assumption changes (sliders, editable what-if controls) are deferred to Phase 8.
 
 ---
 
@@ -91,3 +146,12 @@ Only unchecked items may be worked on.
 - [ ] Error and empty state audit
 - [ ] Performance pass
 - [ ] Pre-release checklist
+
+---
+
+## Phase 8 — Guided What-If & Scenario Exploration
+- [ ] Savings what-if (contribution and rate changes via sliders)
+- [ ] Mortgage what-if (overpayment, term, rate sensitivity)
+- [ ] Scenario preview vs baseline comparison
+- [ ] Explicit save / discard semantics
+- [ ] Guardrails to prevent advice framing or optimisation bias

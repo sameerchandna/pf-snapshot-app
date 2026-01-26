@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -35,7 +35,7 @@ import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, fo
 import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
 import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
-import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE } from '../constants';
+import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
@@ -351,13 +351,21 @@ function roundNice(value: number): number {
   return roundedN * pow10;
 }
 
+/**
+ * Phase 5.3: Generate ticks that stay within the domain boundary.
+ * Ticks are rounded to "nice" values but never exceed max.
+ */
 function buildTicks(min: number, max: number): number[] {
   const range = max - min;
   const step = niceStep(range);
   const start = Math.floor(min / step) * step;
-  const end = Math.ceil(max / step) * step;
+  // Clamp end to domain max - ticks must never exceed the domain boundary
+  const end = Math.min(max, Math.ceil(max / step) * step);
   const ticks: number[] = [];
-  for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
+  for (let v = start; v <= end + step / 2; v += step) {
+    // Only include ticks that are within the domain
+    if (v <= max) ticks.push(v);
+  }
   return ticks;
 }
 
@@ -896,6 +904,196 @@ function ReconciliationOverlay({
         </View>
       )}
     </View>
+  );
+}
+
+// Phase 5.1: Financial Health Summary
+// Threshold for expense dominance (expenses / income >= this value triggers T2)
+const EXPENSE_DOMINANCE_THRESHOLD = 0.8; // 80%
+
+type Insight = {
+  id: string;
+  text: string;
+  salience: {
+    magnitude: number;
+    dominance: number;
+    temporal: number;
+    isSnapshot: boolean;
+  };
+};
+
+function FinancialHealthSummary({
+  snapshotTotals,
+  baselineSummary,
+  baselineSeries,
+  currentAge,
+  endAge,
+  assets,
+}: {
+  snapshotTotals: ReturnType<typeof selectSnapshotTotals>;
+  baselineSummary: ReturnType<typeof computeProjectionSummary>;
+  baselineSeries: ReturnType<typeof computeProjectionSeries>;
+  currentAge: number;
+  endAge: number;
+  assets: AssetItem[];
+}) {
+  const { theme } = useTheme();
+  const insights: Insight[] = [];
+
+  // T1 — Cashflow Balance
+  if (snapshotTotals.netIncome > UI_TOLERANCE && snapshotTotals.expenses > UI_TOLERANCE) {
+    const surplus = snapshotTotals.monthlySurplus;
+    const allocated = snapshotTotals.netIncome - snapshotTotals.expenses - surplus;
+    const surplusPct = snapshotTotals.netIncome > UI_TOLERANCE
+      ? Math.round((surplus / snapshotTotals.netIncome) * 100)
+      : 0;
+    insights.push({
+      id: 'T1',
+      text: `Monthly income of ${formatCurrencyCompact(snapshotTotals.netIncome)} exceeds expenses of ${formatCurrencyCompact(snapshotTotals.expenses)}, with ${formatCurrencyCompact(allocated)} allocated and ${formatCurrencyCompact(surplus)} (${surplusPct}%) remaining unallocated.`,
+      salience: {
+        magnitude: Math.abs(surplus),
+        dominance: Math.abs(surplusPct),
+        temporal: 0,
+        isSnapshot: true,
+      },
+    });
+  }
+
+  // T2 — Expense Dominance
+  if (snapshotTotals.netIncome > UI_TOLERANCE) {
+    const expenseRatio = snapshotTotals.expenses / snapshotTotals.netIncome;
+    if (expenseRatio >= EXPENSE_DOMINANCE_THRESHOLD) {
+      const expensePct = Math.round(expenseRatio * 100);
+      insights.push({
+        id: 'T2',
+        text: `Expenses consume ${expensePct}% of monthly income.`,
+        salience: {
+          magnitude: snapshotTotals.expenses,
+          dominance: expensePct,
+          temporal: 0,
+          isSnapshot: true,
+        },
+      });
+    }
+  }
+
+  // T3 — Unallocated Surplus
+  if (snapshotTotals.monthlySurplus > UI_TOLERANCE) {
+    const surplus = snapshotTotals.monthlySurplus;
+    const surplusPct = snapshotTotals.netIncome > UI_TOLERANCE
+      ? Math.round((surplus / snapshotTotals.netIncome) * 100)
+      : 0;
+    insights.push({
+      id: 'T3',
+      text: `${formatCurrencyFull(surplus)} per month remains unallocated, representing ${surplusPct}% of income.`,
+      salience: {
+        magnitude: surplus,
+        dominance: surplusPct,
+        temporal: 0,
+        isSnapshot: true,
+      },
+    });
+  }
+
+  // T4 — Asset Composition
+  if (snapshotTotals.assets > UI_TOLERANCE) {
+    // Find SYSTEM_CASH balance
+    const systemCashAsset = assets.find(a => a.id === SYSTEM_CASH_ID);
+    const cashBalance = systemCashAsset?.balance ?? 0;
+    const cashPct = Math.round((cashBalance / snapshotTotals.assets) * 100);
+    insights.push({
+      id: 'T4',
+      text: `Cash represents ${cashPct}% of total assets, with the remainder held in long-term assets.`,
+      salience: {
+        magnitude: cashBalance,
+        dominance: cashPct,
+        temporal: 0,
+        isSnapshot: true,
+      },
+    });
+  }
+
+  // T5 — Liability Payoff
+  if (snapshotTotals.liabilities > UI_TOLERANCE && baselineSeries.length > 0) {
+    // Find first point where liabilities <= tolerance (fully repaid)
+    const payoffPoint = baselineSeries.find(p => p.liabilities <= UI_TOLERANCE);
+    if (payoffPoint) {
+      const payoffAge = Math.round(payoffPoint.age);
+      insights.push({
+        id: 'T5',
+        text: `Liabilities decline over time and are fully repaid by age ${payoffAge}.`,
+        salience: {
+          magnitude: snapshotTotals.liabilities,
+          dominance: 0,
+          temporal: payoffAge, // Earlier payoff = higher temporal salience (inverted)
+          isSnapshot: false,
+        },
+      });
+    }
+  }
+
+  // T6 — Projection Stability
+  if (baselineSeries.length > 0) {
+    const netWorthNeverNegative = baselineSeries.every(p => p.netWorth >= -UI_TOLERANCE);
+    if (netWorthNeverNegative) {
+      const years = endAge - currentAge;
+      insights.push({
+        id: 'T6',
+        text: `Net worth remains positive across the entire ${years}-year projection horizon.`,
+        salience: {
+          magnitude: baselineSummary.endNetWorth,
+          dominance: 0,
+          temporal: endAge,
+          isSnapshot: false,
+        },
+      });
+    }
+  }
+
+  // Rank insights by structural salience
+  // 1. Magnitude (absolute £ values)
+  // 2. Dominance (% of total)
+  // 3. Temporal significance (earlier age/year milestones)
+  // Tie-breaker: Prefer Snapshot-based insights over Projection-based ones
+  insights.sort((a, b) => {
+    // Primary: Magnitude
+    if (Math.abs(a.salience.magnitude - b.salience.magnitude) > UI_TOLERANCE) {
+      return b.salience.magnitude - a.salience.magnitude;
+    }
+    // Secondary: Dominance
+    if (Math.abs(a.salience.dominance - b.salience.dominance) > 0.1) {
+      return b.salience.dominance - a.salience.dominance;
+    }
+    // Tertiary: Temporal (earlier = higher salience, so invert)
+    if (a.salience.temporal > 0 && b.salience.temporal > 0) {
+      return a.salience.temporal - b.salience.temporal; // Earlier age = higher rank
+    }
+    // Tie-breaker: Snapshot over Projection
+    if (a.salience.isSnapshot !== b.salience.isSnapshot) {
+      return a.salience.isSnapshot ? -1 : 1;
+    }
+    return 0;
+  });
+
+  // Select at most 3 insights
+  const selectedInsights = insights.slice(0, 3);
+
+  // If no insights qualify, render nothing
+  if (selectedInsights.length === 0) {
+    return null;
+  }
+
+  return (
+    <SectionCard>
+      <SectionHeader title="Financial Health Summary" />
+      <View style={styles.insightsList}>
+        {selectedInsights.map(insight => (
+          <Text key={insight.id} style={styles.bodyText}>
+            • {insight.text}
+          </Text>
+        ))}
+      </View>
+    </SectionCard>
   );
 }
 
@@ -2467,6 +2665,11 @@ export default function ProjectionResultsScreen() {
     };
   }, [selectedAge, effectiveScenarioSeries, scenarioA3AttributionAbs, effectiveScenarioActive, activeScenario, scenario, state, valuesAtAge, scenarioProjectionInputs]);
 
+  // Phase 5.2b: Active values at selected age (scenario if active, otherwise baseline)
+  const activeValues = useMemo(() => {
+    return scenarioValuesAtAge ?? valuesAtAge;
+  }, [scenarioValuesAtAge, valuesAtAge]);
+
   // Phase Four: Calculate deltas between baseline and scenario (single source of truth)
   const scenarioDeltas = useMemo(() => {
     if (!scenarioValuesAtAge || !effectiveScenarioActive) return null;
@@ -2592,11 +2795,11 @@ export default function ProjectionResultsScreen() {
       const values = [...baselineValues, ...scenarioValues];
       const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
       
-      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.03-1.05)
-      // Use 3-5% headroom so the line doesn't touch the top
+      // Phase 5.3: Domain is data-driven (no rounding). Ticks adapt inside the domain.
+      // Use 4% headroom so the line doesn't touch the top
       const headroom = 0.04; // 4% headroom
       const domainMin = 0; // Always 0, do NOT auto-scale Y-min
-      const domainMax = roundNice(visibleMax * (1 + headroom));
+      const domainMax = visibleMax * (1 + headroom); // No rounding - domain tracks data
       const yTicks = buildTicks(domainMin, domainMax);
 
       return { assets: liquidAssets, liabilities, netWorth: netWorthLiquid, scenarioNetWorth: scenarioNetWorthLiquid, domainMin, domainMax, yTicks };
@@ -2620,11 +2823,11 @@ export default function ProjectionResultsScreen() {
       const values = [...baselineValues, ...scenarioValues];
       const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
       
-      // Set Y-axis bounds explicitly: yMin = 0 always, yMax = roundNice(visibleMax * 1.03-1.05)
-      // Use 3-5% headroom so the line doesn't touch the top
+      // Phase 5.3: Domain is data-driven (no rounding). Ticks adapt inside the domain.
+      // Use 4% headroom so the line doesn't touch the top
       const headroom = 0.04; // 4% headroom
       const domainMin = 0; // Always 0, do NOT auto-scale Y-min
-      const domainMax = roundNice(visibleMax * (1 + headroom));
+      const domainMax = visibleMax * (1 + headroom); // No rounding - domain tracks data
       const yTicks = buildTicks(domainMin, domainMax);
 
       return { assets, liabilities, netWorth: baselineNetWorth, scenarioNetWorth, domainMin, domainMax, yTicks };
@@ -2636,6 +2839,80 @@ export default function ProjectionResultsScreen() {
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
   // Explicit chart padding: left for £ tick labels, bottom for x-axis labels + legend, top keeps line off border
   const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
+
+  // Phase 5.2a: Helper to map touch X coordinate to age
+  // Returns null if mapping is invalid (e.g., invalid plottable width)
+  const mapTouchXToAge = useCallback((
+    touchX: number,
+    chartWidth: number,
+    chartPadding: { left: number; right: number },
+    currentAge: number,
+    endAge: number
+  ): number | null => {
+    const plottableWidth = chartWidth - chartPadding.left - chartPadding.right;
+    
+    // Guard against invalid plottable width
+    if (plottableWidth <= 0) return null;
+    
+    // Subtract left padding to get position relative to plottable area
+    const touchXRelative = touchX - chartPadding.left;
+    
+    // Clamp to plottable area
+    const clampedX = Math.max(0, Math.min(plottableWidth, touchXRelative));
+    
+    // Map to age using linear interpolation
+    const age = currentAge + (clampedX / plottableWidth) * (endAge - currentAge);
+    
+    // Snap to nearest integer year
+    const snappedAge = Math.round(age);
+    
+    // Clamp to valid age range
+    const finalAge = Math.max(currentAge, Math.min(endAge, snappedAge));
+    
+    return finalAge;
+  }, []);
+
+  // Phase 5.2a: PanResponder for chart gesture interaction
+  // VictoryChart is intentionally render-only. Gesture handling is implemented via
+  // a transparent RN overlay to avoid Victory SVG interaction issues on mobile.
+  const chartPanResponder = useMemo(() => {
+    const currentAge = state.projection.currentAge;
+    const endAge = state.projection.endAge;
+
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: (evt, gestureState) => {
+        // Allow termination if gesture is predominantly vertical (let ScrollView handle it)
+        // Use 1.2x bias to prevent accidental scroll takeover during horizontal drags
+        return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.2;
+      },
+      onPanResponderGrant: (evt, gestureState) => {
+        // Ignore predominantly vertical gestures (let ScrollView handle them)
+        if (Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.2) return;
+
+        const touchX = evt.nativeEvent.locationX;
+        const mappedAge = mapTouchXToAge(touchX, chartWidth, chartPadding, currentAge, endAge);
+        
+        // Only update if age changed to avoid unnecessary re-renders
+        if (mappedAge !== null && mappedAge !== selectedAge) {
+          setSelectedAge(mappedAge);
+        }
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Ignore predominantly vertical gestures (let ScrollView handle them)
+        if (Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.2) return;
+
+        const touchX = evt.nativeEvent.locationX;
+        const mappedAge = mapTouchXToAge(touchX, chartWidth, chartPadding, currentAge, endAge);
+        
+        // Only update if age changed to avoid unnecessary re-renders
+        if (mappedAge !== null && mappedAge !== selectedAge) {
+          setSelectedAge(mappedAge);
+        }
+      },
+    });
+  }, [chartWidth, chartPadding, state.projection.currentAge, state.projection.endAge, selectedAge, mapTouchXToAge, setSelectedAge]);
 
   // Primary legend: Net Worth (dominant)
   const legendPrimary = useMemo(() => {
@@ -3168,7 +3445,17 @@ export default function ProjectionResultsScreen() {
         ) : null}
 
         <View style={styles.innerContent}>
-          <SectionCard>
+          {/* Phase 5.1: Financial Health Summary */}
+          <FinancialHealthSummary
+            snapshotTotals={selectSnapshotTotals(state)}
+            baselineSummary={baselineSummary}
+            baselineSeries={baselineSeries}
+            currentAge={state.projection.currentAge}
+            endAge={state.projection.endAge}
+            assets={state.assets}
+          />
+
+          <SectionCard style={{ marginBottom: spacing.xs }}>
             {/* Section Header with Toggle */}
             <View style={styles.sectionHeaderRow}>
               <SectionHeader title="Projected Net Worth" />
@@ -3191,105 +3478,92 @@ export default function ProjectionResultsScreen() {
             </View>
 
             <View style={styles.chartCard}>
-            <VictoryChart
-              width={chartWidth}
-              height={chartHeight}
-              padding={chartPadding}
-              domain={{ y: [chartData.domainMin, chartData.domainMax] }}
-              domainPadding={{ x: 12 }}
-              nice={false}
-            >
-              <VictoryAxis
-                tickFormat={t => `${Number(t)}`}
-                tickLabelComponent={<VictoryLabel dy={6} />}
-                style={{
-                  axis: { stroke: chartPalette.axis },
-                  tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
-                  grid: { stroke: 'transparent' },
-                }}
-              />
-              <VictoryAxis
-                dependentAxis
+            {/* Phase 5.2a: Chart container with gesture overlay
+                VictoryChart is render-only. Gesture handling via transparent RN overlay above. */}
+            <View style={{ height: chartHeight, width: chartWidth, position: 'relative' }}>
+              <VictoryChart
+                width={chartWidth}
+                height={chartHeight}
+                padding={chartPadding}
+                domain={{ y: [chartData.domainMin, chartData.domainMax] }}
+                domainPadding={{ x: 12 }}
                 nice={false}
-                tickValues={chartData.yTicks}
-                tickFormat={t => formatCurrencyCompact(Number(t))}
-                style={{
-                  axis: { stroke: chartPalette.axis },
-                  tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
-                  grid: { stroke: chartPalette.grid },
-                }}
-              />
+              >
+                <VictoryAxis
+                  tickFormat={t => `${Number(t)}`}
+                  tickLabelComponent={<VictoryLabel dy={6} />}
+                  style={{
+                    axis: { stroke: chartPalette.axis },
+                    tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
+                    grid: { stroke: 'transparent' },
+                  }}
+                />
+                <VictoryAxis
+                  dependentAxis
+                  nice={false}
+                  tickValues={chartData.yTicks}
+                  tickFormat={t => formatCurrencyCompact(Number(t))}
+                  style={{
+                    axis: { stroke: chartPalette.axis },
+                    tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                    grid: { stroke: chartPalette.grid },
+                  }}
+                />
 
-              {/* Chart rule: Baseline line renders iff baselineSeries.length > 0 */}
-              {baselineSeries.length > 0 && (
-                <VictoryLine data={chartData.netWorth} style={{ data: { stroke: chartPalette.baselineLine, strokeWidth: 2.6, opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0 } }} />
-              )}
-              {/* Chart rule: Scenario line renders iff effectiveScenarioSeries.length > 0 */}
-              {/* Do NOT gate on scenarioDeltas, scenarioA3Delta, or attribution presence */}
-              {effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && chartData.scenarioNetWorth && (
-                <VictoryLine data={chartData.scenarioNetWorth} style={{ data: { stroke: chartPalette.scenarioLine, strokeWidth: 3.0, opacity: 0.85 } }} />
-              )}
-              {/* Phase Three Final Polish: Reduce visual weight of assets/liabilities when scenario is active */}
-              <VictoryLine
-                data={chartData.assets}
-                style={{
-                data: {
-                  stroke: chartPalette.assetsLine,
-                  strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
-                  opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
-                },
-                }}
-              />
-              <VictoryLine
-                data={chartData.liabilities}
-                style={{
+                {/* Chart rule: Baseline line renders iff baselineSeries.length > 0 */}
+                {baselineSeries.length > 0 && (
+                  <VictoryLine data={chartData.netWorth} style={{ data: { stroke: chartPalette.baselineLine, strokeWidth: 2.6, opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0 } }} />
+                )}
+                {/* Chart rule: Scenario line renders iff effectiveScenarioSeries.length > 0 */}
+                {/* Do NOT gate on scenarioDeltas, scenarioA3Delta, or attribution presence */}
+                {effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && chartData.scenarioNetWorth && (
+                  <VictoryLine data={chartData.scenarioNetWorth} style={{ data: { stroke: chartPalette.scenarioLine, strokeWidth: 3.0, opacity: 0.85 } }} />
+                )}
+                {/* Phase Three Final Polish: Reduce visual weight of assets/liabilities when scenario is active */}
+                <VictoryLine
+                  data={chartData.assets}
+                  style={{
                   data: {
-                    stroke: chartPalette.liabilitiesLine,
-                    strokeWidth: activeScenarioSource !== 'baseline' ? 1.2 : 1.4,
-                    opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
+                    stroke: chartPalette.assetsLine,
+                    strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
+                    opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
                   },
-                }}
-              />
-              {/* Vertical marker line at selectedAge (visual cursor, not a filter) */}
-              <VictoryLine
-                data={[
-                  { x: selectedAge, y: chartData.domainMin },
-                  { x: selectedAge, y: chartData.domainMax },
-                ]}
-                style={{
-                  data: {
-                    stroke: chartPalette.markerLine,
-                    strokeWidth: 1.5,
-                    strokeDasharray: '4,4',
-                    opacity: 0.6,
-                  },
-                }}
-              />
-            </VictoryChart>
+                  }}
+                />
+                <VictoryLine
+                  data={chartData.liabilities}
+                  style={{
+                    data: {
+                      stroke: chartPalette.liabilitiesLine,
+                      strokeWidth: activeScenarioSource !== 'baseline' ? 1.2 : 1.4,
+                      opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
+                    },
+                  }}
+                />
+                {/* Vertical marker line at selectedAge (visual cursor, not a filter) */}
+                <VictoryLine
+                  data={[
+                    { x: selectedAge, y: chartData.domainMin },
+                    { x: selectedAge, y: chartData.domainMax },
+                  ]}
+                  style={{
+                    data: {
+                      stroke: chartPalette.markerLine,
+                      strokeWidth: 1.5,
+                      strokeDasharray: '4,4',
+                      opacity: 0.6,
+                    },
+                  }}
+                />
+              </VictoryChart>
 
-            {/* Primary legend: Net Worth (top row) - placed outside chart with spacing */}
-            <View style={[styles.legendRow, { marginTop: 8 }]}>
-              {legendPrimary.map(it => (
-                <View key={it.label} style={styles.legendItem}>
-                  <View style={[styles.legendSwatch, { backgroundColor: it.color }]} />
-                  <Text style={[styles.legendText, { color: chartPalette.legendText }]}>
-                    {it.label}
-                  </Text>
-                </View>
-              ))}
+              {/* Phase 5.2a: Transparent gesture overlay */}
+              <View
+                style={StyleSheet.absoluteFill}
+                {...chartPanResponder.panHandlers}
+              />
             </View>
 
-            {/* Secondary legend: Assets / Liabilities (bottom row) */}
-            <View style={styles.legendRowSecondary}>
-              {legendSecondary.map(it => (
-                <View key={it.label} style={styles.legendItem}>
-                  <View style={[styles.legendSwatch, { backgroundColor: it.color }]} />
-                  <Text style={[styles.legendTextMuted, { color: chartPalette.legendTextMuted }]}>
-                    {it.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
             {/* Helper text when both liquid toggle and scenario are ON */}
             {showLiquidOnly && activeScenarioSource !== 'baseline' ? (
               <Text style={styles.chartHelperText}>
@@ -3298,6 +3572,77 @@ export default function ProjectionResultsScreen() {
             ) : null}
           </View>
           </SectionCard>
+
+          {/* Phase 5.3: Unified value bar companion card */}
+          {valuesAtAge && (
+            <SectionCard style={{ marginTop: spacing.xs, marginBottom: spacing.huge, padding: spacing.sm }}>
+              <View style={[styles.valueBar, { width: chartWidth }]}>
+                {/* Baseline row */}
+                <View style={styles.valueBarRow}>
+                  <Text style={[styles.valueBarRowLabel, { color: theme.colors.text.muted }]}>Baseline</Text>
+                  {/* Net worth */}
+                  <View style={styles.valueBarItem}>
+                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.baselineLine }]} />
+                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Net worth</Text>
+                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                      {formatCurrencyCompact(valuesAtAge.netWorth)}
+                    </Text>
+                  </View>
+
+                  {/* Assets */}
+                  <View style={styles.valueBarItem}>
+                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.assetsLine }]} />
+                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Assets</Text>
+                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                      {formatCurrencyCompact(valuesAtAge.assets)}
+                    </Text>
+                  </View>
+
+                  {/* Liabilities */}
+                  <View style={styles.valueBarItem}>
+                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.liabilitiesLine }]} />
+                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
+                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                      {formatCurrencyCompact(valuesAtAge.liabilities)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Scenario row (only if active) */}
+                {effectiveScenarioActive && scenarioValuesAtAge && (
+                  <View style={styles.valueBarRow}>
+                    <Text style={[styles.valueBarRowLabel, { color: theme.colors.text.muted }]}>Scenario</Text>
+                    {/* Net worth */}
+                    <View style={styles.valueBarItem}>
+                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.scenarioLine }]} />
+                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Net worth</Text>
+                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
+                        {formatCurrencyCompact(scenarioValuesAtAge.netWorth)}
+                      </Text>
+                    </View>
+
+                    {/* Assets */}
+                    <View style={styles.valueBarItem}>
+                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.assetsLine }]} />
+                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Assets</Text>
+                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
+                        {formatCurrencyCompact(scenarioValuesAtAge.assets)}
+                      </Text>
+                    </View>
+
+                    {/* Liabilities */}
+                    <View style={styles.valueBarItem}>
+                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.liabilitiesLine }]} />
+                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
+                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
+                        {formatCurrencyCompact(scenarioValuesAtAge.liabilities)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </SectionCard>
+          )}
 
           {/* Phase Four: Scenario Impact Section (only when scenario is active and deltas are valid) */}
           {effectiveScenarioActive && scenarioDeltas && scenarioValuesAtAge && deltasValid ? (
@@ -4288,6 +4633,41 @@ const styles = StyleSheet.create({
   legendTextMuted: {
     fontSize: 11,
     fontWeight: '400',
+  },
+  // Phase 5.3: Unified value bar companion card
+  valueBar: {
+    flexDirection: 'column',
+    alignSelf: 'center',
+    gap: spacing.sm,
+  },
+  valueBarRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.base,
+  },
+  valueBarRowLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginRight: spacing.xs,
+  },
+  valueBarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  valueBarDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  valueBarLabel: {
+    fontSize: 12,
+    fontWeight: '400',
+  },
+  valueBarValue: {
+    fontSize: 12,
   },
   outcomeSubtitle: {
     fontSize: 13,
