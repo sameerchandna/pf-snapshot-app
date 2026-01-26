@@ -106,31 +106,94 @@ No optimisation, no advice, no user-driven assumption changes.
 - [x] Every insight must be visually provable on the chart
 - [x] No recommendations, alternatives, or rankings
 
-### Phase 5.6 — Savings Deep Dive (Read-Only)
-- [ ] Dedicated savings breakdown screen
-- [ ] Selectable savings asset from Snapshot
-- [ ] Time-based balance projection
-- [ ] Visual split between contributions and interest/growth
-- [ ] Stacked charts using existing projection outputs
-- [ ] Educational framing only
+### Phase 5.6 — Balance Deep Dive (Assets & Liabilities, Read-Only)
 
-### Phase 5.7 — Mortgage Deep Dive (Read-Only)
-- [ ] Dedicated mortgage breakdown screen
-- [ ] Selectable liability from Snapshot
-- [ ] Amortisation over time
-- [ ] Explicit split between principal and interest
-- [ ] Balance over time vs equity buildup
-- [ ] Payoff moment highlighted visually
+Balance Deep Dive is the single, canonical explanatory surface for balance-sheet items. There are no separate savings or mortgage screens. Savings and mortgages are rendered within the same screen using type-specific semantics. All interactions are observational and read-only.
 
-### Phase 5.8 — Explain-the-Chart Mode
-- [ ] Optional overlay explaining how to read charts
-- [ ] Labels for growth, contributions, and interest drag
-- [ ] No interaction beyond toggling explanations
+#### Phase 5.6.1 — Screen Foundation and Navigation
+- [x] Create BalanceDeepDive screen
+- [x] Navigation wiring from Snapshot and Projection screens
+- [x] Screen header and layout structure
+
+#### Phase 5.6.2 — Unified Item Picker (Savings Assets + Mortgage Liabilities)
+- [x] Combined item picker supporting both savings assets and mortgage/loan liabilities
+- [x] Filter savings assets (exclude SYSTEM_CASH and inactive items)
+- [x] Filter mortgage/loan liabilities (exclude inactive items)
+- [x] Item metadata synthesis (type, rate, term, balance)
+- [x] Graceful handling of missing or invalid items
+
+#### Phase 5.6.3 — Read-Only Age Selection and Shared Interaction Model
+- [x] Age selector (read-only, modal-based)
+- [x] Visual cursor (vertical line) at selected age on charts
+- [x] Chart gesture interaction (pan responder for age selection)
+- [x] Shared interaction model for both savings and mortgage views
+- [x] Age synchronization with projection settings
+
+#### Phase 5.6.4 — Savings Asset Explanation (Contributions vs Growth, Reconciliation Enforced)
+- [x] Reuse projection time-series for selected savings asset
+- [x] Stacked area chart: contributions + growth layers
+- [x] Numeric summary at selected age (starting balance, total contributions, total growth)
+- [x] Reconciliation guard (endingBalance ≈ startingBalance + contributions + growth)
+- [x] Defensive error handling and validation
+
+#### Phase 5.6.5 — Mortgage / Loan Explanation (Amortisation, Principal vs Interest, Balance Over Time, Payoff Moment)
+- [x] Mortgage-specific chart semantics (balance line + stacked principal/interest areas)
+- [x] Principal vs interest breakdown visualization
+- [x] Balance over time tracking
+- [x] Payoff moment detection and visual annotation
+- [x] Numeric summary at selected age (remaining balance, principal paid, interest paid)
+- [x] Reconciliation guard (startingBalance ≈ remainingBalance + cumulativePrincipalPaid)
+- [x] Truncation at payoff moment when detected
+
+#### Phase 5.6.6 — Shared Balance Semantics (Visual Cursor, Metadata Synthesis, Truncation, Defensive Guards)
+- [x] Visual cursor (vertical dashed line) synchronized across chart types
+- [x] Metadata synthesis for both asset and liability types
+- [x] Chart truncation logic (payoff moment handling)
+- [x] Defensive guards against invalid data and reconciliation failures
+- [x] Error states and placeholder handling
+
+### Phase 5.7 — Observational Insights (Balance Deep Dive)
+
+Insights are single-sentence, template-based statements that are visually provable on the chart. No advice, no scoring or ranking, no optimisation or nudging.
+
+#### Phase 5.7.1 — Insight Framework
+- [x] Single-sentence, template-based insight generation
+- [x] Insights must be visually provable on the chart
+- [x] Activation only when conditions are met
+- [x] No advice, no ranking, no optimisation
+
+#### Phase 5.7.2 — Savings-Specific Insights
+- [x] Contribution dominance insights (when contributions exceed growth)
+- [x] Growth acceleration insights (compounding effects)
+- [x] Balance milestone insights (age-based thresholds)
+- [x] All insights must reference chart-visible data
+
+#### Phase 5.7.3 — Mortgage-Specific Insights
+- [x] Interest drag insights (total interest vs principal)
+- [x] Payoff timeline insights (time to zero balance)
+- [x] Principal acceleration insights (when principal payments dominate)
+- [x] All insights must reference chart-visible data
+
+### Phase 5.8 — Educational Overlays (Explain the Balance)
+
+Passive, optional overlays that explain balance-sheet concepts. No interaction beyond toggling explanations.
+
+#### Phase 5.8.1 — Savings Education
+- [x] Growth vs contributions explanation overlay
+- [x] Compounding intuition overlay
+- [x] Time-series interpretation guidance
+- [x] Optional toggle to show/hide educational content
+
+#### Phase 5.8.2 — Mortgage Education
+- [x] Amortisation explanation overlay
+- [x] Interest drag concept overlay
+- [x] Principal acceleration explanation
+- [x] Optional toggle to show/hide educational content
 
 ### Phase 5.9 — Insight ↔ Chart Linking
-- [ ] Tapping insights highlights supporting chart regions
-- [ ] Preserve chart context when navigating between screens
-- [ ] Maintain read-only guarantees throughout
+- [x] Tapping insights highlights supporting chart regions
+- [x] Preserve read-only guarantees and chart context
+- [x] Visual feedback linking insight text to chart data points
 
 **Note:** User-driven assumption changes (sliders, editable what-if controls) are deferred to Phase 8.
 
