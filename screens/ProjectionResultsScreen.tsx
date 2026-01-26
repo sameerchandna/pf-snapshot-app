@@ -3,7 +3,7 @@ import { Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine } from 'victory-native';
+import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter } from 'victory-native';
 import * as Clipboard from 'expo-clipboard';
 
 import ScreenHeader from '../components/ScreenHeader';
@@ -73,6 +73,130 @@ function getChartPalette(theme: Theme) {
     legendText: theme.colors.text.tertiary,
     legendTextMuted: theme.colors.text.disabled,
   };
+}
+
+// Phase 5.3: Chart series structure with stable semantic identifiers
+type ChartSeries = {
+  seriesId: 'netWorth' | 'scenarioNetWorth' | 'assets' | 'liabilities';
+  label: string;
+  color: string;
+  data: Array<{ x: number; y: number }>;
+  style: {
+    strokeWidth: number;
+    opacity: number;
+  };
+  // Conditional rendering flags
+  shouldRender: boolean;
+};
+
+// Phase 5.4: Key moment detection types
+type KeyMomentId = 'LIABILITY_PAYOFF' | 'NET_WORTH_ZERO' | 'ASSETS_OVER_LIABILITIES';
+
+type KeyMoment = {
+  id: KeyMomentId;
+  seriesId: 'netWorth' | 'assets' | 'liabilities';
+  age: number;
+  value: number;
+};
+
+// Phase 5.4: Key moment detection function
+// Pure function that detects key moments from baseline projection data
+function detectKeyMoments(
+  baselineSeries: Array<{ age: number; assets: number; liabilities: number; netWorth: number }>,
+  liquidAssetsSeries?: number[]
+): KeyMoment[] {
+  const moments: KeyMoment[] = [];
+
+  // Guard against empty or insufficient data
+  if (!baselineSeries || baselineSeries.length === 0) {
+    return moments;
+  }
+
+  // LIABILITY_PAYOFF: First point where liabilities <= UI_TOLERANCE
+  // If already <= tolerance at first point, mark at first point
+  const liabilityPayoffPoint = baselineSeries.find(p => p.liabilities <= UI_TOLERANCE);
+  if (liabilityPayoffPoint) {
+    moments.push({
+      id: 'LIABILITY_PAYOFF',
+      seriesId: 'liabilities',
+      age: liabilityPayoffPoint.age,
+      value: liabilityPayoffPoint.liabilities,
+    });
+  }
+
+  // NET_WORTH_ZERO: First crossing where netWorth goes from < 0 to >= 0
+  // Use the first point where condition is met (no interpolation)
+  if (baselineSeries.length > 1) {
+    // Find the first point where netWorth >= 0, but only if we've seen a negative value before
+    let hasSeenNegative = false;
+    for (let i = 0; i < baselineSeries.length; i++) {
+      const point = baselineSeries[i];
+      if (point.netWorth < 0) {
+        hasSeenNegative = true;
+      } else if (hasSeenNegative && point.netWorth >= 0) {
+        // First crossing from negative to non-negative
+        moments.push({
+          id: 'NET_WORTH_ZERO',
+          seriesId: 'netWorth',
+          age: point.age,
+          value: point.netWorth,
+        });
+        break; // Only detect the first crossing
+      }
+    }
+  }
+
+  // ASSETS_OVER_LIABILITIES: First crossing where assets go from < liabilities to >= liabilities
+  // Use liquid assets if provided, otherwise use total assets
+  if (baselineSeries.length > 1) {
+    const assetsData = liquidAssetsSeries && liquidAssetsSeries.length > 0
+      ? baselineSeries.map((p, idx) => ({
+          age: p.age,
+          assets: idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0,
+          liabilities: p.liabilities,
+        }))
+      : baselineSeries.map(p => ({
+          age: p.age,
+          assets: p.assets,
+          liabilities: p.liabilities,
+        }));
+
+    // Check if we start with assets < liabilities and cross to assets >= liabilities
+    // Find the first point where assets >= liabilities, but only if we've seen assets < liabilities before
+    let hasSeenBelow = false;
+    for (let i = 0; i < assetsData.length; i++) {
+      const point = assetsData[i];
+      if (point.assets < point.liabilities) {
+        hasSeenBelow = true;
+      } else if (hasSeenBelow && point.assets >= point.liabilities) {
+        // First crossing from below to above/equal
+        moments.push({
+          id: 'ASSETS_OVER_LIABILITIES',
+          seriesId: 'assets',
+          age: point.age,
+          value: point.assets,
+        });
+        break; // Only detect the first crossing
+      }
+    }
+  }
+
+  return moments;
+}
+
+// Phase 5.5: Generate insight text from KeyMoment
+function generateInsightText(moment: KeyMoment): string {
+  const age = Math.round(moment.age);
+  switch (moment.id) {
+    case 'LIABILITY_PAYOFF':
+      return `Liabilities are fully repaid by age ${age}.`;
+    case 'NET_WORTH_ZERO':
+      return `Net worth becomes positive at age ${age}.`;
+    case 'ASSETS_OVER_LIABILITIES':
+      return `Assets exceed liabilities from age ${age} onward.`;
+    default:
+      return '';
+  }
 }
 
 // Helper to convert annual percentage to monthly rate (mirrors projectionEngine logic)
@@ -2754,85 +2878,226 @@ export default function ProjectionResultsScreen() {
     return computeLiquidAssetsSeries(inputsToUse, state.assets);
   }, [persistedScenarioProjectionInputs, scenarioProjectionInputs, activeScenario, effectiveScenarioActive, state.assets]);
 
+  // Phase 5.4: Detect key moments from baseline series only
+  // Detection uses the same data as the visible chart (liquid vs full assets)
+  const keyMoments = useMemo(() => {
+    return detectKeyMoments(
+      baselineSeries,
+      showLiquidOnly ? liquidAssetsSeries : undefined
+    );
+  }, [baselineSeries, liquidAssetsSeries, showLiquidOnly]);
+
+  // Phase 5.5: Generate insights from key moments (filtered by selectedAge, max 2)
+  const insightsToShow = useMemo(() => {
+    // Filter: only show insights for moments that have occurred by selectedAge
+    const visibleMoments = keyMoments.filter(moment => moment.age <= selectedAge);
+    
+    // Sort chronologically (earliest first) and limit to MAX 2
+    const sorted = visibleMoments.sort((a, b) => a.age - b.age);
+    const limited = sorted.slice(0, 2);
+    
+    // Generate text for each insight
+    return limited.map(moment => ({
+      id: moment.id,
+      text: generateInsightText(moment),
+      age: moment.age,
+    }));
+  }, [keyMoments, selectedAge]);
+
   const chartData = useMemo(() => {
+    // Phase 5.3: Structural chart series with stable semantic identifiers
     // CHART IMPLEMENTATION: Display-only changes
     // Always use full projection horizon (currentAge → endAge)
     // All series (assets, liabilities, net worth) start from the same age
     // selectedAge is used only for visual marker (vertical line), not for filtering data
     
-    const liabilities = baselineSeries.map(p => ({ x: p.age, y: p.liabilities }));
+    const liabilitiesData = baselineSeries.map(p => ({ x: p.age, y: p.liabilities }));
 
     if (showLiquidOnly) {
       // Liquid assets view: Net Worth (Liquid) + Total Assets (Liquid) + Total Liabilities
-      const liquidAssets = baselineSeries.map((p, idx) => ({
+      const liquidAssetsData = baselineSeries.map((p, idx) => ({
         x: p.age,
         y: idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0,
       }));
-      const netWorthLiquid = baselineSeries.map((p, idx) => ({
+      const netWorthLiquidData = baselineSeries.map((p, idx) => ({
         x: p.age,
         y: (idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0) - p.liabilities,
       }));
 
       // Scenario liquid net worth (chart rule: render iff series.length > 0)
       // Chart data comes ONLY from projection series, not A3
-      const scenarioNetWorthLiquid = effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && scenarioLiquidAssetsSeries
-        ? baselineSeries.map((p, idx) => ({
-            x: p.age,
-            y: (idx < scenarioLiquidAssetsSeries.length ? scenarioLiquidAssetsSeries[idx] : 0) - p.liabilities,
-          }))
+      // Fix: Use scenario liabilities, not baseline liabilities
+      const scenarioNetWorthLiquidData = effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && scenarioLiquidAssetsSeries
+        ? baselineSeries.map((p, idx) => {
+            // Use scenario liabilities when available, fallback to baseline
+            const scenarioLiabilities = idx < effectiveScenarioSeries.length 
+              ? effectiveScenarioSeries[idx].liabilities 
+              : p.liabilities;
+            const scenarioLiquidAssets = idx < scenarioLiquidAssetsSeries.length 
+              ? scenarioLiquidAssetsSeries[idx] 
+              : 0;
+            return {
+              x: p.age,
+              y: scenarioLiquidAssets - scenarioLiabilities,
+            };
+          })
         : null;
 
-      // Compute Y-axis domain ONLY from absolute series values (netWorth)
-      // Do NOT include: scenarioDeltas, allocationDelta, baseline + scenario sums, stacked series values
+      // Compute Y-axis domain from ALL visible series (baseline + scenario)
+      // Include both positive and negative values for accurate domain
       const baselineValues = baselineSeries.map((p, idx) => {
         // For liquid view, net worth = liquid assets - liabilities
         const liquidVal = idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0;
         return liquidVal - p.liabilities;
       });
-      const scenarioValues = scenarioNetWorthLiquid
-        ? scenarioNetWorthLiquid.map(p => p.y)
+      const scenarioValues = scenarioNetWorthLiquidData
+        ? scenarioNetWorthLiquidData.map(p => p.y)
         : [];
-      const values = [...baselineValues, ...scenarioValues];
-      const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
+      const allYValues = [...baselineValues, ...scenarioValues];
       
-      // Phase 5.3: Domain is data-driven (no rounding). Ticks adapt inside the domain.
-      // Use 4% headroom so the line doesn't touch the top
-      const headroom = 0.04; // 4% headroom
-      const domainMin = 0; // Always 0, do NOT auto-scale Y-min
-      const domainMax = visibleMax * (1 + headroom); // No rounding - domain tracks data
+      // Compute true min/max across all values (no clamping)
+      const rawMinY = allYValues.length > 0 ? Math.min(...allYValues) : 0;
+      const rawMaxY = allYValues.length > 0 ? Math.max(...allYValues) : 0;
+      
+      // Apply 5% padding after truth (preserves semantic zero)
+      const padding = (rawMaxY - rawMinY) * 0.05 || 0.01; // Fallback for zero range
+      const domainMin = rawMinY - padding;
+      const domainMax = rawMaxY + padding;
       const yTicks = buildTicks(domainMin, domainMax);
 
-      return { assets: liquidAssets, liabilities, netWorth: netWorthLiquid, scenarioNetWorth: scenarioNetWorthLiquid, domainMin, domainMax, yTicks };
+      // Phase 5.3: Build structured series array with stable semantic identifiers
+      const series: ChartSeries[] = [
+        {
+          seriesId: 'netWorth',
+          label: 'Net worth',
+          color: chartPalette.baselineLine,
+          data: netWorthLiquidData,
+          style: {
+            strokeWidth: 2.6,
+            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0,
+          },
+          shouldRender: baselineSeries.length > 0,
+        },
+        ...(effectiveScenarioSeries && effectiveScenarioSeries.length > 0
+          ? [{
+              seriesId: 'scenarioNetWorth' as const,
+              label: 'Net worth (scenario)',
+              color: chartPalette.scenarioLine,
+              data: scenarioNetWorthLiquidData || [],
+              style: {
+                strokeWidth: 3.0,
+                opacity: 0.85,
+              },
+              shouldRender: true,
+            }]
+          : []),
+        {
+          seriesId: 'assets',
+          label: 'Assets',
+          color: chartPalette.assetsLine,
+          data: liquidAssetsData,
+          style: {
+            strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
+            opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
+          },
+          shouldRender: true,
+        },
+        {
+          seriesId: 'liabilities',
+          label: 'Liabilities',
+          color: chartPalette.liabilitiesLine,
+          data: liabilitiesData,
+          style: {
+            strokeWidth: activeScenarioSource !== 'baseline' ? 1.3 : 1.5,
+            opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
+          },
+          shouldRender: true,
+        },
+      ];
+
+      return { series, domainMin, domainMax, yTicks };
     } else {
       // Default view: Net Worth (blue) + Assets (grey) + Liabilities (lighter grey)
-      const assets = baselineSeries.map(p => ({ x: p.age, y: p.assets }));
-      const baselineNetWorth = baselineSeries.map(p => ({ x: p.age, y: p.netWorth }));
+      const assetsData = baselineSeries.map(p => ({ x: p.age, y: p.assets }));
+      const baselineNetWorthData = baselineSeries.map(p => ({ x: p.age, y: p.netWorth }));
 
       // Phase Four: Derive scenario net worth from projection series (chart rule: render iff series.length > 0)
       // Chart data comes ONLY from projection series, not A3
-      const scenarioNetWorth = effectiveScenarioSeries && effectiveScenarioSeries.length > 0
+      const scenarioNetWorthData = effectiveScenarioSeries && effectiveScenarioSeries.length > 0
         ? effectiveScenarioSeries.map(p => ({ x: p.age, y: p.netWorth }))
         : null;
 
-      // Compute Y-axis domain ONLY from absolute series values (netWorth)
-      // Do NOT include: scenarioDeltas, allocationDelta, baseline + scenario sums, stacked series values
+      // Compute Y-axis domain from ALL visible series (baseline + scenario)
+      // Include both positive and negative values for accurate domain
       const baselineValues = baselineSeries.map(p => p.netWorth);
-      const scenarioValues = scenarioNetWorth
-        ? scenarioNetWorth.map(p => p.y)
+      const scenarioValues = scenarioNetWorthData
+        ? scenarioNetWorthData.map(p => p.y)
         : [];
-      const values = [...baselineValues, ...scenarioValues];
-      const visibleMax = values.length > 0 ? Math.max(0, ...values) : 0;
+      const allYValues = [...baselineValues, ...scenarioValues];
       
-      // Phase 5.3: Domain is data-driven (no rounding). Ticks adapt inside the domain.
-      // Use 4% headroom so the line doesn't touch the top
-      const headroom = 0.04; // 4% headroom
-      const domainMin = 0; // Always 0, do NOT auto-scale Y-min
-      const domainMax = visibleMax * (1 + headroom); // No rounding - domain tracks data
+      // Compute true min/max across all values (no clamping)
+      const rawMinY = allYValues.length > 0 ? Math.min(...allYValues) : 0;
+      const rawMaxY = allYValues.length > 0 ? Math.max(...allYValues) : 0;
+      
+      // Apply 5% padding after truth (preserves semantic zero)
+      const padding = (rawMaxY - rawMinY) * 0.05 || 0.01; // Fallback for zero range
+      const domainMin = rawMinY - padding;
+      const domainMax = rawMaxY + padding;
       const yTicks = buildTicks(domainMin, domainMax);
 
-      return { assets, liabilities, netWorth: baselineNetWorth, scenarioNetWorth, domainMin, domainMax, yTicks };
+      // Phase 5.3: Build structured series array with stable semantic identifiers
+      const series: ChartSeries[] = [
+        {
+          seriesId: 'netWorth',
+          label: 'Net worth',
+          color: chartPalette.baselineLine,
+          data: baselineNetWorthData,
+          style: {
+            strokeWidth: 2.6,
+            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0,
+          },
+          shouldRender: baselineSeries.length > 0,
+        },
+        ...(effectiveScenarioSeries && effectiveScenarioSeries.length > 0
+          ? [{
+              seriesId: 'scenarioNetWorth' as const,
+              label: 'Net worth (scenario)',
+              color: chartPalette.scenarioLine,
+              data: scenarioNetWorthData || [],
+              style: {
+                strokeWidth: 3.0,
+                opacity: 0.85,
+              },
+              shouldRender: true,
+            }]
+          : []),
+        {
+          seriesId: 'assets',
+          label: 'Assets',
+          color: chartPalette.assetsLine,
+          data: assetsData,
+          style: {
+            strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
+            opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
+          },
+          shouldRender: true,
+        },
+        {
+          seriesId: 'liabilities',
+          label: 'Liabilities',
+          color: chartPalette.liabilitiesLine,
+          data: liabilitiesData,
+          style: {
+            strokeWidth: activeScenarioSource !== 'baseline' ? 1.3 : 1.5,
+            opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
+          },
+          shouldRender: true,
+        },
+      ];
+
+      return { series, domainMin, domainMax, yTicks };
     }
-  }, [baselineSeries, effectiveScenarioSeries, effectiveScenarioActive, liquidAssetsSeries, scenarioLiquidAssetsSeries, showLiquidOnly]);
+  }, [baselineSeries, effectiveScenarioSeries, effectiveScenarioActive, liquidAssetsSeries, scenarioLiquidAssetsSeries, showLiquidOnly, chartPalette, activeScenarioSource]);
 
   const chartWidth: number = Math.max(320, windowWidth - 24);
   // Keep this visually dominant, but give enough vertical space for Victory's top/bounds + labels.
@@ -3486,7 +3751,7 @@ export default function ProjectionResultsScreen() {
                 height={chartHeight}
                 padding={chartPadding}
                 domain={{ y: [chartData.domainMin, chartData.domainMax] }}
-                domainPadding={{ x: 12 }}
+                domainPadding={{ x: 12, y: 6 }}
                 nice={false}
               >
                 <VictoryAxis
@@ -3506,40 +3771,46 @@ export default function ProjectionResultsScreen() {
                   style={{
                     axis: { stroke: chartPalette.axis },
                     tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
-                    grid: { stroke: chartPalette.grid },
+                    grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
                   }}
                 />
 
-                {/* Chart rule: Baseline line renders iff baselineSeries.length > 0 */}
-                {baselineSeries.length > 0 && (
-                  <VictoryLine data={chartData.netWorth} style={{ data: { stroke: chartPalette.baselineLine, strokeWidth: 2.6, opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0 } }} />
-                )}
-                {/* Chart rule: Scenario line renders iff effectiveScenarioSeries.length > 0 */}
-                {/* Do NOT gate on scenarioDeltas, scenarioA3Delta, or attribution presence */}
-                {effectiveScenarioSeries && effectiveScenarioSeries.length > 0 && chartData.scenarioNetWorth && (
-                  <VictoryLine data={chartData.scenarioNetWorth} style={{ data: { stroke: chartPalette.scenarioLine, strokeWidth: 3.0, opacity: 0.85 } }} />
-                )}
-                {/* Phase Three Final Polish: Reduce visual weight of assets/liabilities when scenario is active */}
-                <VictoryLine
-                  data={chartData.assets}
-                  style={{
-                  data: {
-                    stroke: chartPalette.assetsLine,
-                    strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
-                    opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
-                  },
-                  }}
-                />
-                <VictoryLine
-                  data={chartData.liabilities}
-                  style={{
-                    data: {
-                      stroke: chartPalette.liabilitiesLine,
-                      strokeWidth: activeScenarioSource !== 'baseline' ? 1.2 : 1.4,
-                      opacity: activeScenarioSource !== 'baseline' ? 0.28 : 1.0,
-                    },
-                  }}
-                />
+                {/* Phase 5.3: Render series from structured array with stable semantic identifiers */}
+                {chartData.series
+                  .filter(s => s.shouldRender)
+                  .map((series) => (
+                    <VictoryLine
+                      key={series.seriesId}
+                      data={series.data}
+                      style={{
+                        data: {
+                          stroke: series.color,
+                          strokeWidth: series.style.strokeWidth,
+                          opacity: series.style.opacity,
+                        },
+                      }}
+                    />
+                  ))}
+                {/* Phase 5.4: Render key moment dots on baseline series only */}
+                {keyMoments
+                  .map((moment) => {
+                    const parentSeries = chartData.series.find(s => s.seriesId === moment.seriesId);
+                    if (!parentSeries || !parentSeries.shouldRender) return null;
+                    return (
+                      <VictoryScatter
+                        key={moment.id}
+                        data={[{ x: moment.age, y: moment.value }]}
+                        style={{
+                          data: {
+                            fill: parentSeries.color,
+                            opacity: parentSeries.style.opacity,
+                          },
+                        }}
+                        size={4}
+                      />
+                    );
+                  })
+                  .filter(Boolean)}
                 {/* Vertical marker line at selectedAge (visual cursor, not a filter) */}
                 <VictoryLine
                   data={[
@@ -3639,6 +3910,16 @@ export default function ProjectionResultsScreen() {
                       </Text>
                     </View>
                   </View>
+                )}
+
+                {/* Phase 5.5: Observational insights (max 2, filtered by selectedAge) */}
+                {insightsToShow.length > 0 && (
+                  <>
+                    <View style={[styles.insightsDivider, { borderColor: theme.colors.border.subtle }]} />
+                    <Text style={[styles.insightText, { color: theme.colors.text.secondary }]}>
+                      {insightsToShow.map(insight => insight.text).join(' · ')}
+                    </Text>
+                  </>
                 )}
               </View>
             </SectionCard>
@@ -4668,6 +4949,19 @@ const styles = StyleSheet.create({
   },
   valueBarValue: {
     fontSize: 12,
+  },
+  insightsDivider: {
+    borderTopWidth: 1,
+    marginTop: spacing.xs,
+    paddingTop: 0,
+  },
+  insightText: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: spacing.xs,
+    marginBottom: 0,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   outcomeSubtitle: {
     fontSize: 13,

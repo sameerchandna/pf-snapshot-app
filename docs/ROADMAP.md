@@ -82,27 +82,29 @@ No optimisation, no advice, no user-driven assumption changes.
 - [x] Derived read-only from Snapshot + Projection summaries
 
 ### Phase 5.2 — Interactive Projection Chart (Read-Only)
-- [ ] Draggable age cursor on projection chart
-- [ ] Live display of point-in-time values (assets, liabilities, net worth)
-- [ ] No modification of projection inputs
-- [ ] Immediate visual + numeric feedback only
+- [x] Draggable age cursor on projection chart
+- [x] Live display of point-in-time values (assets, liabilities, net worth)
+- [x] No modification of projection inputs
+- [x] Immediate visual + numeric feedback only
 
 ### Phase 5.3 — Structural Chart Layers
-- [ ] Toggle visibility of net worth / assets / liabilities
-- [ ] Optional breakdown layers where already available (contributions, growth)
-- [ ] No re-simulation or new assumptions
+- [x] Introduce semantic chart series identity (net worth / assets / liabilities)
+- [x] Refactor chart rendering to use structured, addressable series
+- [x] Preserve existing visuals (no UI change, no toggles)
+- [ ] Optional breakdown layers where already available (contributions, growth) — deferred (not available as time-series)
+- [x] No re-simulation or new assumptions
 
 ### Phase 5.4 — Key Moment Detection & Highlighting
-- [ ] Detect key projection events (debt payoff, contribution vs growth crossover, net worth zero-crossing)
-- [ ] Visually annotate events on the chart
-- [ ] Provide short observational explanations
-- [ ] Link explanations to highlighted chart regions
+- [x] Detect key projection events (baseline-only)
+- [x] Visually annotate events using subtle dot markers
+- [x] Attach moments to semantic chart series and coordinates
+- [x] Enable explanation ↔ chart linking (no text yet)
 
 ### Phase 5.5 — Observational Hero Insights
-- [ ] Define insight templates (purely descriptive)
-- [ ] Activate only when conditions are met
-- [ ] Every insight must be visually provable on the chart
-- [ ] No recommendations, alternatives, or rankings
+- [x] Define insight templates (purely descriptive)
+- [x] Activate only when conditions are met
+- [x] Every insight must be visually provable on the chart
+- [x] No recommendations, alternatives, or rankings
 
 ### Phase 5.6 — Savings Deep Dive (Read-Only)
 - [ ] Dedicated savings breakdown screen
