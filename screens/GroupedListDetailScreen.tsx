@@ -143,6 +143,9 @@ type Props<TItem> = {
   // Optional active/inactive toggle support
   getItemIsActive?: (item: TItem) => boolean; // Get isActive state (defaults to true if not provided)
   setItemIsActive?: (item: TItem, isActive: boolean) => TItem; // Update isActive state
+
+  // Optional item press handler (for navigation to detail screens)
+  onItemPress?: (item: TItem) => void;
 };
 
 export default function GroupedListDetailScreen<TItem>({
@@ -195,6 +198,7 @@ export default function GroupedListDetailScreen<TItem>({
   findExistingByKey,
   getItemIsActive,
   setItemIsActive,
+  onItemPress,
 }: Props<TItem>) {
   // Education cleanup (phase 1): detail/editor screens should focus purely on entry & inspection.
   // EducationBox is kept only on Snapshot / Accounts / Projection results.
@@ -1168,7 +1172,15 @@ export default function GroupedListDetailScreen<TItem>({
                               }
                             }}
                           >
-                            <View style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}>
+                            <Pressable
+                              onPress={() => {
+                                if (onItemPress && !isCurrentlyEditing) {
+                                  onItemPress(it);
+                                }
+                              }}
+                              disabled={isCurrentlyEditing || !onItemPress}
+                              style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}
+                            >
                               {/* Active/Inactive checkbox */}
                               {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
                                 <Pressable
@@ -1193,7 +1205,7 @@ export default function GroupedListDetailScreen<TItem>({
                                   <Text style={[styles.itemAmount, locked ? styles.itemAmountLocked : null]}>{amountText}</Text>
                                 </View>
                               </View>
-                            </View>
+                            </Pressable>
                           </Swipeable>
                         </View>
                       );
@@ -1338,7 +1350,15 @@ export default function GroupedListDetailScreen<TItem>({
                               }
                             }}
                           >
-                          <View style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}>
+                          <Pressable
+                            onPress={() => {
+                              if (onItemPress && !isCurrentlyEditing) {
+                                onItemPress(it);
+                              }
+                            }}
+                            disabled={isCurrentlyEditing || !onItemPress}
+                            style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}
+                          >
                             {/* Active/Inactive checkbox */}
                             {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
                               <Pressable
@@ -1363,7 +1383,7 @@ export default function GroupedListDetailScreen<TItem>({
                                   <Text style={[styles.itemAmount, locked ? styles.itemAmountLocked : null]}>{amountText}</Text>
                                 </View>
                               </View>
-                          </View>
+                          </Pressable>
                         </Swipeable>
                       </View>
                     );

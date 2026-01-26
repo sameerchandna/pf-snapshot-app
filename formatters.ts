@@ -65,7 +65,7 @@ export function formatCurrencyCompactSigned(value: number): string {
  * 
  * @param value - The numeric percentage value (e.g., 1.5 for 1.5%)
  * @param options - Formatting options
- * @param options.decimals - Number of decimal places (default: 1)
+ * @param options.decimals - Number of decimal places (default: 0 for round numbers)
  * @param options.handleUndefined - Return value for undefined/invalid values (default: '0%')
  * @returns Formatted percentage string
  */
@@ -76,7 +76,7 @@ export function formatPercent(
     handleUndefined?: string;
   }
 ): string {
-  const decimals = options?.decimals ?? 1;
+  const decimals = options?.decimals ?? 0;
   const handleUndefined = options?.handleUndefined ?? '0%';
   
   if (typeof value !== 'number' || !Number.isFinite(value)) {

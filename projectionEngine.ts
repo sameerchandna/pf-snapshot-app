@@ -81,10 +81,45 @@ function isLoanLike(x: ProjectionEngineInputs['liabilitiesToday'][number]): x is
 
 // Removed isCashAsset - now using SYSTEM_CASH_ID constant
 
-function computeMonthlyProjection(
+/**
+ * Canonical monthly simulation loop.
+ * 
+ * Orchestrates asset and liability updates while preserving existing semantics.
+ * State is ephemeral and mutable only within the loop.
+ * Never mutates Snapshot.
+ */
+function runMonthlySimulation(
   inputs: ProjectionEngineInputs,
-  onMonth?: (ctx: { monthIndex: number; assets: number; liabilities: number }) => void,
-): { assets: number; liabilities: number; totalContributions: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
+  onMonth?: (ctx: {
+    monthIndex: number;
+    state: {
+      assets: Array<{ id: string; balance: number }>;
+      loans: Array<{ id: string; balance: number }>;
+      nonLoans: Array<{ id: string; balance: number }>;
+      totals: {
+        contributions: number;
+        scheduledMortgagePayment: number;
+        mortgageOverpayments: number;
+      };
+    };
+    aggregates: {
+      assets: number;
+      liabilities: number;
+    };
+  }) => void
+): {
+  finalState: {
+    assets: Array<{ id: string; balance: number }>;
+    loans: Array<{ id: string; balance: number }>;
+    nonLoans: Array<{ id: string; balance: number }>;
+  };
+  totals: {
+    contributions: number;
+    scheduledMortgagePayment: number;
+    mortgageOverpayments: number;
+  };
+  horizonMonths: number;
+} {
   const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
 
@@ -122,22 +157,6 @@ function computeMonthlyProjection(
   // CRITICAL: This ensures proportional debt reduction remainder logic is deterministic
   nonLoanStates.sort((a, b) => a.id.localeCompare(b.id));
 
-  if (horizonMonths <= 0) {
-    const assetsNow = assetStates.reduce((sum, a) => sum + a.balance, 0);
-    const nonLoanNow = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
-    const loanStart = inputs.liabilitiesToday
-      .filter(isLoanLike)
-      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
-    return { 
-      assets: assetsNow, 
-      liabilities: nonLoanNow + loanStart, 
-      totalContributions, 
-      totalScheduledMortgagePayment: 0, 
-      totalMortgageOverpayments: 0, 
-      horizonMonths: 0,
-    };
-  }
-
   // Mortgage payments are treated as expenses; overpayments are discretionary liability reductions.
   // The full scheduled mortgage payment (interest + scheduled principal) is an expense.
   // Only explicit overpayments appear as liability reductions.
@@ -148,10 +167,14 @@ function computeMonthlyProjection(
     monthlyRate: number;
     remainingMonths: number;
   }> = inputs.liabilitiesToday.filter(isLoanLike).map(l => {
+    // isLoanLike ensures remainingTermYears is a number >= 1, but add explicit check for safety
+    const remainingTermYears = typeof l.remainingTermYears === 'number' && Number.isFinite(l.remainingTermYears) && l.remainingTermYears >= 1
+      ? l.remainingTermYears
+      : 1; // Fallback to 1 year if somehow invalid
     const init = initLoan({
       balance: l.balance,
       annualInterestRatePct: typeof l.annualInterestRatePct === 'number' && Number.isFinite(l.annualInterestRatePct) ? l.annualInterestRatePct : 0,
-      remainingTermYears: l.remainingTermYears,
+      remainingTermYears,
     });
     return {
       id: l.id,
@@ -212,7 +235,7 @@ function computeMonthlyProjection(
       }
     }
 
-    // 3) Apply per-asset growth forces to entire balance (missing -> 0%)
+    // 2) Apply per-asset growth forces to entire balance (missing -> 0%)
     // Growth is applied AFTER transfers and contributions, so all money compounds together
     for (const a of assetStates) {
       a.balance = a.balance * (1 + a.monthlyGrowthRate);
@@ -284,7 +307,7 @@ function computeMonthlyProjection(
     totalScheduledMortgagePayment += scheduledMortgagePaymentThisMonth;
     totalMortgageOverpayments += loanOverpaymentThisMonth;
 
-    // A2: Monthly debt reduction input applies ONLY to non-loan debt, proportionally by balance.
+    // 5) Monthly debt reduction input applies ONLY to non-loan debt, proportionally by balance.
     const nonLoanTotal = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
     const debtPaydownTotal = nonLoanTotal > 0 ? Math.min(inputs.monthlyDebtReduction, nonLoanTotal) : 0;
     if (debtPaydownTotal > 0 && nonLoanTotal > 0) {
@@ -302,7 +325,7 @@ function computeMonthlyProjection(
       }
     }
 
-    // 3) Accumulate explicit effort
+    // 6) Accumulate explicit effort
     const contributionTotalThisMonth = sortedContributions.reduce((sum, c) => {
       const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
       return sum + (amt > 0 ? amt : 0);
@@ -330,12 +353,27 @@ function computeMonthlyProjection(
       }
     }
 
-    if (onMonth) onMonth({ monthIndex, assets: assetsNow, liabilities });
+    // Call onMonth callback with full state if provided
+    if (onMonth) {
+      onMonth({
+        monthIndex,
+        state: {
+          assets: assetStates.map(a => ({ id: a.id, balance: a.balance })),
+          loans: loanStates.map(l => ({ id: l.id, balance: l.balance })),
+          nonLoans: nonLoanStates.map(l => ({ id: l.id, balance: l.balance })),
+          totals: {
+            contributions: totalContributions,
+            scheduledMortgagePayment: totalScheduledMortgagePayment,
+            mortgageOverpayments: totalMortgageOverpayments,
+          },
+        },
+        aggregates: {
+          assets: assetsNow,
+          liabilities,
+        },
+      });
+    }
   }
-
-  const finalLoanBalances = loanStates.reduce((sum, l) => sum + l.balance, 0);
-  const assetsEnd = assetStates.reduce((sum, a) => sum + a.balance, 0);
-  const nonLoanEnd = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
 
   // Dev guardrails: SYSTEM_CASH invariants
   // 
@@ -358,13 +396,76 @@ function computeMonthlyProjection(
     }
   }
 
-  return { 
-    assets: assetsEnd, 
-    liabilities: nonLoanEnd + finalLoanBalances, 
-    totalContributions, 
-    totalScheduledMortgagePayment, 
-    totalMortgageOverpayments, 
+  return {
+    finalState: {
+      assets: assetStates.map(a => ({ id: a.id, balance: a.balance })),
+      loans: loanStates.map(l => ({ id: l.id, balance: l.balance })),
+      nonLoans: nonLoanStates.map(l => ({ id: l.id, balance: l.balance })),
+    },
+    totals: {
+      contributions: totalContributions,
+      scheduledMortgagePayment: totalScheduledMortgagePayment,
+      mortgageOverpayments: totalMortgageOverpayments,
+    },
     horizonMonths,
+  };
+}
+
+/**
+ * Legacy wrapper for computeMonthlyProjection.
+ * Delegates to runMonthlySimulation for backward compatibility.
+ */
+function computeMonthlyProjection(
+  inputs: ProjectionEngineInputs,
+  onMonth?: (ctx: { monthIndex: number; assets: number; liabilities: number }) => void,
+): { assets: number; liabilities: number; totalContributions: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
+  // Handle zero horizon case
+  const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+
+  if (horizonMonths <= 0) {
+    const assetsNow = inputs.assetsToday.reduce((sum, a) => sum + (Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0), 0);
+    const nonLoanNow = inputs.liabilitiesToday
+      .filter(l => !isLoanLike(l))
+      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+    const loanStart = inputs.liabilitiesToday
+      .filter(isLoanLike)
+      .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
+    return { 
+      assets: assetsNow, 
+      liabilities: nonLoanNow + loanStart, 
+      totalContributions: 0, 
+      totalScheduledMortgagePayment: 0, 
+      totalMortgageOverpayments: 0, 
+      horizonMonths: 0,
+    };
+  }
+
+  // Delegate to runMonthlySimulation
+  const { finalState, totals, horizonMonths: computedHorizonMonths } = runMonthlySimulation(
+    inputs,
+    onMonth ? (ctx) => {
+      // Convert new callback format to legacy format
+      onMonth({
+        monthIndex: ctx.monthIndex,
+        assets: ctx.aggregates.assets,
+        liabilities: ctx.aggregates.liabilities,
+      });
+    } : undefined
+  );
+
+  const assetsEnd = finalState.assets.reduce((sum, a) => sum + a.balance, 0);
+  const nonLoanEnd = finalState.nonLoans.reduce((sum, l) => sum + l.balance, 0);
+  const loanEnd = finalState.loans.reduce((sum, l) => sum + l.balance, 0);
+  const liabilitiesEnd = nonLoanEnd + loanEnd;
+
+  return {
+    assets: assetsEnd,
+    liabilities: liabilitiesEnd,
+    totalContributions: totals.contributions,
+    totalScheduledMortgagePayment: totals.scheduledMortgagePayment,
+    totalMortgageOverpayments: totals.mortgageOverpayments,
+    horizonMonths: computedHorizonMonths,
   };
 }
 
@@ -660,6 +761,290 @@ export function assertProjectionDeterminism(
   }
 
   return allMatch;
+}
+
+/**
+ * Compute time series for a single asset.
+ * 
+ * Returns yearly samples with balance, cumulative contributions, and cumulative growth.
+ * Growth is calculated as residual: balance - startingBalance - cumulativeContributions.
+ * 
+ * Uses runMonthlySimulation internally. Ephemeral and deterministic.
+ */
+export function computeSingleAssetTimeSeries(
+  inputs: ProjectionEngineInputs,
+  assetId: string
+): Array<{
+  age: number;
+  balance: number;
+  cumulativeContributions: number;
+  cumulativeGrowth: number;
+}> {
+  // Defensive copying
+  const clonedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    assetsToday: inputs.assetsToday.map(a => ({ ...a })),
+    liabilitiesToday: inputs.liabilitiesToday.map(l => ({ ...l })),
+    assetContributionsMonthly: inputs.assetContributionsMonthly.map(c => ({ ...c })),
+    liabilityOverpaymentsMonthly: inputs.liabilityOverpaymentsMonthly?.map(o => ({ ...o })),
+    scenarioTransfers: inputs.scenarioTransfers?.map(t => ({ ...t })),
+  };
+
+  const currentAge = Number(clonedInputs.currentAge);
+  const endAge = Number(clonedInputs.endAge ?? (clonedInputs as any).settings?.endAge);
+
+  // Guard: Return empty if invalid horizon
+  if (!Number.isFinite(currentAge) || !Number.isFinite(endAge) || endAge <= currentAge) {
+    return [];
+  }
+
+  // Find starting balance for the asset
+  const startingAsset = clonedInputs.assetsToday.find(a => a.id === assetId);
+  if (!startingAsset) {
+    return [];
+  }
+  const startingBalance = Number.isFinite(startingAsset.balance) ? Math.max(0, startingAsset.balance) : 0;
+
+  // Find contributions for this asset
+  const assetContributions = clonedInputs.assetContributionsMonthly
+    .filter(c => c.assetId === assetId)
+    .reduce((sum, c) => sum + (Number.isFinite(c.amountMonthly) ? Math.max(0, c.amountMonthly) : 0), 0);
+
+  const points: Array<{
+    age: number;
+    balance: number;
+    cumulativeContributions: number;
+    cumulativeGrowth: number;
+  }> = [
+    {
+      age: currentAge,
+      balance: deflateToTodaysMoney(startingBalance, clonedInputs.inflationRatePct, 0),
+      cumulativeContributions: 0,
+      cumulativeGrowth: 0,
+    },
+  ];
+
+  const horizonMonthsRaw = (endAge - currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+
+  if (horizonMonths <= 0) return points;
+
+  // Track cumulative contributions month-by-month
+  let cumulativeContributions = 0;
+
+  // Create normalized inputs
+  const normalizedInputs: ProjectionEngineInputs = {
+    ...clonedInputs,
+    currentAge,
+    endAge,
+  };
+
+  runMonthlySimulation(normalizedInputs, ({ monthIndex, state }) => {
+    // Track contributions each month (before sampling)
+    cumulativeContributions += assetContributions;
+
+    // Sample yearly points only (every 12 months)
+    if (monthIndex % 12 !== 0) return;
+
+    // Find the asset in state
+    const assetState = state.assets.find(a => a.id === assetId);
+    if (!assetState) return;
+
+    const age = currentAge + monthIndex / 12;
+    const balance = deflateToTodaysMoney(assetState.balance, clonedInputs.inflationRatePct, monthIndex);
+    const cumulativeContributionsReal = deflateToTodaysMoney(cumulativeContributions, clonedInputs.inflationRatePct, monthIndex);
+    
+    // Growth = balance - startingBalance - cumulativeContributions
+    // This is the residual after accounting for starting balance and contributions
+    const startingBalanceReal = deflateToTodaysMoney(startingBalance, clonedInputs.inflationRatePct, 0);
+    const cumulativeGrowth = balance - startingBalanceReal - cumulativeContributionsReal;
+
+    points.push({
+      age,
+      balance,
+      cumulativeContributions: cumulativeContributionsReal,
+      cumulativeGrowth,
+    });
+  });
+
+  return points;
+}
+
+/**
+ * Compute time series for a single liability.
+ * 
+ * Returns yearly samples with balance, cumulative principal paid, and cumulative interest paid.
+ * 
+ * Uses runMonthlySimulation internally. Ephemeral and deterministic.
+ */
+export function computeSingleLiabilityTimeSeries(
+  inputs: ProjectionEngineInputs,
+  liabilityId: string
+): Array<{
+  age: number;
+  balance: number;
+  cumulativePrincipalPaid: number;
+  cumulativeInterestPaid: number;
+}> {
+  // Defensive copying
+  const clonedInputs: ProjectionEngineInputs = {
+    ...inputs,
+    assetsToday: inputs.assetsToday.map(a => ({ ...a })),
+    liabilitiesToday: inputs.liabilitiesToday.map(l => ({ ...l })),
+    assetContributionsMonthly: inputs.assetContributionsMonthly.map(c => ({ ...c })),
+    liabilityOverpaymentsMonthly: inputs.liabilityOverpaymentsMonthly?.map(o => ({ ...o })),
+    scenarioTransfers: inputs.scenarioTransfers?.map(t => ({ ...t })),
+  };
+
+  const currentAge = Number(clonedInputs.currentAge);
+  const endAge = Number(clonedInputs.endAge ?? (clonedInputs as any).settings?.endAge);
+
+  // Guard: Return empty if invalid horizon
+  if (!Number.isFinite(currentAge) || !Number.isFinite(endAge) || endAge <= currentAge) {
+    return [];
+  }
+
+  // Find starting balance for the liability
+  const startingLiability = clonedInputs.liabilitiesToday.find(l => l.id === liabilityId);
+  if (!startingLiability) {
+    return [];
+  }
+  const startingBalance = Number.isFinite(startingLiability.balance) ? Math.max(0, startingLiability.balance) : 0;
+
+  const isLoan = isLoanLike(startingLiability);
+
+  const points: Array<{
+    age: number;
+    balance: number;
+    cumulativePrincipalPaid: number;
+    cumulativeInterestPaid: number;
+  }> = [
+    {
+      age: currentAge,
+      balance: deflateToTodaysMoney(startingBalance, clonedInputs.inflationRatePct, 0),
+      cumulativePrincipalPaid: 0,
+      cumulativeInterestPaid: 0,
+    },
+  ];
+
+  const horizonMonthsRaw = (endAge - currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+
+  if (horizonMonths <= 0) return points;
+
+  // Track cumulative principal and interest month-by-month
+  let cumulativePrincipalPaid = 0;
+  let cumulativeInterestPaid = 0;
+  let trackedLoanBalance = startingBalance; // Track loan balance separately for accurate interest/principal calculation
+
+  // For loans, initialize to get payment schedule
+  let loanMonthlyPayment = 0;
+  let loanMonthlyRate = 0;
+  if (isLoan) {
+    const loanInit = initLoan({
+      balance: startingBalance,
+      annualInterestRatePct: typeof startingLiability.annualInterestRatePct === 'number' && Number.isFinite(startingLiability.annualInterestRatePct) 
+        ? startingLiability.annualInterestRatePct 
+        : 0,
+      remainingTermYears: startingLiability.remainingTermYears ?? 0,
+    });
+    loanMonthlyPayment = loanInit.monthlyPayment;
+    loanMonthlyRate = loanInit.monthlyRate;
+  }
+
+  // Get interest rate for non-loans
+  const nonLoanMonthlyRate = isLoan ? 0 : annualPctToMonthlyRate(
+    typeof startingLiability.annualInterestRatePct === 'number' && Number.isFinite(startingLiability.annualInterestRatePct)
+      ? startingLiability.annualInterestRatePct
+      : 0
+  );
+
+  // Get overpayment for loans
+  const overpaymentMonthly = isLoan && clonedInputs.liabilityOverpaymentsMonthly
+    ? (clonedInputs.liabilityOverpaymentsMonthly.find(op => op.liabilityId === liabilityId)?.amountMonthly ?? 0)
+    : 0;
+  const overpaymentAmount = Number.isFinite(overpaymentMonthly) ? Math.max(0, overpaymentMonthly) : 0;
+
+  // Create normalized inputs
+  const normalizedInputs: ProjectionEngineInputs = {
+    ...clonedInputs,
+    currentAge,
+    endAge,
+  };
+
+  runMonthlySimulation(normalizedInputs, ({ monthIndex, state }) => {
+    // Find the liability in state (check both loans and nonLoans)
+    const liabilityState = isLoan 
+      ? state.loans.find(l => l.id === liabilityId)
+      : state.nonLoans.find(l => l.id === liabilityId);
+    
+    if (!liabilityState) return;
+
+    const currentBalance = liabilityState.balance;
+
+    if (isLoan) {
+      // For loans: recalculate interest and principal using loan engine
+      // This matches the exact logic used in runMonthlySimulation
+      if (trackedLoanBalance > 0) {
+        // Calculate scheduled payment (without overpayment)
+        const scheduled = stepLoanMonth({
+          balance: trackedLoanBalance,
+          monthlyPayment: loanMonthlyPayment,
+          monthlyRate: loanMonthlyRate,
+        });
+        
+        const interestThisMonth = scheduled.interest;
+        let principalThisMonth = scheduled.principal;
+        
+        // Apply overpayment if any
+        if (overpaymentAmount > 0) {
+          const remainingAfterScheduled = scheduled.newBalance;
+          const overpaymentApplied = Math.min(overpaymentAmount, remainingAfterScheduled);
+          principalThisMonth += overpaymentApplied;
+          trackedLoanBalance = Math.max(0, remainingAfterScheduled - overpaymentApplied);
+        } else {
+          trackedLoanBalance = scheduled.newBalance;
+        }
+        
+        cumulativeInterestPaid += interestThisMonth;
+        cumulativePrincipalPaid += principalThisMonth;
+      }
+    } else {
+      // For non-loans: interest accrues first, then debt reduction
+      if (trackedLoanBalance > 0) {
+        // Interest accrues on opening balance
+        const interestThisMonth = trackedLoanBalance * nonLoanMonthlyRate;
+        cumulativeInterestPaid += interestThisMonth;
+        
+        // Update balance after interest (before debt reduction)
+        trackedLoanBalance = trackedLoanBalance * (1 + nonLoanMonthlyRate);
+      }
+      
+      // Principal paid is the reduction in balance
+      const balanceChange = trackedLoanBalance - currentBalance;
+      if (balanceChange > 0) {
+        cumulativePrincipalPaid += balanceChange;
+      }
+      trackedLoanBalance = currentBalance;
+    }
+
+    // Sample yearly points only (every 12 months)
+    if (monthIndex % 12 !== 0) return;
+
+    const age = currentAge + monthIndex / 12;
+    const balance = deflateToTodaysMoney(currentBalance, clonedInputs.inflationRatePct, monthIndex);
+    const cumulativePrincipalPaidReal = deflateToTodaysMoney(cumulativePrincipalPaid, clonedInputs.inflationRatePct, monthIndex);
+    const cumulativeInterestPaidReal = deflateToTodaysMoney(cumulativeInterestPaid, clonedInputs.inflationRatePct, monthIndex);
+
+    points.push({
+      age,
+      balance,
+      cumulativePrincipalPaid: cumulativePrincipalPaidReal,
+      cumulativeInterestPaid: cumulativeInterestPaidReal,
+    });
+  });
+
+  return points;
 }
 
 

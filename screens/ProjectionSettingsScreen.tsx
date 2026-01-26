@@ -94,7 +94,7 @@ export default function ProjectionSettingsScreen() {
     }
 
     // Rates
-    return formatPercent(value, { decimals: 1 });
+    return formatPercent(value);
   };
 
   const validateEditedItem = ({ itemId, amount }: { itemId: string | null; name: string; amount: number }): string | null => {

@@ -23,7 +23,9 @@ import ScenarioEditorScreen from './screens/ScenarioEditorScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ProfilesManagementScreen from './screens/ProfilesManagementScreen';
 import A3ValidationScreen from './screens/A3ValidationScreen';
+import ProjectionRefactorValidationScreen from './screens/ProjectionRefactorValidationScreen';
 import SnapshotDataSummaryScreen from './screens/SnapshotDataSummaryScreen';
+import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
 
 const Stack = createNativeStackNavigator();
 const AccountsStack = createNativeStackNavigator();
@@ -66,6 +68,7 @@ function SnapshotStackNavigator() {
       <Stack.Screen name="LiabilitiesDetail" component={LiabilitiesDetailScreen} />
       <Stack.Screen name="LoanDetail" component={LoanDetailScreen} />
       <Stack.Screen name="NetWorthDetail" component={NetWorthDetailScreen} />
+      <Stack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
     </Stack.Navigator>
   );
 }
@@ -88,6 +91,7 @@ function ProjectionStackNavigator() {
       <ProjectionStack.Screen name="ProjectionSettings" component={ProjectionSettingsScreen} />
       <ProjectionStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
       <ProjectionStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
+      <ProjectionStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
     </ProjectionStack.Navigator>
   );
 }
@@ -98,6 +102,7 @@ function SettingsStackNavigator() {
       <SettingsStack.Screen name="Settings" component={SettingsScreen} />
       <SettingsStack.Screen name="Profiles" component={ProfilesManagementScreen} />
       <SettingsStack.Screen name="A3Validation" component={A3ValidationScreen} />
+      <SettingsStack.Screen name="ProjectionRefactorValidation" component={ProjectionRefactorValidationScreen} />
       <SettingsStack.Screen name="SnapshotDataSummary" component={SnapshotDataSummaryScreen} />
     </SettingsStack.Navigator>
   );

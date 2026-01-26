@@ -248,6 +248,9 @@ export default function AssetsDetailScreen() {
       createNewGroup={createNewGroup}
       getItemIsActive={item => item.isActive !== false}
       setItemIsActive={(item, isActive) => ({ ...item, isActive })}
+      onItemPress={(item) => {
+        navigation.navigate('BalanceDeepDive', { itemId: item.id });
+      }}
     />
   );
 }

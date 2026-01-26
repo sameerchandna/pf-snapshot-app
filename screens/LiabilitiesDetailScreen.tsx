@@ -171,6 +171,9 @@ export default function LiabilitiesDetailScreen() {
       createNewGroup={createNewGroup}
       getItemIsActive={item => item.isActive !== false}
       setItemIsActive={(item, isActive) => ({ ...item, isActive })}
+      onItemPress={(item) => {
+        navigation.navigate('BalanceDeepDive', { itemId: item.id });
+      }}
     />
   );
 }

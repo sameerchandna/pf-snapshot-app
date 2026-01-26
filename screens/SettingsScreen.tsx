@@ -46,6 +46,20 @@ export default function SettingsScreen() {
             </Text>
           </Pressable>
           <Pressable
+            onPress={() => navigation.navigate('ProjectionRefactorValidation')}
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.8 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Projection refactor validation"
+          >
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Refactor Validation</Text>
+              <Text style={styles.rowSubtitle}>Validate projection engine refactor</Text>
+            </View>
+            <Text style={styles.rowChevron} accessible={false}>
+              {'\u203A'}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={() => navigation.navigate('SnapshotDataSummary')}
             style={({ pressed }) => [styles.row, { opacity: pressed ? 0.8 : 1 }]}
             accessibilityRole="button"
