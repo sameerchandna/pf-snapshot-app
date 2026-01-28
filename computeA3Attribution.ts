@@ -190,11 +190,12 @@ function pvLoanTotals(loans: LoanLike[], months: number, inflationPct: number): 
  * - A3 must NEVER be scenario-aware
  * - A3 treats projectionSeries and projectionSummary as ground truth
  * - Do not reuse or mutate attribution objects between baseline/scenario calls
+ * - projectionInputs MUST be the exact object used to compute projectionSeries and projectionSummary
  * 
  * @param snapshot - Baseline snapshot state (never scenario-modified)
  * @param projectionSeries - Projection series (baselineSeries for baseline, scenarioSeries for scenario)
  * @param projectionSummary - Projection summary (baselineSummary for baseline, scenarioSummary for scenario)
- * @param projectionInputs - Optional projection inputs (when provided, contributions are computed from these instead of snapshot)
+ * @param projectionInputs - REQUIRED projection inputs (must be the exact object used to compute series/summary)
  */
 export function computeA3Attribution({
   snapshot,
@@ -205,8 +206,50 @@ export function computeA3Attribution({
   snapshot: SnapshotState;
   projectionSeries: ProjectionSeriesPoint[];
   projectionSummary: ProjectionSummary;
-  projectionInputs?: ProjectionEngineInputs;
+  projectionInputs: ProjectionEngineInputs;
 }): A3Attribution {
+  // CRITICAL: Validate that projectionInputs is provided (required, no fallback)
+  if (!projectionInputs) {
+    throw new Error('[computeA3Attribution] projectionInputs is required and must be the exact object used to compute projectionSeries and projectionSummary');
+  }
+
+  // CRITICAL: Validate that projectionInputs matches the series/summary horizon
+  // This ensures projectionInputs is the exact object used to compute the series/summary
+  if (projectionSeries.length > 0) {
+    const firstPoint = projectionSeries[0];
+    const lastPoint = projectionSeries[projectionSeries.length - 1];
+    
+    // Validate horizon alignment: projectionInputs must match series age range
+    const inputsCurrentAge = Number(projectionInputs.currentAge);
+    const inputsEndAge = Number(projectionInputs.endAge);
+    const seriesStartAge = firstPoint.age;
+    const seriesEndAge = lastPoint.age;
+    
+    // Allow small tolerance for floating point comparison
+    const AGE_TOLERANCE = 0.01;
+    
+    if (!Number.isFinite(inputsCurrentAge) || !Number.isFinite(inputsEndAge)) {
+      throw new Error(`[computeA3Attribution] projectionInputs has invalid horizon: currentAge=${inputsCurrentAge}, endAge=${inputsEndAge}. projectionInputs must be the exact object used to compute projectionSeries and projectionSummary.`);
+    }
+    
+    if (Math.abs(inputsCurrentAge - seriesStartAge) > AGE_TOLERANCE) {
+      throw new Error(`[computeA3Attribution] projectionInputs.currentAge (${inputsCurrentAge}) does not match projectionSeries start age (${seriesStartAge}). projectionInputs must be the exact object used to compute projectionSeries and projectionSummary.`);
+    }
+    
+    if (Math.abs(inputsEndAge - seriesEndAge) > AGE_TOLERANCE) {
+      throw new Error(`[computeA3Attribution] projectionInputs.endAge (${inputsEndAge}) does not match projectionSeries end age (${seriesEndAge}). projectionInputs must be the exact object used to compute projectionSeries and projectionSummary.`);
+    }
+  }
+  
+  // CRITICAL: Validate that projectionInputs.inflationRatePct matches snapshot (consistency check)
+  const inputsInflationPct = Number(projectionInputs.inflationRatePct);
+  const snapshotInflationPct = Number(snapshot.projection.inflationPct);
+  if (!Number.isFinite(inputsInflationPct) || !Number.isFinite(snapshotInflationPct)) {
+    throw new Error(`[computeA3Attribution] Invalid inflation rates: projectionInputs.inflationRatePct=${inputsInflationPct}, snapshot.projection.inflationPct=${snapshotInflationPct}`);
+  }
+  
+  // Note: We don't enforce exact match on inflationPct because scenarios may modify it
+  // But we validate that both are finite numbers
   // Filter to active items only at the boundary
   const activeAssets = snapshot.assets.filter(a => a.isActive !== false);
   const activeLiabilities = snapshot.liabilities.filter(l => l.isActive !== false);
@@ -437,12 +480,15 @@ export function computeA3Attribution({
   // monthlySurplus is display-only, not part of asset roll-forward
   // ONLY enforce this when cashflow is modeled (snapshot mode)
   // In projection-only mode, scenario allocations are already validated at apply-time
+  // NOTE: Negative surplus is valid (external funding / SYSTEM_CASH does not auto-adjust)
+  // Downgrade to WARN since this is a valid projection state, not an error
   if (isCashflowModeled && monthlySurplus < -ATTRIBUTION_TOLERANCE) {
-    console.error(`[A3 Attribution] Cashflow overspend (allocations exceed net surplus, |delta| > £${ATTRIBUTION_TOLERANCE}).`, {
+    console.warn(`[A3 Attribution] Cashflow overspend (allocations exceed net surplus, |delta| > £${ATTRIBUTION_TOLERANCE}). This may indicate external funding or SYSTEM_CASH mutation.`, {
       monthlySurplus,
       netSurplus: out.cashflow.netSurplus,
       postTaxContributions: out.cashflow.postTaxContributions,
       debtRepayment: out.cashflow.debtRepayment,
+      note: 'Negative surplus is valid when external funding exists or SYSTEM_CASH is explicitly adjusted',
     });
   }
 

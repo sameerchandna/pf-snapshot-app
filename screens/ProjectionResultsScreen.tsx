@@ -27,7 +27,7 @@ const snapshotTypography = {
 };
 
 import { useSnapshot } from '../SnapshotContext';
-import { computeProjectionSeries, computeProjectionSummary, type ProjectionEngineInputs } from '../projectionEngine';
+import { computeProjectionSeries, computeProjectionSummary, annualPctToMonthlyRate, deflateToTodaysMoney, type ProjectionEngineInputs } from '../projectionEngine';
 import { computeA3Attribution, type A3Attribution } from '../computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { initLoan, stepLoanMonth } from '../loanEngine';
@@ -36,6 +36,7 @@ import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
 import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
+import { detectKeyMoments, generateInsightText, type KeyMoment } from '../insights/insightEngine';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
@@ -89,131 +90,8 @@ type ChartSeries = {
   shouldRender: boolean;
 };
 
-// Phase 5.4: Key moment detection types
-type KeyMomentId = 'LIABILITY_PAYOFF' | 'NET_WORTH_ZERO' | 'ASSETS_OVER_LIABILITIES';
 
-type KeyMoment = {
-  id: KeyMomentId;
-  seriesId: 'netWorth' | 'assets' | 'liabilities';
-  age: number;
-  value: number;
-};
-
-// Phase 5.4: Key moment detection function
-// Pure function that detects key moments from baseline projection data
-function detectKeyMoments(
-  baselineSeries: Array<{ age: number; assets: number; liabilities: number; netWorth: number }>,
-  liquidAssetsSeries?: number[]
-): KeyMoment[] {
-  const moments: KeyMoment[] = [];
-
-  // Guard against empty or insufficient data
-  if (!baselineSeries || baselineSeries.length === 0) {
-    return moments;
-  }
-
-  // LIABILITY_PAYOFF: First point where liabilities <= UI_TOLERANCE
-  // If already <= tolerance at first point, mark at first point
-  const liabilityPayoffPoint = baselineSeries.find(p => p.liabilities <= UI_TOLERANCE);
-  if (liabilityPayoffPoint) {
-    moments.push({
-      id: 'LIABILITY_PAYOFF',
-      seriesId: 'liabilities',
-      age: liabilityPayoffPoint.age,
-      value: liabilityPayoffPoint.liabilities,
-    });
-  }
-
-  // NET_WORTH_ZERO: First crossing where netWorth goes from < 0 to >= 0
-  // Use the first point where condition is met (no interpolation)
-  if (baselineSeries.length > 1) {
-    // Find the first point where netWorth >= 0, but only if we've seen a negative value before
-    let hasSeenNegative = false;
-    for (let i = 0; i < baselineSeries.length; i++) {
-      const point = baselineSeries[i];
-      if (point.netWorth < 0) {
-        hasSeenNegative = true;
-      } else if (hasSeenNegative && point.netWorth >= 0) {
-        // First crossing from negative to non-negative
-        moments.push({
-          id: 'NET_WORTH_ZERO',
-          seriesId: 'netWorth',
-          age: point.age,
-          value: point.netWorth,
-        });
-        break; // Only detect the first crossing
-      }
-    }
-  }
-
-  // ASSETS_OVER_LIABILITIES: First crossing where assets go from < liabilities to >= liabilities
-  // Use liquid assets if provided, otherwise use total assets
-  if (baselineSeries.length > 1) {
-    const assetsData = liquidAssetsSeries && liquidAssetsSeries.length > 0
-      ? baselineSeries.map((p, idx) => ({
-          age: p.age,
-          assets: idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0,
-          liabilities: p.liabilities,
-        }))
-      : baselineSeries.map(p => ({
-          age: p.age,
-          assets: p.assets,
-          liabilities: p.liabilities,
-        }));
-
-    // Check if we start with assets < liabilities and cross to assets >= liabilities
-    // Find the first point where assets >= liabilities, but only if we've seen assets < liabilities before
-    let hasSeenBelow = false;
-    for (let i = 0; i < assetsData.length; i++) {
-      const point = assetsData[i];
-      if (point.assets < point.liabilities) {
-        hasSeenBelow = true;
-      } else if (hasSeenBelow && point.assets >= point.liabilities) {
-        // First crossing from below to above/equal
-        moments.push({
-          id: 'ASSETS_OVER_LIABILITIES',
-          seriesId: 'assets',
-          age: point.age,
-          value: point.assets,
-        });
-        break; // Only detect the first crossing
-      }
-    }
-  }
-
-  return moments;
-}
-
-// Phase 5.5: Generate insight text from KeyMoment
-function generateInsightText(moment: KeyMoment): string {
-  const age = Math.round(moment.age);
-  switch (moment.id) {
-    case 'LIABILITY_PAYOFF':
-      return `Liabilities are fully repaid by age ${age}.`;
-    case 'NET_WORTH_ZERO':
-      return `Net worth becomes positive at age ${age}.`;
-    case 'ASSETS_OVER_LIABILITIES':
-      return `Assets exceed liabilities from age ${age} onward.`;
-    default:
-      return '';
-  }
-}
-
-// Helper to convert annual percentage to monthly rate (mirrors projectionEngine logic)
-function annualPctToMonthlyRate(pct: number): number {
-  const g = pct / 100;
-  return Math.pow(1 + g, 1 / 12) - 1;
-}
-
-// Helper to deflate value to today's money (mirrors projectionEngine logic)
-function deflateToTodaysMoney(value: number, inflationRatePct: number, elapsedMonths: number): number {
-  if (elapsedMonths <= 0) return value;
-  const elapsedYears = elapsedMonths / 12;
-  const inflationRate = inflationRatePct / 100;
-  const deflator = Math.pow(1 + inflationRate, elapsedYears);
-  const safeDeflator = Number.isFinite(deflator) && deflator > 0 ? deflator : 1;
-  return value / safeDeflator;
-}
+// Helpers are now imported from projectionEngine to avoid duplication
 
 // Check if an asset is liquid at a given age
 function isAssetLiquidAtAge(asset: AssetItem, age: number, currentAge: number): boolean {
@@ -1271,7 +1149,7 @@ export default function ProjectionResultsScreen() {
   const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
-  const { state, setProjection, isProfileSwitching } = useSnapshot();
+  const { state, setProjection, isSwitching } = useSnapshot();
 
   // Helper to prevent modal open taps from immediately closing via backdrop press
   const openLater = (fn: () => void) => {
@@ -1768,20 +1646,28 @@ export default function ProjectionResultsScreen() {
     }
   };
 
-  // Phase Two: Baseline projection inputs (always computed)
-  // Uses helper to filter inactive items and contributions to inactive assets
-  const baselineProjectionInputs = useMemo(
-    () => buildProjectionInputsFromState(state),
-    [
-      state.projection.currentAge,
-      state.projection.endAge,
-      state.projection.inflationPct,
-      state.projection.monthlyDebtReduction,
-      state.assets,
-      state.assetContributions,
-      state.liabilities,
-    ],
-  );
+  // Phase Two: Compute baseline projection atomically (inputs, series, summary in single memo)
+  // CRITICAL: This ensures inputs, series, and summary are always consistent (no stale values)
+  // Follows pattern from A3ValidationScreen.tsx for atomic projection computation
+  const baselineProjection = useMemo(() => {
+    const inputs = buildProjectionInputsFromState(state);
+    const series = computeProjectionSeries(inputs);
+    const summary = computeProjectionSummary(inputs);
+    return { inputs, series, summary };
+  }, [
+    state.projection.currentAge,
+    state.projection.endAge,
+    state.projection.inflationPct,
+    state.projection.monthlyDebtReduction,
+    state.assets,
+    state.assetContributions,
+    state.liabilities,
+  ]);
+
+  // Extract for backward compatibility (existing code depends on these)
+  const baselineProjectionInputs = baselineProjection.inputs;
+  const baselineSeries = baselineProjection.series;
+  const baselineSummary = baselineProjection.summary;
 
   // Phase Two: Scenario-adjusted projection inputs (only when scenario is active)
   // CRITICAL: Projection horizon is preserved from baseline:
@@ -1844,8 +1730,8 @@ export default function ProjectionResultsScreen() {
     }
 
     // DEV-only invariant: Assert horizon equality at input level
-    // Gate guardrails during profile switches to avoid transient failures
-    if (__DEV__ && !isProfileSwitching) {
+    // Gate guardrails during profile/mode switches to avoid transient failures
+    if (__DEV__ && !isSwitching) {
       if (inputs.currentAge !== baselineProjectionInputs.currentAge || inputs.endAge !== baselineProjectionInputs.endAge) {
         console.error('[CRITICAL] Quick What-If scenario projection horizon mismatch:', {
           baselineCurrentAge: baselineProjectionInputs.currentAge,
@@ -1893,42 +1779,75 @@ export default function ProjectionResultsScreen() {
     };
   }, [baselineProjectionInputs, activeScenario, scenario.isActive, state]);
 
-  // Phase Two: Compute baseline projection (always)
-  const baselineSeries = useMemo(() => {
-    return computeProjectionSeries(baselineProjectionInputs);
-  }, [baselineProjectionInputs]);
-
-  const baselineSummary = useMemo(() => {
-    return computeProjectionSummary(baselineProjectionInputs);
-  }, [baselineProjectionInputs]);
-
   // Phase Four: Compute baseline A3 attribution (always baseline, never scenario-adjusted)
   // Model 1: A3 treats baselineSeries as ground truth (no scenario awareness)
+  // CRITICAL: Uses atomic baselineProjection object to ensure inputs, series, and summary are always consistent
   const baselineA3Attribution = useMemo(() => {
+    // Gate: Prevent attribution computation during profile/mode switches
+    if (isSwitching) {
+      // Return a placeholder attribution during switching to avoid errors
+      // This will be recomputed once switching completes
+      return {
+        startingNetWorth: 0,
+        endingNetWorth: 0,
+        cashflow: {
+          grossIncome: 0,
+          pensionContributions: 0,
+          taxes: 0,
+          livingExpenses: 0,
+          netSurplus: 0,
+          postTaxContributions: 0,
+          debtRepayment: 0,
+        },
+        debt: {
+          interestPaid: 0,
+          principalRepaid: 0,
+          remainingDebt: 0,
+        },
+        assets: {
+          startingValue: 0,
+          contributions: 0,
+          growth: 0,
+          endingValue: 0,
+        },
+        reconciliation: {
+          lhs: 0,
+          rhs: 0,
+          delta: 0,
+        },
+        inactiveCounts: {
+          assets: 0,
+          liabilities: 0,
+          expenses: 0,
+        },
+      };
+    }
+    
     const attribution = computeA3Attribution({
       snapshot: state,
-      projectionSeries: baselineSeries,
-      projectionSummary: baselineSummary,
+      projectionSeries: baselineProjection.series,      // Always in sync with inputs
+      projectionSummary: baselineProjection.summary,    // Always in sync with inputs
+      projectionInputs: baselineProjection.inputs,      // Always in sync with series/summary
       // Model 1: A3 treats baselineSeries as ground truth
     });
     
     // Guardrail: Verify baseline attribution matches baseline projection summary
     // CRITICAL: Baseline attribution must align with baselineSummary on all key metrics
-    // Gate guardrails during profile switches to avoid transient failures
-    if (__DEV__ && !isProfileSwitching) {
+    // Gate guardrails during profile/mode switches to avoid transient failures
+    if (__DEV__ && !isSwitching) {
       // 1) Verify endingNetWorth matches (net worth reconciliation)
-      const netWorthMatch = Math.abs(attribution.endingNetWorth - baselineSummary.endNetWorth) < UI_TOLERANCE;
+      const netWorthMatch = Math.abs(attribution.endingNetWorth - baselineProjection.summary.endNetWorth) < UI_TOLERANCE;
       if (!netWorthMatch) {
         console.error('[A3 Attribution Guardrail] Baseline attribution endingNetWorth mismatch:', {
           attribution: attribution.endingNetWorth,
-          summary: baselineSummary.endNetWorth,
-          delta: attribution.endingNetWorth - baselineSummary.endNetWorth,
+          summary: baselineProjection.summary.endNetWorth,
+          delta: attribution.endingNetWorth - baselineProjection.summary.endNetWorth,
         });
       }
       
       // 2) Verify net worth reconciliation: endingAssets - endingLiabilities ≈ endingNetWorth
-      const endingAssets = baselineSummary.endAssets;
-      const endingLiabilities = baselineSummary.endLiabilities;
+      const endingAssets = baselineProjection.summary.endAssets;
+      const endingLiabilities = baselineProjection.summary.endLiabilities;
       const netWorthReconciliation = Math.abs(endingAssets - endingLiabilities - attribution.endingNetWorth) < ATTRIBUTION_TOLERANCE;
       if (!netWorthReconciliation) {
         console.error('[A3 Attribution Guardrail] Baseline attribution net worth reconciliation failed (endingAssets - endingLiabilities ≈ endingNetWorth):', {
@@ -1940,36 +1859,59 @@ export default function ProjectionResultsScreen() {
         });
       }
       
-      // 3) Verify contribution decomposition: totalContributions ≈ postTax + pension + principalRepaid
-      // totalContributions is a composite cashflow metric: asset contributions + debt paydown + loan principal
+      // 3) Verify contribution decomposition: totalContributions ≈ postTax + pension (asset contributions only)
+      // totalContributions now includes ONLY asset contributions (post-tax + pension)
+      // totalPrincipalRepaid includes liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
       // Decomposition:
       //   - cashflow.postTaxContributions: postTax asset contributions
       //   - cashflow.pensionContributions: preTax asset contributions (pension)
-      //   - debt.principalRepaid: loan principal (scheduled + overpayments)
-      // Note: Non-loan debt paydown is included in totalContributions but not separately tracked in A3
       const expectedContributions = 
         attribution.cashflow.postTaxContributions +
-        attribution.cashflow.pensionContributions +
-        attribution.debt.principalRepaid;
-      const contributionDecompMatch = Math.abs(expectedContributions - baselineSummary.totalContributions) < ATTRIBUTION_TOLERANCE;
+        attribution.cashflow.pensionContributions;
+      const contributionDecompMatch = Math.abs(expectedContributions - baselineProjection.summary.totalContributions) < ATTRIBUTION_TOLERANCE;
       if (!contributionDecompMatch) {
-        console.error('[A3 Attribution Guardrail] Baseline attribution contribution decomposition failed (postTax + pension + principalRepaid ≈ totalContributions):', {
+        console.error('[A3 Attribution Guardrail] Baseline attribution contribution decomposition failed (postTax + pension ≈ totalContributions):', {
           postTaxContributions: attribution.cashflow.postTaxContributions,
           pensionContributions: attribution.cashflow.pensionContributions,
-          principalRepaid: attribution.debt.principalRepaid,
           expectedTotal: expectedContributions,
-          summaryTotalContributions: baselineSummary.totalContributions,
-          delta: expectedContributions - baselineSummary.totalContributions,
-          note: 'totalContributions may include non-loan debt paydown not tracked in A3',
+          summaryTotalContributions: baselineProjection.summary.totalContributions,
+          delta: expectedContributions - baselineProjection.summary.totalContributions,
+          note: 'totalContributions includes only asset contributions (postTax + pension), not debt principal',
+        });
+      }
+      
+      // 3b) Verify attribution.assets.contributions matches projection.summary.totalContributions
+      // CRITICAL: Attribution must use same contribution flows as simulation (via projectionInputs)
+      const attributionContributionsMatch = Math.abs(attribution.assets.contributions - baselineProjection.summary.totalContributions) < ATTRIBUTION_TOLERANCE;
+      if (!attributionContributionsMatch) {
+        console.error('[A3 Attribution Guardrail] Baseline attribution asset contributions do not match projection summary totalContributions:', {
+          attributionContributions: attribution.assets.contributions,
+          summaryTotalContributions: baselineProjection.summary.totalContributions,
+          delta: attribution.assets.contributions - baselineProjection.summary.totalContributions,
+          note: 'Attribution should use projectionInputs to match simulation flows. Ensure baselineProjectionInputs is passed to computeA3Attribution.',
+        });
+      }
+      
+      // 4) Verify principal repayment: totalPrincipalRepaid ≈ principalRepaid (may include non-loan debt paydown)
+      // Note: Non-loan debt paydown is included in totalPrincipalRepaid but not separately tracked in A3
+      const expectedPrincipalRepaid = attribution.debt.principalRepaid;
+      const principalRepaidMatch = Math.abs(expectedPrincipalRepaid - baselineProjection.summary.totalPrincipalRepaid) < ATTRIBUTION_TOLERANCE * 2; // Allow larger tolerance for non-loan debt paydown
+      if (!principalRepaidMatch) {
+        console.warn('[A3 Attribution Guardrail] Baseline attribution principal repayment decomposition may differ (principalRepaid ≈ totalPrincipalRepaid):', {
+          attributionPrincipalRepaid: attribution.debt.principalRepaid,
+          summaryTotalPrincipalRepaid: baselineProjection.summary.totalPrincipalRepaid,
+          delta: expectedPrincipalRepaid - baselineProjection.summary.totalPrincipalRepaid,
+          note: 'totalPrincipalRepaid may include non-loan debt paydown not tracked in A3',
         });
       }
     }
     
     return attribution;
-  }, [baselineSeries, baselineSummary, state]);
+  }, [baselineProjection, state, isSwitching]);
 
-  // Phase Two: Compute Quick What-If scenario projection (ephemeral, only when active)
-  const quickWhatIfSeries = useMemo(() => {
+  // Phase Two: Compute Quick What-If scenario projection atomically (inputs, series, summary in single memo)
+  // CRITICAL: This ensures inputs, series, and summary are always consistent (no stale values)
+  const quickWhatIfProjection = useMemo(() => {
     if (!scenarioProjectionInputs) return null;
     
     // Diagnostic logging: Log horizon values at callsite (just before computeProjectionSeries)
@@ -1990,18 +1932,21 @@ export default function ProjectionResultsScreen() {
       });
     }
     
-    return computeProjectionSeries(scenarioProjectionInputs);
+    const inputs = scenarioProjectionInputs;
+    const series = computeProjectionSeries(inputs);
+    const summary = computeProjectionSummary(inputs);
+    return { inputs, series, summary };
   }, [scenarioProjectionInputs, baselineProjectionInputs]);
 
-  const quickWhatIfSummary = useMemo(() => {
-    if (!scenarioProjectionInputs) return null;
-    return computeProjectionSummary(scenarioProjectionInputs);
-  }, [scenarioProjectionInputs]);
+  // Extract for backward compatibility
+  const quickWhatIfSeries = quickWhatIfProjection?.series ?? null;
+  const quickWhatIfSummary = quickWhatIfProjection?.summary ?? null;
 
-  // Phase Four: Compute persisted scenario projection
+  // Phase Four: Compute persisted scenario projection atomically (inputs, series, summary in single memo)
   // CRITICAL: Always use computeProjectionSeries(persistedScenarioProjectionInputs)
   // Never derive from valuesAtSelectedAge, computeValuesAtAge, selectedAge, or snapshot-only helpers
-  const persistedScenarioSeries = useMemo(() => {
+  // CRITICAL: This ensures inputs, series, and summary are always consistent (no stale values)
+  const persistedScenarioProjection = useMemo(() => {
     if (!persistedScenarioProjectionInputs) return null;
     
     // Dev logging: Diagnose horizon before computing series
@@ -2030,13 +1975,14 @@ export default function ProjectionResultsScreen() {
     }
     
     // Verify apply order: baselineProjectionInputs → applyScenarioToProjectionInputs → computeProjectionSeries
-    return computeProjectionSeries(persistedScenarioProjectionInputs);
+    const series = computeProjectionSeries(inputs);
+    const summary = computeProjectionSummary(inputs);
+    return { inputs, series, summary };
   }, [persistedScenarioProjectionInputs, baselineProjectionInputs, activeScenario]);
 
-  const persistedScenarioSummary = useMemo(() => {
-    if (!persistedScenarioProjectionInputs) return null;
-    return computeProjectionSummary(persistedScenarioProjectionInputs);
-  }, [persistedScenarioProjectionInputs]);
+  // Extract for backward compatibility
+  const persistedScenarioSeries = persistedScenarioProjection?.series ?? null;
+  const persistedScenarioSummary = persistedScenarioProjection?.summary ?? null;
 
   // Phase Four: Select main projection (Quick What-If takes precedence, then persisted scenario, then baseline)
   const series = useMemo(() => {
@@ -2101,34 +2047,42 @@ export default function ProjectionResultsScreen() {
   // Phase Two: Compute Quick What-If A3 attribution (only when Quick What-If is active)
   // Model 1: A3 treats scenarioSeries as ground truth (already reflects scenario changes)
   // Pass scenarioProjectionInputs to compute contributions from scenario inputs (not baseline snapshot)
+  // CRITICAL: Uses atomic quickWhatIfProjection object to ensure inputs, series, and summary are always consistent
   const quickWhatIfA3Attribution = useMemo(() => {
-    if (!quickWhatIfSeries || !quickWhatIfSummary || !scenario.isActive || !scenarioProjectionInputs) return null;
+    // Gate: Prevent attribution computation during profile/mode switches
+    if (isSwitching) return null;
+    
+    if (!quickWhatIfProjection || !scenario.isActive) return null;
     
     // A3 must NEVER be scenario-aware - scenarioSeries already reflects different contributions and asset paths
     // Pass scenarioProjectionInputs to source contributions from scenario inputs (FLOW_TO_ASSET contributions)
     return computeA3Attribution({
       snapshot: state,
-      projectionSeries: quickWhatIfSeries,
-      projectionSummary: quickWhatIfSummary,
-      projectionInputs: scenarioProjectionInputs,
+      projectionSeries: quickWhatIfProjection.series,      // Always in sync with inputs
+      projectionSummary: quickWhatIfProjection.summary,    // Always in sync with inputs
+      projectionInputs: quickWhatIfProjection.inputs,      // Always in sync with series/summary
     });
-  }, [quickWhatIfSeries, quickWhatIfSummary, scenario, state, scenarioProjectionInputs]);
+  }, [quickWhatIfProjection, scenario.isActive, state, isSwitching]);
 
   // Phase Four: Compute persisted scenario A3 attribution (only when persisted scenario is active)
   // Model 1: A3 treats scenarioSeries as ground truth (already reflects scenario changes)
   // Pass persistedScenarioProjectionInputs to compute contributions from scenario inputs (not baseline snapshot)
+  // CRITICAL: Uses atomic persistedScenarioProjection object to ensure inputs, series, and summary are always consistent
   const persistedScenarioA3Attribution = useMemo(() => {
-    if (!activeScenario || !persistedScenarioSeries || !persistedScenarioSummary || !persistedScenarioProjectionInputs) return null;
+    // Gate: Prevent attribution computation during profile/mode switches
+    if (isSwitching) return null;
+    
+    if (!activeScenario || !persistedScenarioProjection) return null;
     
     // A3 must NEVER be scenario-aware - scenarioSeries already reflects different contributions and asset paths
     // Pass persistedScenarioProjectionInputs to source contributions from scenario inputs (FLOW_TO_ASSET contributions)
     return computeA3Attribution({
       snapshot: state,
-      projectionSeries: persistedScenarioSeries,
-      projectionSummary: persistedScenarioSummary,
-      projectionInputs: persistedScenarioProjectionInputs,
+      projectionSeries: persistedScenarioProjection.series,      // Always in sync with inputs
+      projectionSummary: persistedScenarioProjection.summary,    // Always in sync with inputs
+      projectionInputs: persistedScenarioProjection.inputs,      // Always in sync with series/summary
     });
-  }, [persistedScenarioSeries, persistedScenarioSummary, activeScenario, state, persistedScenarioProjectionInputs]);
+  }, [persistedScenarioProjection, activeScenario, state, isSwitching]);
 
   // Phase Four: A3 attribution wiring (Model 1)
   // CRITICAL: Baseline A3 is ALWAYS computed from baseline projection series
@@ -2162,8 +2116,8 @@ export default function ProjectionResultsScreen() {
   }, [scenarioA3AttributionAbs, baselineA3Attribution]);
   
   // Safety assert: Verify delta computation is correct
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching && scenarioA3AttributionAbs && scenarioA3AttributionDelta) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching && scenarioA3AttributionAbs && scenarioA3AttributionDelta) {
     const endingNetWorthDelta = scenarioA3AttributionAbs.endingNetWorth - baselineA3Attribution.endingNetWorth;
     const deltaMatch = Math.abs(endingNetWorthDelta - scenarioA3AttributionDelta.endingNetWorth) < ATTRIBUTION_TOLERANCE;
     if (!deltaMatch) {
@@ -2189,8 +2143,8 @@ export default function ProjectionResultsScreen() {
   
   // Dev assert: Only assert when series EXISTS but is invalid
   // Do NOT assert when series is null during activation (valid transient state)
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching && effectiveScenarioSeries) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching && effectiveScenarioSeries) {
     // Assert length match: scenario series must match baseline length
     if (baselineSeries.length > 0 && effectiveScenarioSeries.length !== baselineSeries.length) {
       console.error('[CRITICAL] Scenario series invalid: length mismatch:', {
@@ -2229,8 +2183,8 @@ export default function ProjectionResultsScreen() {
   // Dev assert: If persistedScenarioActive, assert persistedScenarioSeries.length === baselineSeries.length
   // Note: persistedScenarioActive is also declared later for UI state, but we need it here for the assert
   const persistedScenarioActiveForAssert = activeScenario !== undefined && !scenario.isActive;
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching && persistedScenarioActiveForAssert && persistedScenarioSeries && baselineSeries.length > 0) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching && persistedScenarioActiveForAssert && persistedScenarioSeries && baselineSeries.length > 0) {
     if (persistedScenarioSeries.length !== baselineSeries.length) {
       console.error('[CRITICAL] Persisted scenario and baseline series length mismatch:', {
         baselineLength: baselineSeries.length,
@@ -2263,8 +2217,8 @@ export default function ProjectionResultsScreen() {
   
   // Safety assert: Verify delta computation is correct
   // Pattern A: Assert (scenarioA3Abs.endingNetWorth - baselineA3.endingNetWorth) ≈ scenarioA3Delta.endingNetWorth
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching && scenarioA3AttributionAbs && scenarioA3AttributionDelta) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching && scenarioA3AttributionAbs && scenarioA3AttributionDelta) {
     const endingNetWorthDelta = scenarioA3AttributionAbs.endingNetWorth - baselineA3Attribution.endingNetWorth;
     const deltaMatch = Math.abs(endingNetWorthDelta - scenarioA3AttributionDelta.endingNetWorth) < ATTRIBUTION_TOLERANCE;
     if (!deltaMatch) {
@@ -2280,8 +2234,8 @@ export default function ProjectionResultsScreen() {
   
   // Invariant: scenarioA3Abs.assets.endingValue === last(scenarioSeries).assets
   // Model 1: A3 treats scenarioSeries as ground truth
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching && scenarioA3AttributionAbs && effectiveScenarioSeries && effectiveScenarioSeries.length > 0) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching && scenarioA3AttributionAbs && effectiveScenarioSeries && effectiveScenarioSeries.length > 0) {
     const lastPoint = effectiveScenarioSeries[effectiveScenarioSeries.length - 1];
     const assetsMatch = Math.abs(scenarioA3AttributionAbs.assets.endingValue - lastPoint.assets) < ATTRIBUTION_TOLERANCE;
     if (!assetsMatch) {
@@ -2299,8 +2253,8 @@ export default function ProjectionResultsScreen() {
 
   // Guardrail: Verify baseline attribution is computed from baseline projection only
   // CRITICAL: Baseline attribution must be computed ONLY from baselineProjection and must differ from scenario when scenario is active
-  // Gate guardrails during profile switches to avoid transient failures
-  if (__DEV__ && !isProfileSwitching) {
+  // Gate guardrails during profile/mode switches to avoid transient failures
+  if (__DEV__ && !isSwitching) {
     // Verify baseline attribution matches baseline summary
     const baselineNetWorthMatch = Math.abs(baselineA3Attribution.endingNetWorth - baselineSummary.endNetWorth) < UI_TOLERANCE;
     if (!baselineNetWorthMatch) {
@@ -2316,8 +2270,8 @@ export default function ProjectionResultsScreen() {
     // 
     // FLOW vs STOCK semantics:
     // - FLOW scenarios (FLOW_TO_ASSET, FLOW_TO_DEBT) reallocate monthly surplus, not create new money.
-    // - For FLOW_TO_ASSET: totalContributions may remain unchanged (reallocation within contributions).
-    // - For FLOW_TO_DEBT: totalContributions should increase (overpayments are part of totalContributions).
+    // - For FLOW_TO_ASSET: totalContributions increases (more asset contributions), totalPrincipalRepaid unchanged.
+    // - For FLOW_TO_DEBT: totalContributions unchanged (asset contributions only), totalPrincipalRepaid increases (overpayments).
     // - This invariant is gated for FLOW scenarios and reserved for future STOCK (lump-sum) scenarios.
     
     // Helper: Detect if scenario produces a material output delta (OUTPUT-based, not INPUT-based)
@@ -2364,8 +2318,9 @@ export default function ProjectionResultsScreen() {
       const contributionsDiff = Math.abs(baselineTotalContrib - scenarioTotalContrib);
       
       // Gate totalContributions invariant: Only enforce for future STOCK scenarios
-      // FLOW scenarios reallocate monthly surplus, so totalContributions may remain unchanged (FLOW_TO_ASSET)
-      // or increase (FLOW_TO_DEBT includes overpayments in totalContributions)
+      // FLOW scenarios reallocate monthly surplus:
+      // - FLOW_TO_ASSET: totalContributions increases (more asset contributions)
+      // - FLOW_TO_DEBT: totalContributions unchanged (asset contributions only), totalPrincipalRepaid increases
       if (effectiveScenarioKind === 'STOCK' && contributionsDiff < UI_TOLERANCE) {
         console.error('[A3 Attribution Guardrail] CRITICAL: Baseline and scenario totalContributions are identical when STOCK scenario is active (violates invariant):', {
           baseline: baselineTotalContrib,
@@ -2442,7 +2397,7 @@ export default function ProjectionResultsScreen() {
           
           // DEV-only: Log payoff-aware info when actual < expected (loan paid off early)
           // This is informational only - not an error, as loans correctly stop overpayments after payoff
-          if (__DEV__ && !isProfileSwitching && actualOverpaymentDelta > 0 && actualOverpaymentDelta < maxPossibleOverpaymentDelta) {
+          if (__DEV__ && !isSwitching && actualOverpaymentDelta > 0 && actualOverpaymentDelta < maxPossibleOverpaymentDelta) {
             // Calculate approximate months applied (for diagnostics only, not exact due to PV discounting)
             const monthsApplied = Math.round(actualOverpaymentDelta / scenarioAmountMonthly);
             console.log('[A3 Attribution Guardrail] FLOW_TO_DEBT: Loan paid off early; overpayments stopped before horizon:', {
@@ -3453,23 +3408,40 @@ export default function ProjectionResultsScreen() {
             title="Projection" 
             subtitle="Explore where your finances could land"
             rightAccessory={
-              __DEV__ ? (
+              <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
                 <Pressable
-                  onPress={handleExportDebugJSON}
+                  onPress={() => navigation.navigate('Entry')}
                   style={({ pressed }) => [
                     {
                       paddingHorizontal: spacing.sm,
                       paddingVertical: spacing.xs,
                       borderRadius: 4,
-                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
+                      backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
                     },
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel="Export debug JSON"
+                  accessibilityLabel="Explore"
                 >
-                  <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
+                  <Text style={{ fontSize: 14, color: theme.colors.text.secondary, fontWeight: '500' }}>Explore</Text>
                 </Pressable>
-              ) : null
+                {__DEV__ ? (
+                  <Pressable
+                    onPress={handleExportDebugJSON}
+                    style={({ pressed }) => [
+                      {
+                        paddingHorizontal: spacing.sm,
+                        paddingVertical: spacing.xs,
+                        borderRadius: 4,
+                        backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
+                      },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Export debug JSON"
+                  >
+                    <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             }
           />
 

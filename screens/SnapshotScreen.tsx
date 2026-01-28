@@ -122,7 +122,27 @@ export default function SnapshotScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <StatusBar style="auto" />
-      <ScreenHeader title="Snapshot" subtitle="Your current financial position" />
+      <ScreenHeader
+        title="Snapshot"
+        subtitle="Your current financial position"
+        rightAccessory={
+          <Pressable
+            onPress={() => navigation.navigate('Entry')}
+            style={({ pressed }) => [
+              {
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xs,
+                borderRadius: 4,
+                backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Explore"
+          >
+            <Text style={{ fontSize: 14, color: theme.colors.text.secondary, fontWeight: '500' }}>Explore</Text>
+          </Pressable>
+        }
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* CASH FLOW SECTION */}

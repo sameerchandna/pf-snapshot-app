@@ -200,10 +200,106 @@ Passive, optional overlays that explain balance-sheet concepts. No interaction b
 ---
 
 ## Phase 6 — Onboarding & Demo
-- [ ] Demo profiles
-- [ ] Read-only demo edit mode
-- [ ] Projection-first landing screen
-- [ ] Signup gating
+
+Enable safe exploration of the app with demo data while preserving fast, frictionless access for existing users.
+No signup required. No persistence in demo mode.
+
+### 6.1 Demo Profiles (Static Data)
+- [x] Define v1 demo personas:
+  - Student / Early Career
+  - Young Professional
+  - Couple (Renting)
+  - Family + Home
+- [x] Create static demo profile configs
+- [x] Fully populate Snapshot inputs (income, expenses, assets, liabilities)
+- [x] Define minimal Projection settings (baseline only)
+
+### 6.2 Demo Mode (Non-Persistent State)
+- [x] Introduce demo vs user mode at root level
+- [x] Demo mode uses in-memory state only (no persistence)
+- [x] User mode continues to use existing persistence
+- [x] Demo mode allows all existing functionality (edit, scenarios, navigation)
+- [x] Demo state is discarded on reload
+
+### 6.3 Entry / Launch Surface (Chart-First)
+- [x] Create a new Entry screen outside bottom tab navigation
+- [x] Entry screen always renders a hero projection chart
+- [x] No empty states on app open
+
+### 6.4 Demo Profile Selector UI
+- [x] Add horizontal demo profile selector (icon-based)
+- [x] Selecting a demo profile updates the projection chart live
+
+### 6.5 Mode Toggle (User Data ↔ Demo / Explore)
+- [x] Add toggle at top of Entry screen
+- [x] If no user data exists:
+  - User Data option disabled or greyed
+  - Demo / Explore active by default
+- [x] If user data exists:
+  - User Data active by default
+  - Demo / Explore remains accessible
+
+### 6.6 Entry CTAs
+- [x] CTA: "Go to Snapshot"
+- [x] CTA: "Go to Projection"
+- [x] Navigation respects current mode (demo or user)
+
+### 6.7 Demo Mode Indicator
+- [x] Display subtle indicator in demo mode:
+  "Demo mode — changes won't be saved"
+- [x] No modals, no blocking behaviour
+
+### 6.8 Entry Insights (Optional)
+- [x] Show 1–2 observational insights below the chart
+- [x] Reuse Phase 5 insight engine
+- [x] Read-only, no advice or optimisation
+
+### 6.9 Existing User Entry Behaviour
+- [x] When user data exists:
+  - Entry chart reflects user projection data
+  - Entry screen acts as a fast orientation surface
+  - No onboarding or demo UI shown by default
+
+### 6.10 UI Clean-Up & Polish (Non-Functional)
+
+**Goal:**
+Improve visual clarity, spacing, copy, and calmness.
+No new logic, no new data, no engine changes.
+
+**Status:** UI-only, optional, safe to stop at any point.
+
+- [x] 6.10.1 Entry Screen visual hierarchy
+  - spacing between toggle, selector, chart, CTAs
+  - ensure chart is the dominant hero element
+
+- [x] 6.10.2 Mode toggle styling
+  - refine segmented control proportions
+  - improve active vs disabled contrast
+
+- [x] 6.10.3 Demo profile selector polish
+  - consistent icon sizing and touch targets
+  - clearer selected state without visual noise
+
+- [ ] 6.10.4 Entry CTA clarity
+  - review CTA labels and hierarchy
+  - consistent spacing and alignment
+
+- [ ] 6.10.5 Demo mode indicator
+  - subtle inline text: "Demo mode — changes won't be saved"
+  - no modal, no blocking UI
+
+- [ ] 6.10.6 Header "Explore" action polish
+  - confirm label ("Explore" vs "Home")
+  - subtle visual weight and spacing
+
+- [ ] 6.10.7 Copy & micro-text pass (optional)
+  - neutral, descriptive language
+  - no onboarding/tutorial tone
+
+**Notes:**
+- Signup and authentication are explicitly out of scope for Phase 6
+- No UI restrictions or feature flags based on demo mode
+- No changes to core projection, snapshot, or scenario engines
 
 ---
 
@@ -211,6 +307,17 @@ Passive, optional overlays that explain balance-sheet concepts. No interaction b
 - [ ] Error and empty state audit
 - [ ] Performance pass
 - [ ] Pre-release checklist
+- [ ] Profile Switcher (Entry Screen)
+  - Allow switching between existing USER profiles directly from the Entry screen (similar visual pattern to Demo profiles)
+  - Show the currently active profile and other available profiles
+  - Include a subtle "+" affordance to create a new profile using the existing profile creation flow
+  - This is a navigation and affordance change, not just visual polish
+  - Must preserve existing profile invariants:
+    * exactly one active profile
+    * profile isolation
+  - Must not introduce advice, nudging, or onboarding language
+  - Visual language should align with demo profile selector but remain semantically distinct (user profiles ≠ demo profiles)
+  - No persistence or logic changes beyond existing profile switching
 
 ---
 

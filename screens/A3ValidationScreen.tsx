@@ -38,7 +38,7 @@ function Row({ label, value, valueStyle }: { label: string; value: string; value
 }
 
 export default function A3ValidationScreen() {
-  const { state } = useSnapshot();
+  const { state, isSwitching } = useSnapshot();
 
   const projection = useMemo(() => {
     // Use helper to filter inactive items and contributions to inactive assets
@@ -46,16 +46,57 @@ export default function A3ValidationScreen() {
 
     const projectionSeries = computeProjectionSeries(inputs);
     const projectionSummary = computeProjectionSummary(inputs);
-    return { projectionSeries, projectionSummary };
+    return { projectionSeries, projectionSummary, inputs };
   }, [state]);
 
   const a3 = useMemo(() => {
+    // Gate: Prevent attribution computation during profile/mode switches
+    if (isSwitching) {
+      // Return a placeholder attribution during switching to avoid errors
+      // This will be recomputed once switching completes
+      return {
+        startingNetWorth: 0,
+        endingNetWorth: 0,
+        cashflow: {
+          grossIncome: 0,
+          pensionContributions: 0,
+          taxes: 0,
+          livingExpenses: 0,
+          netSurplus: 0,
+          postTaxContributions: 0,
+          debtRepayment: 0,
+        },
+        debt: {
+          interestPaid: 0,
+          principalRepaid: 0,
+          remainingDebt: 0,
+        },
+        assets: {
+          startingValue: 0,
+          contributions: 0,
+          growth: 0,
+          endingValue: 0,
+        },
+        reconciliation: {
+          lhs: 0,
+          rhs: 0,
+          delta: 0,
+        },
+        inactiveCounts: {
+          assets: 0,
+          liabilities: 0,
+          expenses: 0,
+        },
+      };
+    }
+    
     return computeA3Attribution({
       snapshot: state,
       projectionSeries: projection.projectionSeries,
       projectionSummary: projection.projectionSummary,
+      projectionInputs: projection.inputs, // Use actual simulation inputs to match summary contributions
     });
-  }, [projection.projectionSeries, projection.projectionSummary, state]);
+  }, [projection.projectionSeries, projection.projectionSummary, projection.inputs, state, isSwitching]);
 
   const deltaBad: boolean = Math.abs(a3.reconciliation.delta) > ATTRIBUTION_TOLERANCE;
 

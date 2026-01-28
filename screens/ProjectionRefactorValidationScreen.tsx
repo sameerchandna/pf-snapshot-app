@@ -45,7 +45,7 @@ function Row({ label, value, valueStyle }: { label: string; value: string; value
 }
 
 export default function ProjectionRefactorValidationScreen() {
-  const { state } = useSnapshot();
+  const { state, isSwitching } = useSnapshot();
   const [validationResult, setValidationResult] = useState<ValidationResult>({
     aggregateDeterminism: 'PENDING',
     attributionReconciliation: 'PENDING',
@@ -59,6 +59,11 @@ export default function ProjectionRefactorValidationScreen() {
   }, [state]);
 
   useEffect(() => {
+    // Gate: Skip validation during profile/mode switches
+    if (isSwitching) {
+      return;
+    }
+
     const errors: ValidationResult['errors'] = [];
     let aggregateDeterminism: 'PASS' | 'FAIL' = 'PASS';
     let attributionReconciliation: 'PASS' | 'FAIL' = 'PASS';
@@ -83,6 +88,7 @@ export default function ProjectionRefactorValidationScreen() {
         snapshot: state,
         projectionSeries,
         projectionSummary,
+        projectionInputs: inputs, // Use actual simulation inputs to match summary contributions
       });
 
       const attributionDelta = Math.abs(attribution.reconciliation.delta);
@@ -306,7 +312,7 @@ export default function ProjectionRefactorValidationScreen() {
         }],
       });
     }
-  }, [inputs, state]);
+  }, [inputs, state, isSwitching]);
 
   const getStatusStyle = (status: 'PASS' | 'FAIL' | 'PENDING') => {
     if (status === 'PASS') return styles.statusPass;

@@ -40,6 +40,14 @@ All functionality is designed to support clarity, internal consistency, and fina
 - Persistence and data migration are handled automatically.
 - A system-defined cash asset (SYSTEM_CASH) always exists and cannot be removed.
 
+### Meaningful User Data (Entry Surface Only)
+For the purposes of the Entry / Launch screen, a user is considered to 'have data'
+only when the active snapshot contains at least one active non-SYSTEM asset or
+at least one active liability.
+This definition is used exclusively to determine default entry mode and Entry
+empty-state messaging. It does not affect snapshot validity, projection logic,
+scenarios, or persistence behavior.
+
 ---
 
 ## What the System Does Not Do

@@ -53,7 +53,8 @@ export type ProjectionSummary = {
   endAssets: number;
   endLiabilities: number;
   endNetWorth: number;
-  totalContributions: number; // asset contributions + actual (capped) debt paydown
+  totalContributions: number; // asset contributions only (post-tax + pension)
+  totalPrincipalRepaid: number; // liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
   totalScheduledMortgagePayment: number; // interest + scheduled principal (full payment as expense)
   totalMortgageOverpayments: number; // explicit overpayments only (liability reduction)
 };
@@ -65,7 +66,8 @@ export type ProjectionSeriesPoint = {
   netWorth: number; // real £ (today's money, may be negative)
 };
 
-function annualPctToMonthlyRate(pct: number): number {
+// Exported helper for view-layer computations (used in ProjectionResultsScreen)
+export function annualPctToMonthlyRate(pct: number): number {
   // rg = (1 + g)^(1/12) - 1
   const g = pct / 100;
   return Math.pow(1 + g, 1 / 12) - 1;
@@ -98,6 +100,7 @@ function runMonthlySimulation(
       nonLoans: Array<{ id: string; balance: number }>;
       totals: {
         contributions: number;
+        principalRepaid: number;
         scheduledMortgagePayment: number;
         mortgageOverpayments: number;
       };
@@ -115,6 +118,7 @@ function runMonthlySimulation(
   };
   totals: {
     contributions: number;
+    principalRepaid: number;
     scheduledMortgagePayment: number;
     mortgageOverpayments: number;
   };
@@ -123,7 +127,8 @@ function runMonthlySimulation(
   const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
 
-  let totalContributions = 0;
+  let totalContributions = 0; // Asset contributions only (post-tax + pension)
+  let totalPrincipalRepaid = 0; // Liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
   let totalScheduledMortgagePayment = 0; // Full scheduled payment (interest + scheduled principal) - treated as expense
   let totalMortgageOverpayments = 0; // Explicit overpayments only - treated as liability reduction
 
@@ -223,15 +228,18 @@ function runMonthlySimulation(
     // Contributions are added to balance, then the entire balance compounds together
     // FLOW scenarios: scenario deltas are already merged into assetContributionsMonthly
     // Cash is STOCK-only - FLOW scenarios do not mutate cash balance (enforced by guardrail in applyScenarioToInputs)
+    let contributionTotalThisMonth = 0; // Track only contributions that were actually applied
     for (const c of sortedContributions) {
       const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
       if (amt <= 0) continue;
       const idx = assetStates.findIndex(a => a.id === c.assetId);
       if (idx >= 0) {
         assetStates[idx].balance += amt;
+        contributionTotalThisMonth += amt; // Only count contributions that were actually applied
       } else {
         // Contribution references a missing asset id. Ignore (state should prevent this).
         // Keep it silent to avoid noisy logs on bad persisted states.
+        // Do NOT count this contribution - it was not applied to any asset
       }
     }
 
@@ -326,14 +334,14 @@ function runMonthlySimulation(
     }
 
     // 6) Accumulate explicit effort
-    const contributionTotalThisMonth = sortedContributions.reduce((sum, c) => {
-      const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
-      return sum + (amt > 0 ? amt : 0);
-    }, 0);
-    // totalContributions includes asset contributions, non-loan debt paydown, and loan principal (scheduled + overpayments)
+    // contributionTotalThisMonth was already computed during contribution application (step 1)
+    // This ensures we only count contributions that were actually applied to existing assets
+    // totalContributions: asset contributions only (post-tax + pension)
+    totalContributions += contributionTotalThisMonth;
+    // totalPrincipalRepaid: liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
     // Note: Scheduled principal is treated as expense, but still reduces liability balance
     const totalLoanPrincipalThisMonth = loanScheduledPrincipalThisMonth + loanOverpaymentThisMonth;
-    totalContributions += contributionTotalThisMonth + debtPaydownTotal + totalLoanPrincipalThisMonth;
+    totalPrincipalRepaid += debtPaydownTotal + totalLoanPrincipalThisMonth;
 
     const assetsNow = assetStates.reduce((sum, a) => sum + a.balance, 0);
     const nonLoanNow = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
@@ -363,6 +371,7 @@ function runMonthlySimulation(
           nonLoans: nonLoanStates.map(l => ({ id: l.id, balance: l.balance })),
           totals: {
             contributions: totalContributions,
+            principalRepaid: totalPrincipalRepaid,
             scheduledMortgagePayment: totalScheduledMortgagePayment,
             mortgageOverpayments: totalMortgageOverpayments,
           },
@@ -404,6 +413,7 @@ function runMonthlySimulation(
     },
     totals: {
       contributions: totalContributions,
+      principalRepaid: totalPrincipalRepaid,
       scheduledMortgagePayment: totalScheduledMortgagePayment,
       mortgageOverpayments: totalMortgageOverpayments,
     },
@@ -418,7 +428,7 @@ function runMonthlySimulation(
 function computeMonthlyProjection(
   inputs: ProjectionEngineInputs,
   onMonth?: (ctx: { monthIndex: number; assets: number; liabilities: number }) => void,
-): { assets: number; liabilities: number; totalContributions: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
+): { assets: number; liabilities: number; totalContributions: number; totalPrincipalRepaid: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
   // Handle zero horizon case
   const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
@@ -435,6 +445,7 @@ function computeMonthlyProjection(
       assets: assetsNow, 
       liabilities: nonLoanNow + loanStart, 
       totalContributions: 0, 
+      totalPrincipalRepaid: 0,
       totalScheduledMortgagePayment: 0, 
       totalMortgageOverpayments: 0, 
       horizonMonths: 0,
@@ -463,13 +474,15 @@ function computeMonthlyProjection(
     assets: assetsEnd,
     liabilities: liabilitiesEnd,
     totalContributions: totals.contributions,
+    totalPrincipalRepaid: totals.principalRepaid,
     totalScheduledMortgagePayment: totals.scheduledMortgagePayment,
     totalMortgageOverpayments: totals.mortgageOverpayments,
     horizonMonths: computedHorizonMonths,
   };
 }
 
-function deflateToTodaysMoney(value: number, inflationRatePct: number, elapsedMonths: number): number {
+// Exported helper for view-layer computations (used in ProjectionResultsScreen)
+export function deflateToTodaysMoney(value: number, inflationRatePct: number, elapsedMonths: number): number {
   if (elapsedMonths <= 0) return value;
   const elapsedYears = elapsedMonths / 12;
   const inflationRate = inflationRatePct / 100;
@@ -512,6 +525,7 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
       endLiabilities, 
       endNetWorth, 
       totalContributions: 0, 
+      totalPrincipalRepaid: 0,
       totalScheduledMortgagePayment: 0, 
       totalMortgageOverpayments: 0,
     };
@@ -524,12 +538,13 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
     endAge,
   };
 
-  const { assets, liabilities, totalContributions, totalScheduledMortgagePayment, totalMortgageOverpayments } = computeMonthlyProjection(normalizedInputs);
+  const { assets, liabilities, totalContributions, totalPrincipalRepaid, totalScheduledMortgagePayment, totalMortgageOverpayments } = computeMonthlyProjection(normalizedInputs);
 
   const endAssets = deflateToTodaysMoney(assets, clonedInputs.inflationRatePct, horizonMonths);
   const endLiabilities = deflateToTodaysMoney(liabilities, clonedInputs.inflationRatePct, horizonMonths);
   const endNetWorth = endAssets - endLiabilities;
   const endTotalContributions = deflateToTodaysMoney(totalContributions, clonedInputs.inflationRatePct, horizonMonths);
+  const endTotalPrincipalRepaid = deflateToTodaysMoney(totalPrincipalRepaid, clonedInputs.inflationRatePct, horizonMonths);
   const endScheduledMortgagePayment = deflateToTodaysMoney(totalScheduledMortgagePayment, clonedInputs.inflationRatePct, horizonMonths);
   const endMortgageOverpayments = deflateToTodaysMoney(totalMortgageOverpayments, clonedInputs.inflationRatePct, horizonMonths);
 
@@ -538,6 +553,7 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
     endLiabilities,
     endNetWorth,
     totalContributions: endTotalContributions,
+    totalPrincipalRepaid: endTotalPrincipalRepaid,
     totalScheduledMortgagePayment: endScheduledMortgagePayment,
     totalMortgageOverpayments: endMortgageOverpayments,
   };
@@ -716,6 +732,7 @@ export function assertProjectionDeterminism(
     Math.abs(summary1.endLiabilities - summary2.endLiabilities) <= tolerance &&
     Math.abs(summary1.endNetWorth - summary2.endNetWorth) <= tolerance &&
     Math.abs(summary1.totalContributions - summary2.totalContributions) <= tolerance &&
+    Math.abs(summary1.totalPrincipalRepaid - summary2.totalPrincipalRepaid) <= tolerance &&
     Math.abs(summary1.totalScheduledMortgagePayment - summary2.totalScheduledMortgagePayment) <= tolerance &&
     Math.abs(summary1.totalMortgageOverpayments - summary2.totalMortgageOverpayments) <= tolerance;
 
@@ -751,6 +768,7 @@ export function assertProjectionDeterminism(
         endLiabilities: Math.abs(summary1.endLiabilities - summary2.endLiabilities),
         endNetWorth: Math.abs(summary1.endNetWorth - summary2.endNetWorth),
         totalContributions: Math.abs(summary1.totalContributions - summary2.totalContributions),
+        totalPrincipalRepaid: Math.abs(summary1.totalPrincipalRepaid - summary2.totalPrincipalRepaid),
         totalScheduledMortgagePayment: Math.abs(summary1.totalScheduledMortgagePayment - summary2.totalScheduledMortgagePayment),
         totalMortgageOverpayments: Math.abs(summary1.totalMortgageOverpayments - summary2.totalMortgageOverpayments),
       },

@@ -12,8 +12,9 @@ const PROFILES_STORAGE_KEY = '@profiles_state';
 
 /**
  * Creates an empty ProfilesState with a default profile.
+ * Exported for demo mode initialization.
  */
-function createEmptyProfilesState(): ProfilesState {
+export function createEmptyProfilesState(): ProfilesState {
   const now = Date.now();
   const defaultProfileId: ProfileId = 'default-profile';
   

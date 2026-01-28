@@ -26,7 +26,9 @@ import A3ValidationScreen from './screens/A3ValidationScreen';
 import ProjectionRefactorValidationScreen from './screens/ProjectionRefactorValidationScreen';
 import SnapshotDataSummaryScreen from './screens/SnapshotDataSummaryScreen';
 import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
+import EntryScreen from './screens/EntryScreen';
 
+const RootStack = createNativeStackNavigator();
 const Stack = createNativeStackNavigator();
 const AccountsStack = createNativeStackNavigator();
 const ProjectionStack = createNativeStackNavigator();
@@ -108,7 +110,7 @@ function SettingsStackNavigator() {
   );
 }
 
-export default function AppNavigator() {
+function MainTabsNavigator() {
   return (
     <Tab.Navigator initialRouteName={TAB_INITIAL_ROUTE_NAME} screenOptions={{ headerShown: TAB_HEADER_SHOWN }}>
       <Tab.Screen
@@ -135,3 +137,11 @@ export default function AppNavigator() {
   );
 }
 
+export default function AppNavigator() {
+  return (
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Screen name="Entry" component={EntryScreen} />
+      <RootStack.Screen name="MainTabs" component={MainTabsNavigator} options={{ headerShown: false }} />
+    </RootStack.Navigator>
+  );
+}

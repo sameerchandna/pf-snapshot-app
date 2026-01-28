@@ -61,6 +61,7 @@ export function validateProjectionRefactor(state: SnapshotState): ValidationResu
     snapshot: state,
     projectionSeries,
     projectionSummary,
+    projectionInputs: inputs, // Use actual simulation inputs to match summary contributions
   });
 
   const attributionDelta = Math.abs(attribution.reconciliation.delta);

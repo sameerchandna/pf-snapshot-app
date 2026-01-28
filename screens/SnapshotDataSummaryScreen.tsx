@@ -23,7 +23,7 @@ function formatSnapshotDate(): string {
 }
 
 export default function SnapshotDataSummaryScreen() {
-  const { state } = useSnapshot();
+  const { state, isSwitching } = useSnapshot();
   const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
 
   const totals = useMemo(() => selectSnapshotTotals(state), [state]);
@@ -165,6 +165,12 @@ export default function SnapshotDataSummaryScreen() {
   const handleExportDebugJSON = async () => {
     if (!__DEV__) return;
 
+    // Gate: Prevent attribution computation during profile/mode switches
+    if (isSwitching) {
+      Alert.alert('Export Disabled', 'Cannot export debug data while switching profiles or modes.');
+      return;
+    }
+
     try {
       // Build projection inputs (baseline)
       const baselineProjectionInputs: ProjectionEngineInputs = {
@@ -199,6 +205,7 @@ export default function SnapshotDataSummaryScreen() {
         snapshot: state,
         projectionSeries: baselineSeries,
         projectionSummary: baselineSummary,
+        projectionInputs: baselineProjectionInputs, // Use actual simulation inputs to match summary contributions
       });
 
       // Build debug payload

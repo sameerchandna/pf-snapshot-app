@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import DemoModeBanner from './DemoModeBanner';
 
 type Props = {
   title: string;
@@ -13,16 +14,20 @@ type Props = {
 /**
  * Standard app-wide screen header.
  * Matches the existing "detail/card" header pattern: fixed header, iOS spacing, bottom divider.
+ * Phase 6.7: Includes demo mode banner when active.
  */
 export default function ScreenHeader({ title, totalText, subtitle, subtitleFootnote, rightAccessory }: Props) {
   const { theme } = useTheme();
   return (
-    <View style={[styles.header, styles.safeHeader, { borderBottomColor: theme.colors.border.default }]}>
-      <Text style={[styles.title, { color: theme.colors.text.primary }]}>{title}</Text>
-      {totalText ? <Text style={[styles.headerTotal, { color: theme.colors.text.primary }]}>{totalText}</Text> : null}
-      {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.text.muted }, totalText ? styles.subtitleAfterTotal : null]}>{subtitle}</Text> : null}
-      {subtitleFootnote ? <Text style={[styles.subtitleFootnote, { color: theme.colors.text.disabled }]}>{subtitleFootnote}</Text> : null}
-      {rightAccessory ? <View style={styles.rightAccessory}>{rightAccessory}</View> : null}
+    <View>
+      <View style={[styles.header, styles.safeHeader, { borderBottomColor: theme.colors.border.default }]}>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>{title}</Text>
+        {totalText ? <Text style={[styles.headerTotal, { color: theme.colors.text.primary }]}>{totalText}</Text> : null}
+        {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.text.muted }, totalText ? styles.subtitleAfterTotal : null]}>{subtitle}</Text> : null}
+        {subtitleFootnote ? <Text style={[styles.subtitleFootnote, { color: theme.colors.text.disabled }]}>{subtitleFootnote}</Text> : null}
+        {rightAccessory ? <View style={styles.rightAccessory}>{rightAccessory}</View> : null}
+      </View>
+      <DemoModeBanner />
     </View>
   );
 }

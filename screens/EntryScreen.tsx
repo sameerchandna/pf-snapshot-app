@@ -1,0 +1,549 @@
+// Phase 6.3: Entry / Launch Screen (Skeleton Only)
+// Chart-first entry screen with CTAs to navigate to Snapshot and Projection
+
+import React, { useMemo, useState, useEffect } from 'react';
+import { StyleSheet, View, Pressable, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useWindowDimensions } from 'react-native';
+import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine } from 'victory-native';
+import { Feather } from '@expo/vector-icons';
+import { useMode } from '../context/ModeContext';
+
+import Button from '../components/Button';
+import DemoModeBanner from '../components/DemoModeBanner';
+import SectionCard from '../components/SectionCard';
+import SectionHeader from '../components/SectionHeader';
+import { useTheme } from '../ui/theme/useTheme';
+import { useSnapshot } from '../SnapshotContext';
+import { computeProjectionSeries } from '../projectionEngine';
+import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
+import { formatCurrencyCompact } from '../formatters';
+import { layout } from '../layout';
+import { spacing } from '../spacing';
+import { DEMO_PROFILES, DEFAULT_DEMO_PROFILE_ID, type DemoProfileId } from '../demo/demoProfiles';
+import { detectKeyMoments, generateInsightText } from '../insights/insightEngine';
+
+// Chart color palette (reused from ProjectionResultsScreen)
+function getChartPalette(theme: any) {
+  return {
+    baselineLine: theme.colors.brand.primary,
+    assetsLine: theme.colors.text.muted,
+    liabilitiesLine: theme.colors.text.muted,
+    axis: theme.colors.border.default,
+    grid: theme.colors.border.subtle,
+    tickLabels: theme.colors.text.secondary,
+  };
+}
+
+export default function EntryScreen() {
+  const { theme } = useTheme();
+  const chartPalette = getChartPalette(theme);
+  const { width: windowWidth } = useWindowDimensions();
+  const navigation = useNavigation<any>();
+  const { state, resetDemoProfile } = useSnapshot();
+  const { mode, setMode, hasUserData, hasMeaningfulUserData } = useMode();
+  
+  // Phase 6.4: Maintain selected demo profile ID locally
+  const [selectedDemoProfileId, setSelectedDemoProfileId] = useState<DemoProfileId>(DEFAULT_DEMO_PROFILE_ID);
+  
+  // Phase 6.4: Handle demo profile selection
+  const handleProfileSelect = (demoProfileId: DemoProfileId) => {
+    setSelectedDemoProfileId(demoProfileId);
+    if (resetDemoProfile) {
+      resetDemoProfile(demoProfileId);
+    }
+  };
+  
+  // Phase 6.5: Handle mode toggle
+  const handleModeToggle = (newMode: 'user' | 'demo') => {
+    if (newMode === 'user' && !hasUserData) {
+      return; // Cannot switch to user mode if no user data exists
+    }
+    setMode(newMode);
+  };
+
+  // Build projection inputs from state
+  const projectionInputs = useMemo(
+    () => buildProjectionInputsFromState(state),
+    [
+      state.projection.currentAge,
+      state.projection.endAge,
+      state.projection.inflationPct,
+      state.projection.monthlyDebtReduction,
+      state.assets,
+      state.assetContributions,
+      state.liabilities,
+    ],
+  );
+
+  // Compute baseline projection series
+  const baselineSeries = useMemo(() => {
+    return computeProjectionSeries(projectionInputs);
+  }, [projectionInputs]);
+
+  // Build chart data (baseline only, simplified)
+  const chartData = useMemo(() => {
+    if (baselineSeries.length === 0) {
+      return { series: [], domainMin: 0, domainMax: 0 };
+    }
+
+    // Default view: Net Worth (blue) + Assets (grey) + Liabilities (lighter grey)
+    const assetsData = baselineSeries.map(p => ({ x: p.age, y: p.assets }));
+    const baselineNetWorthData = baselineSeries.map(p => ({ x: p.age, y: p.netWorth }));
+    const liabilitiesData = baselineSeries.map(p => ({ x: p.age, y: p.liabilities }));
+
+    // Compute Y-axis domain from baseline values
+    const baselineValues = baselineSeries.map(p => p.netWorth);
+    const allYValues = [
+      ...baselineValues,
+      ...baselineSeries.map(p => p.assets),
+      ...baselineSeries.map(p => p.liabilities),
+    ];
+    
+    // Compute true min/max across all values
+    const rawMinY = allYValues.length > 0 ? Math.min(...allYValues) : 0;
+    const rawMaxY = allYValues.length > 0 ? Math.max(...allYValues) : 0;
+    
+    // Apply 5% padding after truth (preserves semantic zero)
+    const padding = (rawMaxY - rawMinY) * 0.05 || 0.01;
+    const domainMin = rawMinY - padding;
+    const domainMax = rawMaxY + padding;
+
+    // Build structured series array (baseline only)
+    const series = [
+      {
+        seriesId: 'netWorth' as const,
+        label: 'Net worth',
+        color: chartPalette.baselineLine,
+        data: baselineNetWorthData,
+        style: {
+          strokeWidth: 2.6,
+          opacity: 1.0,
+        },
+        shouldRender: baselineSeries.length > 0,
+      },
+      {
+        seriesId: 'assets' as const,
+        label: 'Assets',
+        color: chartPalette.assetsLine,
+        data: assetsData,
+        style: {
+          strokeWidth: 1.8,
+          opacity: 1.0,
+        },
+        shouldRender: true,
+      },
+      {
+        seriesId: 'liabilities' as const,
+        label: 'Liabilities',
+        color: chartPalette.liabilitiesLine,
+        data: liabilitiesData,
+        style: {
+          strokeWidth: 1.5,
+          opacity: 1.0,
+        },
+        shouldRender: true,
+      },
+    ];
+
+    return { series, domainMin, domainMax };
+  }, [baselineSeries, chartPalette]);
+
+  // Chart dimensions (reused from ProjectionResultsScreen)
+  const chartWidth: number = Math.max(320, windowWidth - 24);
+  const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
+  const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
+
+  // Phase 6.8: Generate insights from key moments (using existing Phase 5 insight engine)
+  const insightsToShow = useMemo(() => {
+    if (baselineSeries.length === 0) {
+      return [];
+    }
+
+    // Detect key moments from baseline series
+    const keyMoments = detectKeyMoments(baselineSeries);
+
+    // Filter: only show insights for moments that have occurred by endAge
+    // Entry screen shows full projection, so use endAge as the reference point
+    const visibleMoments = keyMoments.filter(moment => moment.age <= state.projection.endAge);
+    
+    // Sort chronologically (earliest first) and limit to MAX 2
+    const sorted = visibleMoments.sort((a, b) => a.age - b.age);
+    const limited = sorted.slice(0, 2);
+    
+    // Generate text for each insight
+    return limited.map(moment => ({
+      id: moment.id,
+      text: generateInsightText(moment),
+      age: moment.age,
+    }));
+  }, [baselineSeries, state.projection.endAge]);
+
+  return (
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+      <View style={styles.content}>
+        {/* Phase 6.5: Mode toggle */}
+        <View style={styles.modeToggle}>
+          <Pressable
+            onPress={() => handleModeToggle('user')}
+            disabled={!hasUserData}
+            style={[
+              styles.toggleOption,
+              mode === 'user' && styles.toggleOptionActive,
+              !hasUserData && styles.toggleOptionDisabled,
+              { borderColor: theme.colors.border.subtle },
+              mode === 'user' && { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.brand.primary },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="User Data"
+            accessibilityState={{ disabled: !hasUserData, selected: mode === 'user' }}
+          >
+            <Text
+              style={[
+                styles.toggleOptionText,
+                { color: theme.colors.text.muted },
+                !hasUserData && { color: theme.colors.text.disabled },
+                mode === 'user' && { color: theme.colors.brand.primary, fontWeight: '600' },
+              ]}
+            >
+              User Data
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleModeToggle('demo')}
+            style={[
+              styles.toggleOption,
+              mode === 'demo' && styles.toggleOptionActive,
+              { borderColor: theme.colors.border.subtle },
+              mode === 'demo' && { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.brand.primary },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Demo / Explore"
+            accessibilityState={{ selected: mode === 'demo' }}
+          >
+            <Text
+              style={[
+                styles.toggleOptionText,
+                { color: theme.colors.text.muted },
+                mode === 'demo' && { color: theme.colors.brand.primary, fontWeight: '600' },
+              ]}
+            >
+              Demo / Explore
+            </Text>
+          </Pressable>
+        </View>
+        
+        {/* Phase 6.10.3: Demo profile selector (persistent container) */}
+        <View style={styles.profileSelectorContainer}>
+          {mode === 'demo' && resetDemoProfile ? (
+            <View style={styles.profileSelector}>
+              {Object.values(DEMO_PROFILES).map((profile) => {
+                const isSelected = selectedDemoProfileId === profile.id;
+                return (
+                  <Pressable
+                    key={profile.id}
+                    onPress={() => handleProfileSelect(profile.id)}
+                    style={[
+                      styles.profileIcon,
+                      isSelected && {
+                        backgroundColor: theme.colors.bg.subtle,
+                        borderColor: theme.colors.brand.primary,
+                      },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={profile.name}
+                  >
+                    <Feather
+                      name={profile.icon as any}
+                      size={20}
+                      color={isSelected ? theme.colors.brand.primary : theme.colors.text.secondary}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.profileSelectorSpacer} />
+          )}
+        </View>
+        
+        {/* Phase 6.10.5: Demo mode indicator (wrapped for subtle presentation) */}
+        <View style={styles.demoBannerWrapper}>
+          <DemoModeBanner />
+        </View>
+        
+        {/* Phase 6.10.1: Hero card with title, subtitle, and chart */}
+        <SectionCard style={styles.heroCard}>
+          <SectionHeader
+            title="Projection"
+            subtitle="Assets, liabilities, and net worth over time"
+          />
+          {/* Phase 7.1: Inline legend */}
+          {chartData.series.length > 0 && (
+            <View style={styles.legendRow}>
+              {chartData.series
+                .filter(s => s.shouldRender)
+                .map((series) => (
+                  <View key={series.seriesId} style={styles.legendItem}>
+                    <View style={[styles.legendSwatch, { backgroundColor: series.color }]} />
+                    <Text style={[styles.legendText, { color: theme.colors.text.muted }]}>
+                      {series.label}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          )}
+          <View style={[styles.chartContainer, { minHeight: chartHeight }]}>
+            {chartData.series.length > 0 ? (
+              <View style={{ height: chartHeight, width: chartWidth }}>
+                <VictoryChart
+                  width={chartWidth}
+                  height={chartHeight}
+                  padding={chartPadding}
+                  domain={{ y: [chartData.domainMin, chartData.domainMax] }}
+                  domainPadding={{ x: 12, y: 6 }}
+                  nice={false}
+                >
+                  <VictoryAxis
+                    tickFormat={t => `${Number(t)}`}
+                    tickLabelComponent={<VictoryLabel dy={6} />}
+                    label="Age"
+                    axisLabelComponent={<VictoryLabel dy={24} style={{ fontSize: 10, fill: chartPalette.tickLabels }} />}
+                    style={{
+                      axis: { stroke: chartPalette.axis },
+                      tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
+                      grid: { stroke: 'transparent' },
+                    }}
+                  />
+                  <VictoryAxis
+                    dependentAxis
+                    tickFormat={t => formatCurrencyCompact(Number(t))}
+                    style={{
+                      axis: { stroke: chartPalette.axis },
+                      tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                      grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
+                    }}
+                  />
+
+                  {/* Render series */}
+                  {chartData.series
+                    .filter(s => s.shouldRender)
+                    .map((series) => (
+                      <VictoryLine
+                        key={series.seriesId}
+                        data={series.data}
+                        style={{
+                          data: {
+                            stroke: series.color,
+                            strokeWidth: series.style.strokeWidth,
+                            opacity: series.style.opacity,
+                          },
+                        }}
+                      />
+                    ))}
+                </VictoryChart>
+              </View>
+            ) : (
+              <View style={[styles.placeholderContainer, { height: chartHeight }]}>
+                {/* Placeholder for empty state - will be handled by demo profiles */}
+              </View>
+            )}
+          </View>
+        </SectionCard>
+
+        {/* Phase 6.10.3: Bottom zone (persistent containers) */}
+        {/* Empty state message (only shown in user mode without meaningful data) */}
+        {mode === 'user' && !hasMeaningfulUserData && (
+          <View style={styles.emptyStateContainer}>
+            <Text style={[styles.emptyStateText, { color: theme.colors.text.muted }]}>
+              Add your data to view your projection.
+            </Text>
+          </View>
+        )}
+
+        {/* Phase 6.8: Observational insights (persistent container) */}
+        <View style={styles.insightsContainer}>
+          {insightsToShow.length > 0 && (
+            <>
+              {insightsToShow.map(insight => (
+                <Text key={insight.id} style={[styles.insightText, { color: theme.colors.text.muted }]}>
+                  {insight.text}
+                </Text>
+              ))}
+            </>
+          )}
+        </View>
+
+        {/* Flex spacer to anchor CTAs to bottom */}
+        <View style={{ flexGrow: 1 }} />
+
+        {/* CTA buttons (persistent container with space for two buttons) */}
+        <View style={styles.ctaContainer}>
+          <Button
+            variant="secondary"
+            size="md"
+            onPress={() => navigation.navigate('MainTabs', { screen: 'SnapshotTab' })}
+            style={styles.ctaButton}
+          >
+            Go to Snapshot
+          </Button>
+          <View style={mode === 'user' && !hasMeaningfulUserData ? styles.ctaButtonSpacer : null}>
+            {!(mode === 'user' && !hasMeaningfulUserData) && (
+              <Button
+                variant="text"
+                size="md"
+                onPress={() => navigation.navigate('MainTabs', { screen: 'ProjectionTab' })}
+                style={styles.ctaButton}
+              >
+                Go to Projection
+              </Button>
+            )}
+          </View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: layout.screenPadding,
+    paddingTop: layout.screenPaddingTop,
+  },
+  heroCard: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.xl,
+    // Shadow/elevation pattern from ProjectionResultsScreen
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.base,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.base,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.tiny,
+  },
+  legendSwatch: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    fontWeight: '400',
+  },
+  chartContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ctaContainer: {
+    gap: layout.md,
+    paddingTop: spacing.base,
+  },
+  ctaButton: {
+    width: '100%',
+  },
+  ctaButtonSpacer: {
+    width: '100%',
+    // Match button height: paddingVertical (10*2) + line height (~14) + gap (layout.md)
+    minHeight: 34,
+  },
+  profileSelectorContainer: {
+    minHeight: 58,
+  },
+  profileSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: layout.md,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  profileSelectorSpacer: {
+    minHeight: 58,
+  },
+  demoBannerWrapper: {
+    marginTop: spacing.tiny,
+    marginBottom: spacing.tiny,
+  },
+  profileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: 'transparent',
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    gap: spacing.tiny,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  toggleOption: {
+    flex: 1,
+    paddingVertical: spacing.tiny,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 6,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  toggleOptionActive: {
+    // Active state handled via inline styles
+  },
+  toggleOptionDisabled: {
+    // Disabled state handled via inline styles
+  },
+  toggleOptionText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  insightsContainer: {
+    paddingTop: spacing.base,
+    paddingBottom: spacing.xs,
+    gap: spacing.xs,
+    minHeight: 0,
+  },
+  insightText: {
+    fontSize: 12,
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  emptyStateContainer: {
+    paddingTop: spacing.base,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.base,
+  },
+  emptyStateText: {
+    fontSize: 12,
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+});
