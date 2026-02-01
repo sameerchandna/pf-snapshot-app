@@ -11,6 +11,7 @@ import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { ATTRIBUTION_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../selectors';
+import { useTheme } from '../ui/theme/useTheme';
 
 // Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() instead
 // Monthly surplus is now single-sourced from selector (no manual computation, no clamping)
@@ -28,16 +29,17 @@ function fmtOutflow(v: number): string {
   return formatCurrencyFullSigned(-Math.abs(v));
 }
 
-function Row({ label, value, valueStyle }: { label: string; value: string; valueStyle?: any }) {
+function Row({ label, value, valueStyle, theme }: { label: string; value: string; valueStyle?: any; theme: any }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={[styles.rowValue, valueStyle]}>{value}</Text>
+      <Text style={[styles.rowLabel, theme.typography.body, { color: theme.colors.text.tertiary }]}>{label}</Text>
+      <Text style={[styles.rowValue, theme.typography.label, { color: theme.colors.text.primary }, valueStyle]}>{value}</Text>
     </View>
   );
 }
 
 export default function A3ValidationScreen() {
+  const { theme } = useTheme();
   const { state, isSwitching } = useSnapshot();
 
   const projection = useMemo(() => {
@@ -101,53 +103,54 @@ export default function A3ValidationScreen() {
   const deltaBad: boolean = Math.abs(a3.reconciliation.delta) > ATTRIBUTION_TOLERANCE;
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title="A3 Validation" subtitle="Internal inspection surface" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="A3 Validation" />
-          <Row label="Starting Net Worth" value={fmtBalance(a3.startingNetWorth)} />
-          <Row label="Ending Net Worth" value={fmtBalance(a3.endingNetWorth)} />
+          <Row label="Starting Net Worth" value={fmtBalance(a3.startingNetWorth)} theme={theme} />
+          <Row label="Ending Net Worth" value={fmtBalance(a3.endingNetWorth)} theme={theme} />
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="Cashflow" />
-          <Row label="Gross income" value={fmtInflow(a3.cashflow.grossIncome)} />
-          <Row label="Taxes" value={fmtOutflow(a3.cashflow.taxes)} />
-          <Row label="Living expenses" value={fmtOutflow(a3.cashflow.livingExpenses)} />
-          <Row label="Net surplus" value={fmtInflow(a3.cashflow.netSurplus)} />
-          <Row label="Post-tax contributions" value={fmtOutflow(a3.cashflow.postTaxContributions)} />
-          <Row label="Debt repayment (loan principal)" value={fmtOutflow(a3.cashflow.debtRepayment)} />
+          <Row label="Gross income" value={fmtInflow(a3.cashflow.grossIncome)} theme={theme} />
+          <Row label="Taxes" value={fmtOutflow(a3.cashflow.taxes)} theme={theme} />
+          <Row label="Living expenses" value={fmtOutflow(a3.cashflow.livingExpenses)} theme={theme} />
+          <Row label="Net surplus" value={fmtInflow(a3.cashflow.netSurplus)} theme={theme} />
+          <Row label="Post-tax contributions" value={fmtOutflow(a3.cashflow.postTaxContributions)} theme={theme} />
+          <Row label="Debt repayment (loan principal)" value={fmtOutflow(a3.cashflow.debtRepayment)} theme={theme} />
           {/* Phase 3.3: Use selector for monthly surplus (single source of truth, no clamping) */}
-          <Row label="Unallocated cash" value={fmtOutflow(selectMonthlySurplus(state))} />
+          <Row label="Unallocated cash" value={fmtOutflow(selectMonthlySurplus(state))} theme={theme} />
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="Debt" />
-          <Row label="Interest paid" value={fmtOutflow(a3.debt.interestPaid)} />
-          <Row label="Principal repaid" value={fmtOutflow(a3.debt.principalRepaid)} />
-          <Row label="Remaining debt" value={fmtBalance(a3.debt.remainingDebt)} />
+          <Row label="Interest paid" value={fmtOutflow(a3.debt.interestPaid)} theme={theme} />
+          <Row label="Principal repaid" value={fmtOutflow(a3.debt.principalRepaid)} theme={theme} />
+          <Row label="Remaining debt" value={fmtBalance(a3.debt.remainingDebt)} theme={theme} />
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="Assets" />
-          <Row label="Starting value" value={fmtBalance(a3.assets.startingValue)} />
-          <Row label="Contributions" value={fmtBalance(a3.assets.contributions)} />
-          <Row label="Growth" value={fmtInflow(a3.assets.growth)} />
-          <Row label="Ending value" value={fmtBalance(a3.assets.endingValue)} />
+          <Row label="Starting value" value={fmtBalance(a3.assets.startingValue)} theme={theme} />
+          <Row label="Contributions" value={fmtBalance(a3.assets.contributions)} theme={theme} />
+          <Row label="Growth" value={fmtInflow(a3.assets.growth)} theme={theme} />
+          <Row label="Ending value" value={fmtBalance(a3.assets.endingValue)} theme={theme} />
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="Reconciliation" />
-          <Row label="LHS (ending net worth)" value={fmtBalance(a3.reconciliation.lhs)} />
-          <Row label="RHS (reconstructed)" value={fmtBalance(a3.reconciliation.rhs)} />
+          <Row label="LHS (ending net worth)" value={fmtBalance(a3.reconciliation.lhs)} theme={theme} />
+          <Row label="RHS (reconstructed)" value={fmtBalance(a3.reconciliation.rhs)} theme={theme} />
           <Row
             label="Delta (lhs - rhs)"
             value={formatCurrencyFullSigned(a3.reconciliation.delta)}
-            valueStyle={deltaBad ? styles.deltaBad : null}
+            valueStyle={deltaBad ? [styles.deltaBad, { color: theme.colors.semantic.errorText }] : null}
+            theme={theme}
           />
-          {deltaBad ? <Text style={styles.deltaHint}>Delta is outside tolerance (|delta| &gt; £1).</Text> : null}
+          {deltaBad ? <Text style={[styles.deltaHint, theme.typography.body, { color: theme.colors.semantic.errorText }]}>Delta is outside tolerance (|delta| &gt; £1).</Text> : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -157,7 +160,7 @@ export default function A3ValidationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    // backgroundColor moved to inline style
   },
   scrollView: {
     flex: 1,
@@ -169,10 +172,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#eee',
+    // borderColor moved to inline style
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
   },
   row: {
     flexDirection: 'row',
@@ -182,22 +185,21 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-    fontSize: 13,
-    color: '#333',
+    // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
+    // color moved to inline style
   },
   rowValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
+    // Typography moved to inline style with theme token (13px/600 → 12px/600 via theme.typography.label)
+    // color moved to inline style
     textAlign: 'right',
   },
   deltaBad: {
-    color: '#b42318',
+    // color moved to inline style
   },
   deltaHint: {
     marginTop: 8,
-    fontSize: 12,
-    color: '#b42318',
+    // Typography moved to inline style with theme token
+    // color moved to inline style
   },
 });
 

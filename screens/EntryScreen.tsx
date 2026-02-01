@@ -7,13 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useWindowDimensions } from 'react-native';
 import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine } from 'victory-native';
-import { Feather } from '@expo/vector-icons';
 import { useMode } from '../context/ModeContext';
 
 import Button from '../components/Button';
 import DemoModeBanner from '../components/DemoModeBanner';
 import SectionCard from '../components/SectionCard';
 import SectionHeader from '../components/SectionHeader';
+import Icon from '../components/Icon';
 import { useTheme } from '../ui/theme/useTheme';
 import { useSnapshot } from '../SnapshotContext';
 import { computeProjectionSeries } from '../projectionEngine';
@@ -28,8 +28,9 @@ import { detectKeyMoments, generateInsightText } from '../insights/insightEngine
 function getChartPalette(theme: any) {
   return {
     baselineLine: theme.colors.brand.primary,
-    assetsLine: theme.colors.text.muted,
-    liabilitiesLine: theme.colors.text.muted,
+    // Phase 7.11: Assets and liabilities use domain-specific colors
+    assetsLine: theme.colors.domain.asset,
+    liabilitiesLine: theme.colors.domain.liability,
     axis: theme.colors.border.default,
     grid: theme.colors.border.subtle,
     tickLabels: theme.colors.text.secondary,
@@ -115,7 +116,7 @@ export default function EntryScreen() {
       {
         seriesId: 'netWorth' as const,
         label: 'Net worth',
-        color: chartPalette.baselineLine,
+        color: theme.colors.text.primary, // Phase 7.11: Baseline net worth uses text.primary (charcoal/white)
         data: baselineNetWorthData,
         style: {
           strokeWidth: 2.6,
@@ -190,6 +191,7 @@ export default function EntryScreen() {
             disabled={!hasUserData}
             style={[
               styles.toggleOption,
+              { borderRadius: theme.radius.base },
               mode === 'user' && styles.toggleOptionActive,
               !hasUserData && styles.toggleOptionDisabled,
               { borderColor: theme.colors.border.subtle },
@@ -214,6 +216,7 @@ export default function EntryScreen() {
             onPress={() => handleModeToggle('demo')}
             style={[
               styles.toggleOption,
+              { borderRadius: theme.radius.base },
               mode === 'demo' && styles.toggleOptionActive,
               { borderColor: theme.colors.border.subtle },
               mode === 'demo' && { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.brand.primary },
@@ -246,6 +249,7 @@ export default function EntryScreen() {
                     onPress={() => handleProfileSelect(profile.id)}
                     style={[
                       styles.profileIcon,
+                      { borderRadius: theme.radius.pill },
                       isSelected && {
                         backgroundColor: theme.colors.bg.subtle,
                         borderColor: theme.colors.brand.primary,
@@ -254,9 +258,9 @@ export default function EntryScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={profile.name}
                   >
-                    <Feather
+                    <Icon
                       name={profile.icon as any}
-                      size={20}
+                      size="medium"
                       color={isSelected ? theme.colors.brand.primary : theme.colors.text.secondary}
                     />
                   </Pressable>
@@ -274,7 +278,7 @@ export default function EntryScreen() {
         </View>
         
         {/* Phase 6.10.1: Hero card with title, subtitle, and chart */}
-        <SectionCard style={styles.heroCard}>
+        <SectionCard style={[styles.heroCard, theme.shadows.medium]}>
           <SectionHeader
             title="Projection"
             subtitle="Assets, liabilities, and net worth over time"
@@ -286,7 +290,7 @@ export default function EntryScreen() {
                 .filter(s => s.shouldRender)
                 .map((series) => (
                   <View key={series.seriesId} style={styles.legendItem}>
-                    <View style={[styles.legendSwatch, { backgroundColor: series.color }]} />
+                    <View style={[styles.legendSwatch, { backgroundColor: series.color, borderRadius: theme.radius.small }]} />
                     <Text style={[styles.legendText, { color: theme.colors.text.muted }]}>
                       {series.label}
                     </Text>
@@ -418,15 +422,7 @@ const styles = StyleSheet.create({
   heroCard: {
     marginTop: spacing.xl,
     marginBottom: spacing.xl,
-    // Shadow/elevation pattern from ProjectionResultsScreen
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    // Shadow applied inline with theme.shadows.medium
   },
   legendRow: {
     flexDirection: 'row',
@@ -444,7 +440,7 @@ const styles = StyleSheet.create({
   legendSwatch: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    // borderRadius applied inline with theme.radius.small
   },
   legendText: {
     fontSize: 11,
@@ -491,7 +487,7 @@ const styles = StyleSheet.create({
   profileIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    // borderRadius applied inline with theme.radius.pill
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
@@ -507,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
-    borderRadius: 6,
+    // borderRadius applied inline with theme.radius.base
     borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',

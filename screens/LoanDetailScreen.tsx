@@ -10,6 +10,7 @@ import type { LiabilityItem } from '../types';
 import { parseItemName } from '../domainValidation';
 import { formatCurrencyFull, formatPercent } from '../formatters';
 import { deriveLoanStateAsOfToday } from '../loanDerivation';
+import { useTheme } from '../ui/theme/useTheme';
 
 type RouteParams = {
   template: 'mortgage' | 'loan';
@@ -58,6 +59,7 @@ function parseDdMmmYyyy(input: string): Date | null {
 }
 
 export default function LoanDetailScreen() {
+  const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { template, groupId, liabilityId } = (route.params ?? {}) as RouteParams;
@@ -285,7 +287,10 @@ export default function LoanDetailScreen() {
           <Pressable
             onPress={() => navigation.goBack()}
             disabled={!canDone}
-            style={({ pressed }) => [styles.doneButton, { opacity: !canDone ? 0.35 : pressed ? 0.75 : 1 }]}
+            style={({ pressed }) => [
+              styles.doneButton,
+              { opacity: !canDone ? 0.35 : undefined, backgroundColor: !canDone ? undefined : (pressed ? theme.colors.bg.subtle : undefined) }
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Save"
           >
@@ -354,7 +359,7 @@ export default function LoanDetailScreen() {
           />
 
           <View style={styles.actionsRow}>
-            <Pressable onPress={calculate} style={({ pressed }) => [styles.actionButton, { opacity: pressed ? 0.8 : 1 }]}>
+            <Pressable onPress={calculate} style={({ pressed }) => [styles.actionButton, { backgroundColor: pressed ? theme.colors.bg.subtle : undefined }]}>
               <Text style={styles.actionButtonText}>Calculate</Text>
             </Pressable>
           </View>

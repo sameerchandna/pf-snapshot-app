@@ -22,6 +22,7 @@ import { computeA3Attribution } from '../computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
+import { useTheme } from '../ui/theme/useTheme';
 
 type ValidationResult = {
   aggregateDeterminism: 'PASS' | 'FAIL' | 'PENDING';
@@ -35,16 +36,17 @@ type ValidationResult = {
   }>;
 };
 
-function Row({ label, value, valueStyle }: { label: string; value: string; valueStyle?: any }) {
+function Row({ label, value, valueStyle, theme }: { label: string; value: string; valueStyle?: any; theme: any }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={[styles.rowValue, valueStyle]}>{value}</Text>
+      <Text style={[styles.rowLabel, theme.typography.body, { color: theme.colors.text.tertiary }]}>{label}</Text>
+      <Text style={[styles.rowValue, theme.typography.label, { color: theme.colors.text.primary }, valueStyle]}>{value}</Text>
     </View>
   );
 }
 
 export default function ProjectionRefactorValidationScreen() {
+  const { theme } = useTheme();
   const { state, isSwitching } = useSnapshot();
   const [validationResult, setValidationResult] = useState<ValidationResult>({
     aggregateDeterminism: 'PENDING',
@@ -315,48 +317,52 @@ export default function ProjectionRefactorValidationScreen() {
   }, [inputs, state, isSwitching]);
 
   const getStatusStyle = (status: 'PASS' | 'FAIL' | 'PENDING') => {
-    if (status === 'PASS') return styles.statusPass;
-    if (status === 'FAIL') return styles.statusFail;
-    return styles.statusPending;
+    if (status === 'PASS') return [styles.statusPass, { color: theme.colors.semantic.success }];
+    if (status === 'FAIL') return [styles.statusFail, { color: theme.colors.semantic.error }];
+    return [styles.statusPending, { color: theme.colors.text.muted }];
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title="Refactor Validation" subtitle="Projection engine refactor validation" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.section}>
+        <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
           <GroupHeader title="Validation Results" />
           <Row 
             label="Aggregate Determinism" 
             value={validationResult.aggregateDeterminism}
             valueStyle={getStatusStyle(validationResult.aggregateDeterminism)}
+            theme={theme}
           />
           <Row 
             label="Attribution Reconciliation" 
             value={validationResult.attributionReconciliation}
             valueStyle={getStatusStyle(validationResult.attributionReconciliation)}
+            theme={theme}
           />
           <Row 
             label="Asset Helper Sanity" 
             value={validationResult.assetHelperSanity}
             valueStyle={getStatusStyle(validationResult.assetHelperSanity)}
+            theme={theme}
           />
           <Row 
             label="Liability Helper Sanity" 
             value={validationResult.liabilityHelperSanity}
             valueStyle={getStatusStyle(validationResult.liabilityHelperSanity)}
+            theme={theme}
           />
         </View>
 
         {validationResult.errors.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
             <GroupHeader title="Errors" />
             {validationResult.errors.map((error, idx) => (
-              <View key={idx} style={styles.errorItem}>
-                <Text style={styles.errorTest}>{error.test}</Text>
-                <Text style={styles.errorCause}>{error.cause}</Text>
-                {error.details && <Text style={styles.errorDetails}>{error.details}</Text>}
+              <View key={idx} style={[styles.errorItem, { backgroundColor: theme.colors.semantic.errorBg }]}>
+                <Text style={[styles.errorTest, theme.typography.button, { color: theme.colors.semantic.errorText }]}>{error.test}</Text>
+                <Text style={[styles.errorCause, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{error.cause}</Text>
+                {error.details && <Text style={[styles.errorDetails, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{error.details}</Text>}
               </View>
             ))}
           </View>
@@ -369,7 +375,7 @@ export default function ProjectionRefactorValidationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    // backgroundColor moved to inline style
   },
   scrollView: {
     flex: 1,
@@ -381,10 +387,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: '#eee',
+    // borderColor moved to inline style
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
   },
   row: {
     flexDirection: 'row',
@@ -394,44 +400,42 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-    fontSize: 13,
-    color: '#333',
+    // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
+    // color moved to inline style
   },
   rowValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
+    // Typography moved to inline style with theme token (13px/600 → 12px/600 via theme.typography.label)
+    // color moved to inline style
     textAlign: 'right',
   },
   statusPass: {
-    color: '#059669',
+    // color moved to inline style
   },
   statusFail: {
-    color: '#dc2626',
+    // color moved to inline style
   },
   statusPending: {
-    color: '#6b7280',
+    // color moved to inline style
   },
   errorItem: {
     marginBottom: 12,
     padding: 8,
-    backgroundColor: '#fee2e2',
+    // backgroundColor moved to inline style
     borderRadius: 4,
   },
   errorTest: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#991b1b',
+    // Typography moved to inline style with theme token
+    // color moved to inline style
     marginBottom: 4,
   },
   errorCause: {
-    fontSize: 13,
-    color: '#7f1d1d',
+    // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
+    // color moved to inline style
     marginBottom: 2,
   },
   errorDetails: {
-    fontSize: 12,
-    color: '#991b1b',
+    // Typography moved to inline style with theme token
+    // color moved to inline style
     fontStyle: 'italic',
   },
 });

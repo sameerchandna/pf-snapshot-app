@@ -31,6 +31,18 @@ export function formatCurrencyFullSigned(value: number): string {
 }
 
 /**
+ * Format currency in full format with always-visible sign (+ or -).
+ * Example: +£1,234,567 or -£1,234,567 or +£0
+ * 
+ * @param value - The numeric value to format
+ * @returns Formatted currency string with always-visible sign
+ */
+export function formatCurrencyFullAlwaysSigned(value: number): string {
+  const sign = value >= 0 ? '+' : '-';
+  return `${sign}£${Math.abs(value).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+/**
  * Format currency in compact format (no sign, uses K/M notation).
  * Example: £1.2m, £234k, £1,234
  * 

@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter } from 'victory-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -10,6 +9,10 @@ import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
+import Row from '../components/Row';
+import Divider from '../components/Divider';
+import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -59,10 +62,9 @@ function getChartPalette(theme: Theme) {
     // Visual distinction is enforced via strokeWidth / opacity, not color (structural, not chromatic)
     baselineLine: theme.colors.brand.primary,
     scenarioLine: theme.colors.brand.primary,
-    // Assets and liabilities use the same muted color
-    // Distinction is via existing opacity / stroke logic (intentional for Phase 4.4)
-    assetsLine: theme.colors.text.muted,
-    liabilitiesLine: theme.colors.text.muted,
+    // Phase 7.11: Assets and liabilities use domain-specific colors
+    assetsLine: theme.colors.domain.asset,
+    liabilitiesLine: theme.colors.domain.liability,
     // Marker line uses brand color
     markerLine: theme.colors.brand.primary,
     // Axis and grid use border colors
@@ -409,10 +411,14 @@ function SnapshotComparisonCard({
     ]}>
       <View style={styles.cashflowCardRow}>
         <View style={isSubCard ? styles.cashflowCardLeftIndented : styles.cashflowCardLeft}>
-          <Text style={[styles.snapshotCardTitle, isSubCard && styles.snapshotSubCardTitle]}>
+          <Text style={[
+            styles.snapshotCardTitle,
+            { color: theme.colors.text.primary },
+            isSubCard && [styles.snapshotSubCardTitle, { color: theme.colors.text.secondary }]
+          ]}>
             {title}
           </Text>
-          <Text style={styles.snapshotCardDescription}>
+          <Text style={[styles.snapshotCardDescription, { color: theme.colors.text.muted }]}>
             {description}
           </Text>
         </View>
@@ -459,6 +465,7 @@ function SnapshotComparisonCard({
                       <Text style={[
                         styles.snapshotDeltaValue,
                         styles.snapshotDeltaValueMuted,
+                        { color: theme.colors.semantic.infoText },
                         styles.cashflowValueRight,
                       ]}>
                         {formatCurrencyCompactSigned(delta)}
@@ -467,7 +474,7 @@ function SnapshotComparisonCard({
                   ) : (
                     <Text style={[
                       styles.snapshotPrimaryValue,
-                      { color: '#999' },
+                      { color: theme.colors.text.muted },
                       styles.cashflowValueRight,
                     ]}>
                       -
@@ -540,14 +547,14 @@ function DualValueCard({
             {formatValue(baselineValue)}
           </Text>
         </View>
-        <View style={styles.dualValueDivider} />
+        <View style={[styles.dualValueDivider, { backgroundColor: theme.colors.border.subtle }]} />
         <View style={{ flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingLeft: spacing.xs }}>
           <View style={{ alignItems: 'flex-start' }}>
             <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, { textAlign: 'left', color: theme.colors.brand.primary }]}>
               {formatValue(scenarioValue)}
             </Text>
             {hasDelta && (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { textAlign: 'left', marginTop: 2 }]}>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText, textAlign: 'left', marginTop: 2 }]}>
                 {formatCurrencyCompactSigned(delta)}
               </Text>
             )}
@@ -635,7 +642,7 @@ function BalanceSheetCard({
         </View>
 
         {/* Divider */}
-        <View style={styles.balanceSheetDivider} />
+        <View style={[styles.balanceSheetDivider, { backgroundColor: theme.colors.border.subtle }]} />
 
         {/* RIGHT COLUMN: Scenario */}
         <View style={styles.balanceSheetColumn}>
@@ -651,7 +658,7 @@ function BalanceSheetCard({
           </Text>
               {/* Row 2: Scenario delta (baseline → scenario) */}
               {hasScenarioDelta && (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, styles.cashflowTextCentered]}>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText }, styles.cashflowTextCentered]}>
                 {formatCurrencyCompactSigned(delta)}
               </Text>
               )}
@@ -673,21 +680,25 @@ type Row = {
 };
 
 function KeyDriversCard({ rows, showScenario, showDelta, scenarioResult, endNetWorthBaseline, endNetWorthScenario, endNetWorthDelta }: { rows: Row[]; showScenario: boolean; showDelta: boolean; scenarioResult?: string | null; endNetWorthBaseline?: string; endNetWorthScenario?: string; endNetWorthDelta?: string }) {
+  const { theme } = useTheme();
   const endNetWorthValuesDiffer = endNetWorthDelta && endNetWorthDelta !== '—';
   
   return (
-    <View style={styles.keyDriversCard}>
-      <Text style={styles.keyDriversTitle}>What mattered most over this time</Text>
+    <View style={[styles.keyDriversCard, { borderColor: theme.colors.border.default }]}>
+      <Text style={[styles.keyDriversTitle, { color: theme.colors.text.primary }]}>What mattered most over this time</Text>
       {showScenario && scenarioResult ? (
         <Text style={styles.scenarioResultSummary}>{scenarioResult}</Text>
       ) : null}
       {showScenario && rows.some(r => r.scenarioValueText) ? (
-        <View style={styles.keyDriversHeaderRow}>
-          <View style={styles.keyDriversHeaderSpacer} />
-          <Text style={styles.keyDriversHeaderLabel}>Baseline</Text>
-          <Text style={styles.keyDriversHeaderLabelScenario}>Scenario</Text>
-          {showDelta ? <Text style={styles.keyDriversHeaderLabelDelta}>Δ</Text> : null}
-        </View>
+        <>
+          <View style={styles.keyDriversHeaderRow}>
+            <View style={styles.keyDriversHeaderSpacer} />
+            <Text style={styles.keyDriversHeaderLabel}>Baseline</Text>
+            <Text style={styles.keyDriversHeaderLabelScenario}>Scenario</Text>
+            {showDelta ? <Text style={styles.keyDriversHeaderLabelDelta}>Δ</Text> : null}
+          </View>
+          <Divider />
+        </>
       ) : null}
       <View style={styles.keyDriversRows}>
         {rows
@@ -695,35 +706,37 @@ function KeyDriversCard({ rows, showScenario, showDelta, scenarioResult, endNetW
             const isUnchanged = showScenario && r.valuesDiffer === false;
             return (
               <View key={r.label} style={[styles.keyDriversRow, isUnchanged && styles.attrRowUnchanged]}>
-                <Text style={[styles.keyDriversLabel, isUnchanged && styles.attrLabelUnchanged]}>{r.label}</Text>
+                <Text style={[styles.keyDriversLabel, { color: theme.colors.text.tertiary }, isUnchanged && styles.attrLabelUnchanged]}>{r.label}</Text>
                 {showScenario && r.scenarioValueText ? (
                   <View style={styles.keyDriversValuesRow}>
-                    <Text style={styles.keyDriversValue}>{r.valueText}</Text>
+                    <Text style={[styles.keyDriversValue, { color: theme.colors.text.primary }]}>{r.valueText}</Text>
                     <Text style={[
-                      r.valuesDiffer ? styles.keyDriversValueScenario : styles.keyDriversValueScenarioUnchanged
+                      r.valuesDiffer ? [styles.keyDriversValueScenario, { color: theme.colors.brand.primary }] : styles.keyDriversValueScenarioUnchanged
                     ]}>{r.scenarioValueText}</Text>
                     {showDelta && r.deltaValueText ? (
-                      <Text style={styles.keyDriversValueDelta}>{r.deltaValueText}</Text>
+                      <Text style={[styles.keyDriversValueDelta, { color: theme.colors.text.muted }]}>{r.deltaValueText}</Text>
                     ) : null}
                   </View>
                 ) : (
-                  <Text style={styles.keyDriversValue}>{r.valueText}</Text>
+                  <Text style={[styles.keyDriversValue, { color: theme.colors.text.primary }]}>{r.valueText}</Text>
                 )}
               </View>
             );
           })}
         {showScenario && endNetWorthBaseline && endNetWorthScenario ? (
           <>
-            <View style={styles.endNetWorthDivider} />
+            <View style={{ marginBottom: spacing.sm }}>
+              <Divider />
+            </View>
             <View style={styles.keyDriversRow}>
-              <Text style={styles.keyDriversLabel}>Net Worth</Text>
+              <Text style={[styles.keyDriversLabel, { color: theme.colors.text.tertiary }]}>Net Worth</Text>
               <View style={styles.keyDriversValuesRow}>
-                <Text style={styles.keyDriversValue}>{endNetWorthBaseline}</Text>
+                <Text style={[styles.keyDriversValue, { color: theme.colors.text.primary }]}>{endNetWorthBaseline}</Text>
                 <Text style={[
-                  endNetWorthValuesDiffer ? styles.keyDriversValueScenario : styles.keyDriversValueScenarioUnchanged
+                  endNetWorthValuesDiffer ? [styles.keyDriversValueScenario, { color: theme.colors.brand.primary }] : styles.keyDriversValueScenarioUnchanged
                 ]}>{endNetWorthScenario}</Text>
                 {showDelta && endNetWorthDelta ? (
-                  <Text style={styles.keyDriversValueDelta}>{endNetWorthDelta}</Text>
+                  <Text style={[styles.keyDriversValueDelta, { color: theme.colors.text.muted }]}>{endNetWorthDelta}</Text>
                 ) : null}
               </View>
             </View>
@@ -785,6 +798,7 @@ function ReconciliationOverlay({
   };
   selectedAge: number;
 }) {
+  const { theme } = useTheme();
   // Core reconciliation
   const baselineNetWorth = valuesAtAge.netWorth;
   const scenarioNetWorth = scenarioValuesAtAge.netWorth;
@@ -810,7 +824,7 @@ function ReconciliationOverlay({
   const allInvariantsPass = invariant1 && invariant2 && invariant3 && invariant4;
 
   return (
-    <View style={styles.reconciliationPanel}>
+    <View style={[styles.reconciliationPanel, { backgroundColor: theme.colors.bg.subtle }]}>
       <Text style={styles.reconciliationTitle}>Core Reconciliation (Age {selectedAge})</Text>
       
       <View style={styles.reconciliationRow}>
@@ -835,12 +849,14 @@ function ReconciliationOverlay({
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>Reconciles:</Text>
-        <Text style={[styles.reconciliationValue, reconciles ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, reconciles ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : [styles.reconciliationFail, { color: theme.colors.semantic.error }]]}>
           {reconciles ? '✓ YES' : '✕ NO'}
         </Text>
       </View>
 
-      <View style={styles.reconciliationDivider} />
+      <View style={{ marginVertical: 8 }}>
+        <Divider />
+      </View>
 
       <Text style={styles.reconciliationTitle}>Attribution Breakdown</Text>
       
@@ -859,48 +875,52 @@ function ReconciliationOverlay({
         <Text style={styles.reconciliationValue}>{formatCurrencyFull(-debtReduction)}</Text>
       </View>
       
-      <View style={styles.reconciliationDivider} />
+      <View style={{ marginVertical: 8 }}>
+        <Divider />
+      </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>Sum:</Text>
         <Text style={styles.reconciliationValue}>{formatCurrencyFull(attributionSum)}</Text>
       </View>
 
-      <View style={styles.reconciliationDivider} />
+      <View style={{ marginVertical: 8 }}>
+        <Divider />
+      </View>
 
       <Text style={styles.reconciliationTitle}>Canonical Invariants</Text>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = scenario − baseline:</Text>
-        <Text style={[styles.reconciliationValue, invariant1 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant1 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : [styles.reconciliationFail, { color: theme.colors.semantic.error }]]}>
           {invariant1 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = extraContributions + extraGrowth:</Text>
-        <Text style={[styles.reconciliationValue, invariant2 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant2 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : [styles.reconciliationFail, { color: theme.colors.semantic.error }]]}>
           {invariant2 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>netWorthDelta = sum(attribution):</Text>
-        <Text style={[styles.reconciliationValue, invariant3 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant3 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : [styles.reconciliationFail, { color: theme.colors.semantic.error }]]}>
           {invariant3 ? '✓' : '✕'}
         </Text>
       </View>
       
       <View style={styles.reconciliationRow}>
         <Text style={styles.reconciliationLabel}>Growth = residual (not total):</Text>
-        <Text style={[styles.reconciliationValue, invariant4 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : styles.reconciliationFail]}>
+        <Text style={[styles.reconciliationValue, invariant4 ? [styles.reconciliationPass, { color: theme.colors.semantic.success }] : [styles.reconciliationFail, { color: theme.colors.semantic.error }]]}>
           {invariant4 ? '✓' : '✕'}
         </Text>
       </View>
 
       {!allInvariantsPass && (
-        <View style={styles.reconciliationWarning}>
-          <Text style={styles.reconciliationWarningText}>
+        <View style={[styles.reconciliationWarning, { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder }]}>
+          <Text style={[styles.reconciliationWarningText, { color: theme.colors.semantic.errorText }]}>
             ⚠️ One or more invariants failed. Check console for details.
           </Text>
         </View>
@@ -1100,18 +1120,22 @@ function FinancialHealthSummary({
 }
 
 function AttributionCard({ title, subtitle, education, rows, showScenario, showDelta }: { title: string; subtitle?: string; education: string; rows: Row[]; showScenario: boolean; showDelta: boolean }) {
+  const { theme } = useTheme();
   return (
-    <View style={styles.attrCard}>
-      <Text style={styles.attrTitle}>{title}</Text>
-      {subtitle ? <Text style={styles.attrSubtitle}>{subtitle}</Text> : null}
-      {education ? <Text style={styles.attrEducation}>{education}</Text> : null}
+    <View style={[styles.attrCard, { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.border.subtle }]}>
+      <Text style={[styles.attrTitle, { color: theme.colors.text.primary }]}>{title}</Text>
+      {subtitle ? <Text style={[styles.attrSubtitle, { color: theme.colors.text.secondary }]}>{subtitle}</Text> : null}
+      {education ? <Text style={[styles.attrEducation, { color: theme.colors.text.muted }]}>{education}</Text> : null}
       {showScenario && rows.some(r => r.scenarioValueText) ? (
-        <View style={styles.attrHeaderRow}>
-          <View style={styles.attrHeaderSpacer} />
-          <Text style={styles.attrHeaderLabel}>Baseline</Text>
-          <Text style={styles.attrHeaderLabelScenario}>Scenario</Text>
-          {showDelta ? <Text style={styles.attrHeaderLabelDelta}>Δ</Text> : null}
-        </View>
+        <>
+          <View style={styles.attrHeaderRow}>
+            <View style={styles.attrHeaderSpacer} />
+            <Text style={styles.attrHeaderLabel}>Baseline</Text>
+            <Text style={styles.attrHeaderLabelScenario}>Scenario</Text>
+            {showDelta ? <Text style={styles.attrHeaderLabelDelta}>Δ</Text> : null}
+          </View>
+          <Divider />
+        </>
       ) : null}
       <View style={styles.attrRows}>
         {rows
@@ -1120,22 +1144,26 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
             return (
               <View key={r.label}>
                 <View style={[styles.attrRow, isUnchanged && styles.attrRowUnchanged]}>
-                  <Text style={[styles.attrLabel, isUnchanged && styles.attrLabelUnchanged]}>{r.label}</Text>
+                  <Text style={[styles.attrLabel, { color: theme.colors.text.tertiary }, isUnchanged && styles.attrLabelUnchanged]}>{r.label}</Text>
                   {showScenario && r.scenarioValueText ? (
                     <View style={styles.attrValuesRow}>
-                      <Text style={styles.attrValue}>{r.valueText}</Text>
+                      <Text style={[styles.attrValue, { color: theme.colors.text.primary }]}>{r.valueText}</Text>
                       <Text style={[
-                        r.valuesDiffer ? styles.attrValueScenario : styles.attrValueScenarioUnchanged
+                        r.valuesDiffer ? [styles.attrValueScenario, { color: theme.colors.brand.primary }] : styles.attrValueScenarioUnchanged
                       ]}>{r.scenarioValueText}</Text>
                       {showDelta && r.deltaValueText ? (
-                        <Text style={styles.attrValueDelta}>{r.deltaValueText}</Text>
+                        <Text style={[styles.attrValueDelta, { color: theme.colors.text.muted }]}>{r.deltaValueText}</Text>
                       ) : null}
                     </View>
                   ) : (
-                    <Text style={styles.attrValue}>{r.valueText}</Text>
+                    <Text style={[styles.attrValue, { color: theme.colors.text.primary }]}>{r.valueText}</Text>
                   )}
                 </View>
-                {r.showDividerAfter ? <View style={styles.attrDivider} /> : null}
+                {r.showDividerAfter ? (
+                  <View style={{ marginTop: 4, marginBottom: 4 }}>
+                    <Divider />
+                  </View>
+                ) : null}
               </View>
             );
           })}
@@ -1145,7 +1173,7 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
 }
 
 export default function ProjectionResultsScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
@@ -2925,11 +2953,11 @@ export default function ProjectionResultsScreen() {
         {
           seriesId: 'netWorth',
           label: 'Net worth',
-          color: chartPalette.baselineLine,
+          color: theme.colors.text.primary, // Phase 7.11: Baseline net worth uses text.primary (charcoal/white)
           data: netWorthLiquidData,
           style: {
-            strokeWidth: 2.6,
-            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0,
+            strokeWidth: 3.2, // Phase 7.11: Increased for prominence
+            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 0.97, // Phase 7.11: Micro-soften when no scenario (was 1.0)
           },
           shouldRender: baselineSeries.length > 0,
         },
@@ -2953,7 +2981,7 @@ export default function ProjectionResultsScreen() {
           data: liquidAssetsData,
           style: {
             strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
-            opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
+            opacity: activeScenarioSource !== 'baseline' ? 0.35 : 0.82, // Phase 7.11: Final micro-calibration - very small reduction to ensure clearly secondary (was 0.85)
           },
           shouldRender: true,
         },
@@ -3005,11 +3033,11 @@ export default function ProjectionResultsScreen() {
         {
           seriesId: 'netWorth',
           label: 'Net worth',
-          color: chartPalette.baselineLine,
+          color: theme.colors.text.primary, // Phase 7.11: Baseline net worth uses text.primary (charcoal/white)
           data: baselineNetWorthData,
           style: {
-            strokeWidth: 2.6,
-            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 1.0,
+            strokeWidth: 3.2, // Phase 7.11: Increased for prominence
+            opacity: effectiveScenarioSeries && effectiveScenarioSeries.length > 0 ? 0.7 : 0.97, // Phase 7.11: Micro-soften when no scenario (was 1.0)
           },
           shouldRender: baselineSeries.length > 0,
         },
@@ -3033,7 +3061,7 @@ export default function ProjectionResultsScreen() {
           data: assetsData,
           style: {
             strokeWidth: activeScenarioSource !== 'baseline' ? 1.5 : 1.8,
-            opacity: activeScenarioSource !== 'baseline' ? 0.38 : 1.0,
+            opacity: activeScenarioSource !== 'baseline' ? 0.35 : 0.82, // Phase 7.11: Final micro-calibration - very small reduction to ensure clearly secondary (was 0.85)
           },
           shouldRender: true,
         },
@@ -3447,8 +3475,8 @@ export default function ProjectionResultsScreen() {
 
           {/* Negative Surplus Banner */}
           {isSurplusNegative && (
-            <View style={styles.warningBanner}>
-              <Text style={styles.warningBannerText}>
+            <View style={[styles.warningBanner, { backgroundColor: theme.colors.semantic.warningBg, borderColor: theme.colors.semantic.warning }]}>
+              <Text style={[styles.warningBannerText, { color: theme.colors.semantic.warningText }]}>
                 Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
               </Text>
             </View>
@@ -3467,7 +3495,7 @@ export default function ProjectionResultsScreen() {
                     disabled={isSurplusNegative}
                     style={[
                       styles.toolbarPillButton,
-                      activeScenarioSource === 'persisted' && styles.toolbarPillButtonActive,
+                      activeScenarioSource === 'persisted' && [styles.toolbarPillButtonActive, { backgroundColor: theme.colors.brand.tint }],
                       isSurplusNegative && styles.toolbarPillButtonDisabled,
                     ]}
                   >
@@ -3495,13 +3523,13 @@ export default function ProjectionResultsScreen() {
                     disabled={isSurplusNegative}
                     style={[
                       styles.toolbarPillButton,
-                      activeScenarioSource === 'quick' && styles.toolbarPillButtonActive,
+                      activeScenarioSource === 'quick' && [styles.toolbarPillButtonActive, { backgroundColor: theme.colors.brand.tint }],
                       isSurplusNegative && styles.toolbarPillButtonDisabled,
                     ]}
                   >
-                    <Feather 
+                    <Icon 
                       name="zap" 
-                      size={16} 
+                      size="base"
                       color={activeScenarioSource === 'quick' ? theme.colors.brand.primary : theme.colors.text.secondary} 
                     />
                     <Text
@@ -3527,12 +3555,12 @@ export default function ProjectionResultsScreen() {
                     <Text style={styles.toolbarPillChevron}>▼</Text>
                   </Pressable>
 
-                  <Pressable 
+                  <IconButton
+                    icon="settings"
+                    variant="default"
                     onPress={() => navigation.navigate('ProjectionSettings')}
-                    style={styles.toolbarIconPill}
-                  >
-                    <Feather name="settings" size={16} color="#777" />
-                  </Pressable>
+                    accessibilityLabel="Projection settings"
+                  />
                 </View>
               </View>
             </View>
@@ -3542,7 +3570,7 @@ export default function ProjectionResultsScreen() {
         {quickWhatIfExpanded ? (
           <View 
             ref={quickWhatIfRef} 
-            style={styles.quickWhatIfContainer}
+            style={[styles.quickWhatIfContainer, { backgroundColor: theme.colors.bg.subtle }]}
             onLayout={(event) => {
               // Scroll to this section when it's laid out, accounting for sticky header
               const { y } = event.nativeEvent.layout;
@@ -3557,8 +3585,8 @@ export default function ProjectionResultsScreen() {
           >
             {/* Helper Hint */}
             {availableToAllocate !== undefined && scenarioTypeToggle === 'FLOW_INVESTING' && (
-              <Text style={styles.quickWhatIfHint}>
-                Available to invest: <Text style={styles.quickWhatIfHintAmount}>{formatCurrencyFull(availableToAllocate)}</Text> / month
+              <Text style={[styles.quickWhatIfHint, { color: theme.colors.text.muted }]}>
+                Available to invest: <Text style={[styles.quickWhatIfHintAmount, { color: theme.colors.brand.primary }]}>{formatCurrencyFull(availableToAllocate)}</Text> / month
               </Text>
             )}
 
@@ -3613,41 +3641,53 @@ export default function ProjectionResultsScreen() {
             {/* Apply to Row - Conditional based on scenario type */}
             {scenarioTypeToggle === 'FLOW_INVESTING' ? (
             <View style={styles.quickRow}>
-              <Text style={styles.quickLabel}>Apply to</Text>
+              <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Apply to</Text>
               <Pressable
                 onPress={() => openLater(() => setAssetPickerOpen(true))}
-                style={({ pressed }) => [styles.quickWhatIfSelector, { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, flex: 1 }]}
+                style={({ pressed }) => [
+                  styles.quickWhatIfSelector,
+                  { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, borderColor: theme.colors.border.subtle, flex: 1 }
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Select asset"
               >
                 <View style={styles.quickWhatIfSelectorRow}>
                   <Text
-                    style={[styles.quickWhatIfSelectorValue, !selectedAsset ? styles.quickWhatIfPlaceholder : null]}
+                    style={[
+                      styles.quickWhatIfSelectorValue,
+                      { color: selectedAsset ? theme.colors.text.primary : theme.colors.text.secondary }
+                    ]}
                     numberOfLines={1}
                   >
                     {selectedAsset ? getAssetName(selectedAsset) : 'Select asset'}
                   </Text>
-                  <Feather name="chevron-down" size={16} color="#777" />
+                  <Icon name="chevron-down" size="base" />
                 </View>
               </Pressable>
             </View>
             ) : (
               <View style={styles.quickRow}>
-                <Text style={styles.quickLabel}>Apply to</Text>
+                <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Apply to</Text>
                 <Pressable
                   onPress={() => openLater(() => setMortgagePickerOpen(true))}
-                  style={({ pressed }) => [styles.quickWhatIfSelector, { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, flex: 1 }]}
+                  style={({ pressed }) => [
+                  styles.quickWhatIfSelector,
+                  { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, borderColor: theme.colors.border.subtle, flex: 1 }
+                ]}
                   accessibilityRole="button"
                   accessibilityLabel="Select mortgage"
                 >
                   <View style={styles.quickWhatIfSelectorRow}>
                     <Text
-                      style={[styles.quickWhatIfSelectorValue, !selectedLiability ? styles.quickWhatIfPlaceholder : null]}
+                      style={[
+                        styles.quickWhatIfSelectorValue,
+                        { color: selectedLiability ? theme.colors.text.primary : theme.colors.text.secondary }
+                      ]}
                       numberOfLines={1}
                     >
                       {selectedLiability ? getLiabilityName(selectedLiability) : 'Select mortgage'}
                     </Text>
-                    <Feather name="chevron-down" size={16} color="#777" />
+                    <Icon name="chevron-down" size="base" />
                   </View>
                 </Pressable>
               </View>
@@ -3655,9 +3695,14 @@ export default function ProjectionResultsScreen() {
 
             {/* Extra Amount Row */}
             <View style={styles.quickRow}>
-              <Text style={styles.quickLabel}>Extra / month</Text>
+              <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Extra / month</Text>
               <TextInput
-                style={[styles.quickWhatIfAmountInput, scenarioValidationError ? styles.quickWhatIfAmountInputError : null, { flex: 1 }]}
+                style={[
+                  styles.quickWhatIfAmountInput,
+                  { color: theme.colors.text.primary, borderColor: theme.colors.border.subtle },
+                  scenarioValidationError ? [styles.quickWhatIfAmountInputError, { borderColor: theme.colors.semantic.error }] : null,
+                  { flex: 1 }
+                ]}
                 value={amountInput}
                 onChangeText={handleAmountChange}
                 placeholder="0"
@@ -3666,7 +3711,7 @@ export default function ProjectionResultsScreen() {
               />
             </View>
             {scenarioValidationError ? (
-              <Text style={styles.quickWhatIfError}>{scenarioValidationError}</Text>
+              <Text style={[styles.quickWhatIfError, { color: theme.colors.semantic.error }]}>{scenarioValidationError}</Text>
             ) : null}
 
             {/* Clear Scenario */}
@@ -3699,15 +3744,16 @@ export default function ProjectionResultsScreen() {
               <Pressable
                 style={[
                   styles.chartMiniToggle,
-                  showLiquidOnly && styles.chartMiniToggleActive,
+                  { backgroundColor: theme.colors.bg.subtle },
+                  showLiquidOnly && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
                 ]}
                 onPress={() => setShowLiquidOnly(v => !v)}
               >
                 <Text
-                  style={[
-                    styles.chartMiniToggleText,
-                    showLiquidOnly && styles.chartMiniToggleTextActive,
-                  ]}
+                    style={[
+                      styles.chartMiniToggleText,
+                      showLiquidOnly && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
+                    ]}
                 >
                   {showLiquidOnly ? 'Liquid assets' : 'All assets'}
                 </Text>
@@ -3732,7 +3778,7 @@ export default function ProjectionResultsScreen() {
                   style={{
                     axis: { stroke: chartPalette.axis },
                     tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
-                    grid: { stroke: 'transparent' },
+                    grid: { stroke: 'transparent' }, // Phase 7.11: Remove horizontal gridlines
                   }}
                 />
                 <VictoryAxis
@@ -3743,7 +3789,7 @@ export default function ProjectionResultsScreen() {
                   style={{
                     axis: { stroke: chartPalette.axis },
                     tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
-                    grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
+                    grid: { stroke: 'transparent' }, // Phase 7.11: Remove vertical gridlines
                   }}
                 />
 
@@ -3759,6 +3805,7 @@ export default function ProjectionResultsScreen() {
                           stroke: series.color,
                           strokeWidth: series.style.strokeWidth,
                           opacity: series.style.opacity,
+                          ...(series.seriesId === 'netWorth' ? { strokeLinecap: 'round' } : {}), // Phase 7.11: Rounded caps for baseline net worth only
                         },
                       }}
                     />
@@ -3783,21 +3830,66 @@ export default function ProjectionResultsScreen() {
                     );
                   })
                   .filter(Boolean)}
+                {/* Phase 7.11 Fix: Selected-age dots (explicit, independent from insight dots) */}
+                {selectedAge != null && valuesAtAge && chartData.series
+                  .filter(s => s.shouldRender && (s.seriesId === 'netWorth' || s.seriesId === 'assets' || s.seriesId === 'liabilities'))
+                  .map((series) => {
+                    // Get Y value from valuesAtAge based on series type
+                    let yValue: number;
+                    if (series.seriesId === 'netWorth') {
+                      yValue = valuesAtAge.netWorth;
+                    } else if (series.seriesId === 'assets') {
+                      yValue = valuesAtAge.assets;
+                    } else if (series.seriesId === 'liabilities') {
+                      yValue = valuesAtAge.liabilities;
+                    } else {
+                      return null;
+                    }
+                    
+                    // Phase 7.11: Reduce size for asset/liability dots only (pins, not markers)
+                    const dotSize = (series.seriesId === 'assets' || series.seriesId === 'liabilities') ? 3 : 4;
+                    
+                    return (
+                      <VictoryScatter
+                        key={`selected-age-${series.seriesId}`}
+                        data={[{ x: selectedAge, y: yValue }]}
+                        style={{
+                          data: {
+                            fill: series.color,
+                            opacity: 1.0, // Full opacity for selected-age dots
+                          },
+                        }}
+                        size={dotSize} // Phase 7.11: Assets/liabilities use size 3 (pins), net worth uses size 4
+                      />
+                    );
+                  })
+                  .filter(Boolean)}
                 {/* Vertical marker line at selectedAge (visual cursor, not a filter) */}
-                <VictoryLine
-                  data={[
-                    { x: selectedAge, y: chartData.domainMin },
-                    { x: selectedAge, y: chartData.domainMax },
-                  ]}
-                  style={{
-                    data: {
-                      stroke: chartPalette.markerLine,
-                      strokeWidth: 1.5,
-                      strokeDasharray: '4,4',
-                      opacity: 0.6,
-                    },
-                  }}
-                />
+                 {/* Phase 7.11: Muted grey, thinner than data lines, darker and more dotted */}
+                 {selectedAge != null && (() => {
+                   // Shorten vertical span to ~90% of chart height (5% padding at top and bottom)
+                   const domainRange = chartData.domainMax - chartData.domainMin;
+                   const padding = domainRange * 0.05;
+                   const shortenedMin = chartData.domainMin + padding;
+                   const shortenedMax = chartData.domainMax - padding;
+                   
+                   return (
+                     <VictoryLine
+                       data={[
+                         { x: selectedAge, y: shortenedMin },
+                         { x: selectedAge, y: shortenedMax },
+                       ]}
+                       style={{
+                         data: {
+                           stroke: theme.colors.chart.markerLine, // Phase 7.11: Muted grey
+                           strokeWidth: 1.0, // Phase 7.11: Less weight (was 1.2)
+                           strokeDasharray: '2,2', // More dotted appearance (was '4,4')
+                           opacity: 0.72, // Phase 7.11: Reduced to read as reference, not divider (was 0.80)
+                         },
+                       }}
+                     />
+                   );
+                 })()}
               </VictoryChart>
 
               {/* Phase 5.2a: Transparent gesture overlay */}
@@ -3805,6 +3897,43 @@ export default function ProjectionResultsScreen() {
                 style={StyleSheet.absoluteFill}
                 {...chartPanResponder.panHandlers}
               />
+              
+              {/* Fixed values card inside chart (top-left) */}
+              {valuesAtAge && (
+                <View
+                  style={[
+                    styles.chartValuesCard,
+                    {
+                      backgroundColor: theme.colors.bg.card,
+                      opacity: 0.88, // Phase 7.11: Reduced opacity for less floating feel
+                      borderWidth: 0, // Phase 7.11: Remove border entirely
+                      top: chartPadding.top + 4,
+                      left: chartPadding.left + 4,
+                    },
+                  ]}
+                  pointerEvents="none" // Allow gestures to pass through
+                >
+                  {/* Net worth (primary, dominant) */}
+                  <View style={styles.chartValuesPrimary}>
+                    <Text style={[styles.chartValuesPrimaryLabel, { color: theme.colors.text.muted, opacity: 0.88 }]}>
+                      {effectiveScenarioActive ? 'Net worth (baseline)' : 'Net worth'}
+                    </Text>
+                    <Text style={[styles.chartValuesPrimaryValue, { color: theme.colors.text.primary }]}>
+                      {formatCurrencyCompact(valuesAtAge.netWorth)}
+                    </Text>
+                  </View>
+                  
+                  {/* Assets and liabilities (secondary, domain colors) */}
+                  <View style={styles.chartValuesSecondary}>
+                    <Text style={[styles.chartValuesSecondaryText, { color: theme.colors.domain.asset, opacity: 0.88 }]}>
+                      Assets {formatCurrencyCompact(valuesAtAge.assets)}
+                    </Text>
+                    <Text style={[styles.chartValuesSecondaryText, { color: theme.colors.domain.liability, opacity: 0.88 }]}>
+                      Liabilities {formatCurrencyCompact(valuesAtAge.liabilities)}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Helper text when both liquid toggle and scenario are ON */}
@@ -3815,87 +3944,6 @@ export default function ProjectionResultsScreen() {
             ) : null}
           </View>
           </SectionCard>
-
-          {/* Phase 5.3: Unified value bar companion card */}
-          {valuesAtAge && (
-            <SectionCard style={{ marginTop: spacing.xs, marginBottom: spacing.huge, padding: spacing.sm }}>
-              <View style={[styles.valueBar, { width: chartWidth }]}>
-                {/* Baseline row */}
-                <View style={styles.valueBarRow}>
-                  <Text style={[styles.valueBarRowLabel, { color: theme.colors.text.muted }]}>Baseline</Text>
-                  {/* Net worth */}
-                  <View style={styles.valueBarItem}>
-                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.baselineLine }]} />
-                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Net worth</Text>
-                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
-                      {formatCurrencyCompact(valuesAtAge.netWorth)}
-                    </Text>
-                  </View>
-
-                  {/* Assets */}
-                  <View style={styles.valueBarItem}>
-                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.assetsLine }]} />
-                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Assets</Text>
-                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
-                      {formatCurrencyCompact(valuesAtAge.assets)}
-                    </Text>
-                  </View>
-
-                  {/* Liabilities */}
-                  <View style={styles.valueBarItem}>
-                    <View style={[styles.valueBarDot, { backgroundColor: chartPalette.liabilitiesLine }]} />
-                    <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
-                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
-                      {formatCurrencyCompact(valuesAtAge.liabilities)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Scenario row (only if active) */}
-                {effectiveScenarioActive && scenarioValuesAtAge && (
-                  <View style={styles.valueBarRow}>
-                    <Text style={[styles.valueBarRowLabel, { color: theme.colors.text.muted }]}>Scenario</Text>
-                    {/* Net worth */}
-                    <View style={styles.valueBarItem}>
-                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.scenarioLine }]} />
-                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Net worth</Text>
-                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
-                        {formatCurrencyCompact(scenarioValuesAtAge.netWorth)}
-                      </Text>
-                    </View>
-
-                    {/* Assets */}
-                    <View style={styles.valueBarItem}>
-                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.assetsLine }]} />
-                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Assets</Text>
-                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
-                        {formatCurrencyCompact(scenarioValuesAtAge.assets)}
-                      </Text>
-                    </View>
-
-                    {/* Liabilities */}
-                    <View style={styles.valueBarItem}>
-                      <View style={[styles.valueBarDot, { backgroundColor: chartPalette.liabilitiesLine }]} />
-                      <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
-                      <Text style={[styles.valueBarValue, { color: theme.colors.brand.primary, fontWeight: '600' }]}>
-                        {formatCurrencyCompact(scenarioValuesAtAge.liabilities)}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Phase 5.5: Observational insights (max 2, filtered by selectedAge) */}
-                {insightsToShow.length > 0 && (
-                  <>
-                    <View style={[styles.insightsDivider, { borderColor: theme.colors.border.subtle }]} />
-                    <Text style={[styles.insightText, { color: theme.colors.text.secondary }]}>
-                      {insightsToShow.map(insight => insight.text).join(' · ')}
-                    </Text>
-                  </>
-                )}
-              </View>
-            </SectionCard>
-          )}
 
           {/* Phase Four: Scenario Impact Section (only when scenario is active and deltas are valid) */}
           {effectiveScenarioActive && scenarioDeltas && scenarioValuesAtAge && deltasValid ? (
@@ -4038,7 +4086,7 @@ export default function ProjectionResultsScreen() {
 
             <View style={[styles.column, styles.cashflowColumn, { marginTop: layout.md }]}>
               <View style={styles.cashflowCardStack}>
-                <View style={styles.cashflowSpine} />
+                <View style={[styles.cashflowSpine, { backgroundColor: theme.colors.border.subtle }]} />
               <View style={styles.cashflowCentered}>
                 {/* Gross Income */}
                 <SnapshotComparisonCard
@@ -4213,15 +4261,16 @@ export default function ProjectionResultsScreen() {
                 <Pressable
                   style={[
                     styles.chartMiniToggle,
-                    showDeltaColumn && styles.chartMiniToggleActive,
+                    { backgroundColor: theme.colors.bg.subtle },
+                    showDeltaColumn && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
                   ]}
                   onPress={() => setShowDeltaColumn(v => !v)}
                 >
                   <Text
-                    style={[
-                      styles.chartMiniToggleText,
-                      showDeltaColumn && styles.chartMiniToggleTextActive,
-                    ]}
+                      style={[
+                        styles.chartMiniToggleText,
+                        showDeltaColumn && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
+                      ]}
                   >
                     Show Deltas
                   </Text>
@@ -4234,7 +4283,7 @@ export default function ProjectionResultsScreen() {
               <View style={styles.reconciliationOverlayContainer}>
                 <Pressable
                   onPress={() => setShowReconciliationOverlay(!showReconciliationOverlay)}
-                  style={styles.reconciliationToggle}
+                  style={[styles.reconciliationToggle, { backgroundColor: theme.colors.bg.subtle }]}
                 >
                   <Text style={styles.reconciliationToggleText}>
                     {showReconciliationOverlay ? '▼' : '▶'} Math Reconciliation (Dev)
@@ -4313,10 +4362,11 @@ export default function ProjectionResultsScreen() {
                   return parts.length > 0 ? parts.join(' • ') : null;
                 })();
                 return (
-                  <Pressable
+                  <Row
                     key={asset.id}
                     onPress={() => handleSelectAsset(asset.id)}
-                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
+                    showBottomDivider={true}
+                    style={{ paddingVertical: 12 }}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{asset.name}</Text>
@@ -4324,7 +4374,7 @@ export default function ProjectionResultsScreen() {
                         <Text style={styles.modalOptionMetadata}>{metadata}</Text>
                       ) : null}
                     </View>
-                  </Pressable>
+                  </Row>
                 );
               })}
               {state.assets.length === 0 ? (
@@ -4359,10 +4409,11 @@ export default function ProjectionResultsScreen() {
                   return parts.length > 0 ? parts.join(' • ') : null;
                 })();
                 return (
-                  <Pressable
+                  <Row
                     key={loan.id}
                     onPress={() => handleSelectLiability(loan.id)}
-                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
+                    showBottomDivider={true}
+                    style={{ paddingVertical: 12 }}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{loan.name}</Text>
@@ -4370,7 +4421,7 @@ export default function ProjectionResultsScreen() {
                         <Text style={styles.modalOptionMetadata}>{metadata}</Text>
                       ) : null}
                     </View>
-                  </Pressable>
+                  </Row>
                 );
               })}
               {availableLoans.length === 0 ? (
@@ -4390,19 +4441,24 @@ export default function ProjectionResultsScreen() {
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {Array.from({ length: state.projection.endAge - state.projection.currentAge + 1 }, (_, i) => {
                 const age = state.projection.currentAge + i;
+                const isSelected = selectedAge === age;
                 return (
-                  <Pressable
+                  <Row
                     key={age}
                     onPress={() => {
                       setSelectedAge(age);
                       setAgeSelectorOpen(false);
                     }}
-                    style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : (selectedAge === age ? theme.colors.bg.subtle : 'transparent') }]}
+                    showBottomDivider={true}
+                    style={{ 
+                      paddingVertical: 12,
+                      backgroundColor: isSelected ? theme.colors.bg.subtle : undefined
+                    }}
                   >
-                    <Text style={[styles.modalOptionText, selectedAge === age && { color: theme.colors.brand.primary }]}>
+                    <Text style={[styles.modalOptionText, isSelected && { color: theme.colors.brand.primary }]}>
                       Age {age}
                     </Text>
-                  </Pressable>
+                  </Row>
                 );
               })}
             </ScrollView>
@@ -4419,57 +4475,61 @@ export default function ProjectionResultsScreen() {
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {/* Negative Surplus Banner in Modal */}
               {isSurplusNegative && (
-                <View style={styles.modalWarningBanner}>
-                  <Text style={styles.modalWarningBannerText}>
+                <View style={[styles.modalWarningBanner, { backgroundColor: theme.colors.semantic.warningBg, borderColor: theme.colors.semantic.warning }]}>
+                  <Text style={[styles.modalWarningBannerText, { color: theme.colors.semantic.warningText }]}>
                     Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
                   </Text>
                 </View>
               )}
-              <Pressable
+              <Row
                 onPress={() => handleScenarioSelect(BASELINE_SCENARIO_ID)}
                 disabled={isSurplusNegative}
-                style={({ pressed }) => [
-                  styles.modalOption, 
-                  { 
-                    opacity: isSurplusNegative ? 0.5 : 1,
-                    backgroundColor: pressed && !isSurplusNegative ? theme.colors.bg.subtle : ((!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? theme.colors.bg.subtle : 'transparent')
-                  }
-                ]}
+                showBottomDivider={true}
+                style={{ 
+                  paddingVertical: 12,
+                  opacity: isSurplusNegative ? 0.5 : 1,
+                  backgroundColor: (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? theme.colors.bg.subtle : undefined
+                }}
               >
                 <Text style={[styles.modalOptionText, (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) && { color: theme.colors.brand.primary }]}>
                   Baseline
                 </Text>
-              </Pressable>
+              </Row>
               {savedScenarios
                 .filter(s => s.id !== BASELINE_SCENARIO_ID) // Exclude baseline from scenarios list
-                .map(s => (
-                  <Pressable
-                    key={s.id}
-                    onPress={() => handleScenarioSelect(s.id)}
-                    disabled={isSurplusNegative}
-                    style={({ pressed }) => [
-                      styles.modalOption, 
-                      { 
+                .map(s => {
+                  const isSelected = activeScenarioId === s.id;
+                  return (
+                    <Row
+                      key={s.id}
+                      onPress={() => handleScenarioSelect(s.id)}
+                      disabled={isSurplusNegative}
+                      showBottomDivider={true}
+                      style={{ 
+                        paddingVertical: 12,
                         opacity: isSurplusNegative ? 0.5 : 1,
-                        backgroundColor: pressed && !isSurplusNegative ? theme.colors.bg.subtle : (activeScenarioId === s.id ? theme.colors.bg.subtle : 'transparent')
-                      }
-                    ]}
-                  >
-                    <Text style={[styles.modalOptionText, activeScenarioId === s.id && { color: theme.colors.brand.primary }]}>
-                      {s.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              <View style={styles.modalDivider} />
-              <Pressable
+                        backgroundColor: isSelected ? theme.colors.bg.subtle : undefined
+                      }}
+                    >
+                      <Text style={[styles.modalOptionText, isSelected && { color: theme.colors.brand.primary }]}>
+                        {s.name}
+                      </Text>
+                    </Row>
+                  );
+                })}
+              <View style={{ marginVertical: spacing.sm }}>
+                <Divider />
+              </View>
+              <Row
                 onPress={() => {
                   setScenarioSelectorOpen(false);
                   navigation.navigate('ScenarioManagement');
                 }}
-                style={({ pressed }) => [styles.modalOption, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
+                showBottomDivider={true}
+                style={{ paddingVertical: 12 }}
               >
                 <Text style={styles.modalOptionTextSecondary}>Manage scenarios…</Text>
-              </Pressable>
+              </Row>
             </ScrollView>
           </View>
         </View>
@@ -4512,27 +4572,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  toolbarLeftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  toolbarRightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
   toolbarPill: {
     height: 28,
     paddingHorizontal: layout.inputPadding,
     borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  toolbarIconPill: {
-    height: 28,
-    width: 28,
-    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4566,8 +4609,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   toolbarPillButtonActive: {
-    // TODO: brand tint — no theme token (intentional)
-    backgroundColor: '#e8f0ff',
+    // backgroundColor moved to inline style
   },
   toolbarPillButtonTextActive: {
     fontWeight: '600',
@@ -4675,7 +4717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 6,
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     flexShrink: 0,
   },
   quickWhatIfContainer: {
@@ -4686,7 +4728,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
   },
   quickWhatIfHint: {
     fontSize: 11,
@@ -4695,7 +4737,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   quickWhatIfHintAmount: {
-    color: '#2F5BEA',
+    // color moved to inline style (already using theme.colors.brand.primary)
     fontWeight: '500',
   },
   quickRow: {
@@ -4751,7 +4793,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   quickWhatIfAmountInputError: {
-    borderColor: '#d32f2f',
+    // borderColor moved to inline style
     borderWidth: 1.5,
   },
   quickWhatIfAvailableCash: {
@@ -4761,12 +4803,12 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   quickWhatIfAvailableCashAmount: {
-    color: '#2F5BEA',
+    // color moved to inline style
     fontWeight: '500',
   },
   quickWhatIfError: {
     fontSize: 12,
-    color: '#d32f2f',
+    // color moved to inline style
     lineHeight: 16,
     marginTop: 4,
   },
@@ -4791,7 +4833,7 @@ const styles = StyleSheet.create({
   },
   hairlineDivider: {
     height: 0.5,
-    backgroundColor: '#e0e0e0',
+    // backgroundColor moved to inline style
     marginBottom: layout.lg,
   },
   block: {
@@ -4808,12 +4850,12 @@ const styles = StyleSheet.create({
     height: 22,
     paddingHorizontal: layout.inputPadding,
     borderRadius: 11,
-    backgroundColor: '#f2f2f2',
+    // backgroundColor moved to inline style
     justifyContent: 'center',
     alignItems: 'center',
   },
   chartMiniToggleActive: {
-    backgroundColor: '#e8f0ff',
+    // backgroundColor moved to inline style
   },
   chartMiniToggleText: {
     fontSize: 12,
@@ -4821,11 +4863,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   chartMiniToggleTextActive: {
-    color: '#2f5cff',
+    // color moved to inline style
     fontWeight: '600',
   },
   toggleCard: {
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     borderRadius: 8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.base,
@@ -4922,11 +4964,6 @@ const styles = StyleSheet.create({
   valueBarValue: {
     fontSize: 12,
   },
-  insightsDivider: {
-    borderTopWidth: 1,
-    marginTop: spacing.xs,
-    paddingTop: 0,
-  },
   insightText: {
     fontSize: 11.5,
     lineHeight: 16,
@@ -4934,6 +4971,34 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // Fixed values card inside chart (top-left)
+  chartValuesCard: {
+    position: 'absolute',
+    padding: spacing.sm,
+    borderRadius: 6,
+    borderWidth: 1,
+    minWidth: 140,
+    zIndex: 10,
+  },
+  chartValuesPrimary: {
+    marginBottom: spacing.xs,
+  },
+  chartValuesPrimaryLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  chartValuesPrimaryValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  chartValuesSecondary: {
+    gap: 2,
+  },
+  chartValuesSecondaryText: {
+    fontSize: 11, // Phase 7.11: Slightly increased for readability (was 10)
+    fontWeight: '400',
   },
   outcomeSubtitle: {
     fontSize: 13,
@@ -4973,7 +5038,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   ageSelectorControlRow: {
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     borderRadius: 8,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.base,
@@ -4998,7 +5063,7 @@ const styles = StyleSheet.create({
     color: '#111',
   },
   keyDriversCard: {
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     borderWidth: 1,
     borderColor: '#e8e8e8',
     borderRadius: 8,
@@ -5039,7 +5104,7 @@ const styles = StyleSheet.create({
   keyDriversValueScenario: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2F5BEA',
+    // color moved to inline style
     textAlign: 'right',
     minWidth: 70,
   },
@@ -5051,7 +5116,7 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   attrCard: {
-    backgroundColor: '#f8f8f8',
+    // backgroundColor moved to inline style
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 12,
@@ -5087,12 +5152,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
-  attrDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginTop: 4,
-    marginBottom: 4,
-  },
   attrLabel: {
     flex: 1,
     fontSize: 13,
@@ -5113,8 +5172,6 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     marginHorizontal: -spacing.base,
     paddingHorizontal: spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   attrHeaderSpacer: {
     flex: 1,
@@ -5148,7 +5205,7 @@ const styles = StyleSheet.create({
   attrValueScenario: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2F5BEA',
+    // color moved to inline style
     textAlign: 'right',
     minWidth: 70,
   },
@@ -5186,8 +5243,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: spacing.sm,
     paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   keyDriversHeaderSpacer: {
     flex: 1,
@@ -5216,11 +5271,6 @@ const styles = StyleSheet.create({
   endNetWorthSection: {
     marginTop: 12,
     paddingTop: 12,
-  },
-  endNetWorthDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginBottom: spacing.sm,
   },
   endNetWorthLabel: {
     fontSize: 13,
@@ -5302,7 +5352,7 @@ const styles = StyleSheet.create({
   },
   modalDivider: {
     height: 1,
-    backgroundColor: '#eee',
+    // backgroundColor moved to inline style
     marginVertical: 8,
   },
   modalOptionContent: {
@@ -5371,7 +5421,7 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     bottom: spacing.xs,
     width: 1,
-    backgroundColor: '#f0f0f0',
+    // backgroundColor moved to inline style
     zIndex: 0,
   },
   cashflowSubGroup: {
@@ -5504,13 +5554,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   projectedDeltaScenario: {
-    color: '#5B8DEF', // Muted brand blue
+    // color moved to inline style
   },
   projectedDeltaAge: {
     color: '#999', // Muted neutral grey
   },
   projectedPrimaryValueScenario: {
-    color: '#2F5BEA', // Brand blue
+    // color moved to inline style (already using theme.colors.brand.primary where used)
   },
   dualValueRow: {
     flexDirection: 'row',
@@ -5521,7 +5571,7 @@ const styles = StyleSheet.create({
   dualValueDivider: {
     width: 1,
     height: 20,
-    backgroundColor: '#ddd',
+    // backgroundColor moved to inline style
   },
   balanceSheetDualColumn: {
     flexDirection: 'row',
@@ -5543,7 +5593,7 @@ const styles = StyleSheet.create({
   balanceSheetDivider: {
     width: 1,
     minHeight: 40,
-    backgroundColor: '#ddd',
+    // backgroundColor moved to inline style
     alignSelf: 'stretch',
   },
   dotSeparatorTight: {
@@ -5583,7 +5633,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   scenarioImpactBlock: {
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     borderRadius: 8,
     padding: layout.md,
     borderWidth: 1,
@@ -5601,7 +5651,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   scenarioImpactPositive: {
-    color: '#2F5BEA',
+    // color moved to inline style
   },
   scenarioImpactNegative: {
     color: '#999',
@@ -5636,7 +5686,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   projectedSnapshotMutedCard: {
-    backgroundColor: '#f9f9f9',
+    // backgroundColor moved to inline style
     borderColor: '#e5e5e5',
   },
   // Insights list (same format as SnapshotScreen)
@@ -5699,7 +5749,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   snapshotDeltaValueMuted: {
-    color: '#8FA8D4', // Muted blue
+    // color moved to inline style
   },
   comparisonValuesContainer: {
     alignItems: 'flex-end',
@@ -5732,7 +5782,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   reconciliationToggle: {
-    backgroundColor: '#f0f0f0',
+    // backgroundColor moved to inline style
     borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: layout.inputPadding,
@@ -5745,7 +5795,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   reconciliationPanel: {
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 6,
@@ -5781,38 +5831,33 @@ const styles = StyleSheet.create({
   reconciliationPass: {
   },
   reconciliationFail: {
-    color: '#ef4444',
-  },
-  reconciliationDivider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
+    // color moved to inline style
   },
   reconciliationWarning: {
-    backgroundColor: '#fef2f2',
+    // backgroundColor moved to inline style
     borderWidth: 1,
-    borderColor: '#fecaca',
+    // borderColor moved to inline style
     borderRadius: 4,
     padding: 8,
     marginTop: 8,
   },
   reconciliationWarningText: {
     fontSize: 11,
-    color: '#991b1b',
+    // color moved to inline style
     fontFamily: 'monospace',
   },
   warningBanner: {
     marginTop: layout.sectionGap,
     marginHorizontal: layout.screenPadding,
     padding: layout.blockPadding,
-    backgroundColor: '#fff3cd',
+    // backgroundColor moved to inline style
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ffc107',
+    // borderColor moved to inline style
   },
   warningBannerText: {
     fontSize: 14,
-    color: '#856404',
+    // color moved to inline style
     lineHeight: 20,
   },
   toolbarPillButtonDisabled: {
@@ -5821,14 +5866,14 @@ const styles = StyleSheet.create({
   modalWarningBanner: {
     marginBottom: 12,
     padding: layout.blockPadding,
-    backgroundColor: '#fff3cd',
+    // backgroundColor moved to inline style
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ffc107',
+    // borderColor moved to inline style
   },
   modalWarningBannerText: {
     fontSize: 13,
-    color: '#856404',
+    // color moved to inline style
     lineHeight: 18,
   },
 });

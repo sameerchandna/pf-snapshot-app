@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
@@ -9,6 +8,8 @@ import GroupedListDetailScreen from './GroupedListDetailScreen';
 import { ContributionItem } from '../types';
 import { formatCurrencyFullSigned } from '../formatters';
 import { parseMoney } from '../domainValidation';
+import { useTheme } from '../ui/theme/useTheme';
+import Icon from '../components/Icon';
 
 type RouteParams = {
   preselectAssetId?: string;
@@ -64,6 +65,7 @@ const assetContributionsHelpContent = {
 export default function ContributionsDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { theme } = useTheme();
   const { state, setAssetContributions } = useSnapshot();
   const params = (route.params as RouteParams) || {};
 
@@ -125,35 +127,51 @@ export default function ContributionsDetailScreen() {
             }
             setAssetPickerOpen(true);
           }}
-          style={({ pressed }) => [styles.selector, { opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [
+            styles.selector,
+            {
+              backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
+              borderColor: theme.colors.border.default,
+            }
+          ]}
           accessibilityRole="button"
           accessibilityLabel="Select asset to contribute to"
         >
           <View style={styles.selectorRow}>
             <Text
-              style={[styles.selectorValue, !props.value ? styles.selectorPlaceholder : null]}
+              style={[
+                styles.selectorValue,
+                { color: theme.colors.text.primary },
+                !props.value ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
+              ]}
               numberOfLines={1}
             >
               {props.value ? getAssetName(props.value) : 'Select asset to contribute to'}
             </Text>
-            <Feather name="chevron-down" size={16} color="#777" />
+            <Icon name="chevron-down" size="small" color={theme.colors.text.muted} />
           </View>
         </Pressable>
 
         {/* Asset picker modal */}
         <Modal transparent={true} visible={assetPickerOpen} animationType="slide" onRequestClose={() => setAssetPickerOpen(false)}>
           <View style={styles.modalRoot}>
-            <Pressable style={styles.modalBackdropFlex} onPress={() => setAssetPickerOpen(false)} />
-            <View style={styles.modalSheet}>
-              <Text style={styles.modalTitle}>Select asset</Text>
+            <Pressable style={[styles.modalBackdropFlex, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setAssetPickerOpen(false)} />
+            <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
               <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
                 {getUserEditableAssets(state.assets).map(a => (
                   <Pressable
                     key={a.id}
                     onPress={() => handleSelectAsset(a.id)}
-                    style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [
+                      styles.modalOption,
+                      {
+                        backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                        borderBottomColor: theme.colors.border.subtle,
+                      }
+                    ]}
                   >
-                    <Text style={styles.modalOptionText}>{a.name}</Text>
+                    <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{a.name}</Text>
                   </Pressable>
                 ))}
                 <Pressable
@@ -161,9 +179,15 @@ export default function ContributionsDetailScreen() {
                     setAssetPickerOpen(false);
                     navigation.navigate('AssetsDetail', { createForContribution: true, returnRouteKey: route.key, returnRouteName: 'AssetContributionDetail' });
                   }}
-                  style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalOption,
+                    {
+                      backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                      borderBottomColor: theme.colors.border.subtle,
+                    }
+                  ]}
                 >
-                  <Text style={styles.modalOptionText}>+ Create new asset</Text>
+                  <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>+ Create new asset</Text>
                 </Pressable>
               </ScrollView>
             </View>
@@ -253,9 +277,7 @@ export default function ContributionsDetailScreen() {
 
 const styles = StyleSheet.create({
   selector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -270,11 +292,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#111',
   },
   selectorPlaceholder: {
     fontWeight: '500',
-    color: '#777',
   },
   modalRoot: {
     flex: 1,
@@ -282,10 +302,8 @@ const styles = StyleSheet.create({
   },
   modalBackdropFlex: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   modalSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
     paddingHorizontal: 16,
@@ -296,7 +314,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
     marginBottom: 10,
   },
   modalList: {
@@ -308,11 +325,9 @@ const styles = StyleSheet.create({
   modalOption: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalOptionText: {
     fontSize: 14,
-    color: '#111',
     fontWeight: '600',
   },
 });

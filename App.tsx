@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './navigation';
 import { SnapshotProvider } from './SnapshotContext';
 import { ModeProvider, useMode } from './context/ModeContext';
+import { ThemeProvider } from './ui/theme/ThemeContext';
 
 function AppContent() {
   const { mode, modeInitialized } = useMode();
@@ -26,7 +27,9 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ModeProvider>
-        <AppContent />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </ModeProvider>
     </GestureHandlerRootView>
   );

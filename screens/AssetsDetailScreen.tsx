@@ -9,6 +9,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { parseItemName } from '../domainValidation';
 import EducationBox from '../components/EducationBox';
+import { useTheme } from '../ui/theme/useTheme';
 
 const assetsHelpContent: HelpContent = {
   title: 'Assets',
@@ -58,6 +59,7 @@ const assetsHelpContent: HelpContent = {
 export default function AssetsDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { theme } = useTheme();
   const { state, setAssetGroups, setAssets } = useSnapshot();
 
   const createForContribution: boolean = Boolean(route?.params?.createForContribution);
@@ -122,16 +124,29 @@ export default function AssetsDetailScreen() {
         <View>
           <EducationBox lines={['Only active items are used in your Snapshot and projections. Inactive items are kept for reference.']} />
           {createForContribution ? (
-            <View style={styles.quickCreateCard}>
+            <View style={[
+              styles.quickCreateCard,
+              {
+                backgroundColor: theme.colors.bg.subtle,
+                borderColor: theme.colors.border.subtle,
+              }
+            ]}>
             <View style={styles.quickHeaderRow}>
-              <Text style={styles.quickTitle}>Create asset</Text>
-              <Text style={styles.quickContextTag}>From Asset Contributions</Text>
+              <Text style={[styles.quickTitle, { color: theme.colors.text.tertiary }]}>Create asset</Text>
+              <Text style={[styles.quickContextTag, { color: theme.colors.brand.primary }]}>From Asset Contributions</Text>
             </View>
-            <Text style={styles.quickHint}>Name only. Balance will start at £0.</Text>
-            {quickError ? <Text style={styles.quickError}>{quickError}</Text> : null}
+            <Text style={[styles.quickHint, { color: theme.colors.text.secondary }]}>Name only. Balance will start at £0.</Text>
+            {quickError ? <Text style={[styles.quickError, { color: theme.colors.semantic.errorText }]}>{quickError}</Text> : null}
             <View style={styles.quickRow}>
               <TextInput
-                style={styles.quickInput}
+                style={[
+                  styles.quickInput,
+                  {
+                    backgroundColor: theme.colors.bg.card,
+                    borderColor: theme.colors.border.default,
+                    color: theme.colors.text.primary,
+                  }
+                ]}
                 value={quickName}
                 onChangeText={t => {
                   setQuickError('');
@@ -142,8 +157,17 @@ export default function AssetsDetailScreen() {
                 onSubmitEditing={quickCreate}
                 autoFocus={true}
               />
-              <Pressable onPress={quickCreate} style={({ pressed }) => [styles.quickButton, { opacity: pressed ? 0.85 : 1 }]}>
-                <Text style={styles.quickButtonText}>Create</Text>
+              <Pressable
+                onPress={quickCreate}
+                style={({ pressed }) => [
+                  styles.quickButton,
+                  {
+                    backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.brand.primary,
+                    borderColor: theme.colors.brand.primary,
+                  }
+                ]}
+              >
+                <Text style={[styles.quickButtonText, { color: '#fff' }]}>Create</Text>
               </Pressable>
             </View>
           </View>
@@ -257,38 +281,31 @@ export default function AssetsDetailScreen() {
 
 const styles = StyleSheet.create({
   quickCreateCard: {
-    backgroundColor: '#f3f7ff',
     borderWidth: 1,
-    borderColor: '#d6e3ff',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
   quickHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  quickTitle: { fontSize: 13, fontWeight: '700', color: '#444' },
-  quickContextTag: { fontSize: 11, fontWeight: '700', color: '#2F5BEA' },
-  quickHint: { fontSize: 12, color: '#666', marginBottom: 8, lineHeight: 16 },
-  quickError: { fontSize: 12, color: '#8a1f1f', marginBottom: 8 },
+  quickTitle: { fontSize: 13, fontWeight: '700' },
+  quickContextTag: { fontSize: 11, fontWeight: '700' },
+  quickHint: { fontSize: 12, marginBottom: 8, lineHeight: 16 },
+  quickError: { fontSize: 12, marginBottom: 8 },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   quickInput: {
     flex: 1,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#111',
   },
   quickButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#2F5BEA',
-    backgroundColor: '#2F5BEA',
   },
-  quickButtonText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  quickButtonText: { fontSize: 13, fontWeight: '700' },
 });
 

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import ScreenHeader from './ScreenHeader';
 import { HelpContent } from '../screens/GroupedListDetailScreen';
 import { useTheme } from '../ui/theme/useTheme';
+import Icon from './Icon';
 
 type Props = {
   title: string;
@@ -38,11 +38,14 @@ export default function DetailScreenShell({
           hasHints ? (
             <Pressable
               onPress={() => setIsHintOpen(true)}
-              style={({ pressed }) => [styles.hintButton, { opacity: pressed ? 0.8 : 0.55 }]}
+              style={({ pressed }) => [
+                styles.hintButton,
+                { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Help"
             >
-              <Feather name="help-circle" size={18} color={theme.colors.text.tertiary} />
+              <Icon name="help-circle" size="medium" color={theme.colors.text.tertiary} />
             </Pressable>
           ) : null
         }

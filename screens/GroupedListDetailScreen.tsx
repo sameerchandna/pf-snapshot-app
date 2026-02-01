@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Modal, Platform, View, Text, StyleSheet, TextInput, Pressable, ScrollView as RNScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Swipeable, ScrollView } from 'react-native-gesture-handler';
 import { Group } from '../types';
@@ -9,10 +8,12 @@ import { parseItemName, parseMoney } from '../domainValidation';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
+import Divider from '../components/Divider';
+import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
-
-type IconName = React.ComponentProps<typeof Feather>['name'];
+import { useTheme } from '../ui/theme/useTheme';
 
 // Minimal, opinionated help content structure
 export type HelpExample = {
@@ -200,6 +201,7 @@ export default function GroupedListDetailScreen<TItem>({
   setItemIsActive,
   onItemPress,
 }: Props<TItem>) {
+  const { theme } = useTheme();
   // Education cleanup (phase 1): detail/editor screens should focus purely on entry & inspection.
   // EducationBox is kept only on Snapshot / Accounts / Projection results.
   void educationLines;
@@ -585,49 +587,6 @@ export default function GroupedListDetailScreen<TItem>({
     if (expandedGroupId === groupId) collapseAll();
   };
 
-  const ITEM_ICON_SIZE: number = 16;
-  const GROUP_ICON_SIZE: number = 14;
-  const ITEM_ICON_OPACITY: number = 0.62;
-  const GROUP_ICON_OPACITY: number = 0.55;
-  const ICON_COLOR: string = '#333';
-  const TRASH_PRESSED_COLOR: string = '#9b2c2c';
-
-  const IconButton = ({
-    icon,
-    size,
-    onPress,
-    disabled,
-    baseOpacity,
-    isTrash,
-    variant,
-  }: {
-    icon: IconName;
-    size: number;
-    onPress: () => void;
-    disabled: boolean;
-    baseOpacity: number;
-    isTrash: boolean;
-    variant: 'item' | 'group';
-  }) => {
-    const baseStyle = variant === 'group' ? styles.groupIconButton : styles.iconButton;
-    return (
-      <Pressable
-        disabled={disabled}
-        onPress={onPress}
-        style={({ pressed }) => [
-          baseStyle,
-          {
-            opacity: pressed ? 1 : baseOpacity,
-          },
-        ]}
-      >
-        {({ pressed }) => (
-          <Feather name={icon} size={size} color={isTrash && pressed ? TRASH_PRESSED_COLOR : ICON_COLOR} />
-        )}
-      </Pressable>
-    );
-  };
-
   const renderSwipeActions = (item: TItem, itemId: string, locked: boolean, canDelete: boolean, canEdit: boolean, inlineEditable: boolean, canExternalEdit: boolean) => {
     const handleEdit = () => {
       closeAllSwipeables();
@@ -651,11 +610,14 @@ export default function GroupedListDetailScreen<TItem>({
         <Pressable
           key="edit"
           onPress={handleEdit}
-          style={styles.swipeActionEdit}
+          style={({ pressed }) => [
+            styles.swipeActionEdit,
+            { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.default, borderRadius: theme.radius.medium },
+          ]}
           accessibilityRole="button"
           accessibilityLabel="Edit"
         >
-          <Feather name="edit-2" size={14} color="#333" />
+          <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
         </Pressable>
       );
     }
@@ -666,11 +628,14 @@ export default function GroupedListDetailScreen<TItem>({
         <Pressable
           key="delete"
           onPress={handleDelete}
-          style={styles.swipeActionDelete}
+          style={({ pressed }) => [
+            styles.swipeActionDelete,
+            { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error, borderRadius: theme.radius.medium },
+          ]}
           accessibilityRole="button"
           accessibilityLabel="Delete"
         >
-          <Feather name="trash-2" size={14} color="#fff" />
+          <Icon name="trash-2" size="small" color={theme.colors.text.primary} />
         </Pressable>
       );
     }
@@ -691,7 +656,7 @@ export default function GroupedListDetailScreen<TItem>({
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <ScreenHeader
         title={title}
         totalText={totalText}
@@ -703,11 +668,14 @@ export default function GroupedListDetailScreen<TItem>({
               {hasHints ? (
                 <Pressable
                   onPress={() => setIsHintOpen(true)}
-                  style={({ pressed }) => [styles.hintButton, { opacity: pressed ? 0.8 : 0.55 }]}
+                  style={({ pressed }) => [
+                    styles.hintButton,
+                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Common examples"
                 >
-                  <Feather name="help-circle" size={18} color="#333" />
+                  <Icon name="help-circle" size="medium" color={theme.colors.text.tertiary} />
                 </Pressable>
               ) : null}
               {headerRightAccessory ? headerRightAccessory : null}
@@ -739,11 +707,21 @@ export default function GroupedListDetailScreen<TItem>({
               </View>
 
               <View style={styles.activeEntryWrapper}>
-                <View style={styles.activeEntryBlock}>
+                <View
+                  style={[
+                    styles.activeEntryBlock,
+                    { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium },
+                  ]}
+                >
                   {errorMessage.length > 0 ? (
-                    <View style={styles.errorCard}>
-                      <Text style={styles.errorTitle}>Can't save</Text>
-                      <Text style={styles.errorText}>{errorMessage}</Text>
+                    <View
+                      style={[
+                        styles.errorCard,
+                        { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium },
+                      ]}
+                    >
+                      <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
+                      <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
                     </View>
                   ) : null}
 
@@ -753,7 +731,7 @@ export default function GroupedListDetailScreen<TItem>({
                     <>
                       {canEditItemName ? (
                         <View style={styles.projectionField}>
-                          <Text style={styles.projectionFieldLabel}>Name</Text>
+                          <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Name</Text>
                           {renderCustomNameField ? (
                             renderCustomNameField({
                               value: draftName,
@@ -763,10 +741,15 @@ export default function GroupedListDetailScreen<TItem>({
                             })
                           ) : (
                             <TextInput
-                              style={[styles.input, styles.projectionFieldInputFull]}
+                              style={[
+                                styles.input,
+                                styles.projectionFieldInputFull,
+                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                              ]}
                               value={draftName}
                               onChangeText={setDraftName}
                               placeholder="Name"
+                              placeholderTextColor={theme.colors.text.disabled}
                               autoFocus={false}
                               returnKeyType="next"
                             />
@@ -774,12 +757,18 @@ export default function GroupedListDetailScreen<TItem>({
                         </View>
                       ) : null}
                       <View style={styles.projectionField}>
-                        <Text style={styles.projectionFieldLabel}>Amount</Text>
+                        <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Amount</Text>
                         <TextInput
-                          style={[styles.input, styles.projectionFieldInputFull]}
+                          style={[
+                            styles.input,
+                            theme.typography.input,
+                            styles.projectionFieldInputFull,
+                            { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                          ]}
                           value={draftAmount}
                           onChangeText={setDraftAmount}
                           placeholder="Amount"
+                          placeholderTextColor={theme.colors.text.disabled}
                           keyboardType="numeric"
                           returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
                           onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
@@ -801,20 +790,32 @@ export default function GroupedListDetailScreen<TItem>({
                           </View>
                         ) : (
                           <TextInput
-                            style={[styles.input, styles.activeEntryNameSplit]}
+                            style={[
+                              styles.input,
+                              theme.typography.input,
+                              styles.activeEntryNameSplit,
+                              { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                            ]}
                             value={draftName}
                             onChangeText={setDraftName}
                             placeholder="Name"
+                            placeholderTextColor={theme.colors.text.disabled}
                             autoFocus={false}
                             returnKeyType="next"
                           />
                         )
                       ) : null}
                       <TextInput
-                        style={[styles.input, styles.activeEntryAmountSplit]}
+                        style={[
+                          styles.input,
+                          theme.typography.input,
+                          styles.activeEntryAmountSplit,
+                          { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                        ]}
                         value={draftAmount}
                         onChangeText={setDraftAmount}
                         placeholder="Amount"
+                        placeholderTextColor={theme.colors.text.disabled}
                         keyboardType="numeric"
                         returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
                         onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
@@ -830,12 +831,17 @@ export default function GroupedListDetailScreen<TItem>({
                         {/* Growth rate */}
                         {secondaryNumberField ? (
                           <View style={styles.projectionField}>
-                            <Text style={styles.projectionFieldLabel}>Growth rate (% per year)</Text>
+                            <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Growth rate (% per year)</Text>
                             <TextInput
-                              style={[styles.input, styles.projectionFieldInputFull]}
+                              style={[
+                                styles.input,
+                                styles.projectionFieldInputFull,
+                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                              ]}
                               value={draftSecondaryNumber}
                               onChangeText={setDraftSecondaryNumber}
                               placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
+                              placeholderTextColor={theme.colors.text.disabled}
                               keyboardType="numeric"
                               returnKeyType={liquidityField ? 'next' : 'done'}
                               onSubmitEditing={!liquidityField ? saveEditor : undefined}
@@ -846,7 +852,7 @@ export default function GroupedListDetailScreen<TItem>({
                         {/* Liquidity */}
                         {liquidityField ? (
                           <View style={styles.projectionField}>
-                            <Text style={styles.projectionFieldLabelGrey}>Liquidity</Text>
+                            <Text style={[styles.projectionFieldLabelGrey, theme.typography.label, { color: theme.colors.text.disabled }]}>Liquidity</Text>
                             <SegmentedControl
                               values={['Liquid', 'Locked', 'Illiquid']}
                               selectedIndex={draftLiquidityType === 'immediate' ? 0 : draftLiquidityType === 'locked' ? 1 : 2}
@@ -863,24 +869,30 @@ export default function GroupedListDetailScreen<TItem>({
                                 }
                               }}
                               style={styles.segmentedControl}
-                              fontStyle={styles.segmentedControlText}
-                              activeFontStyle={styles.segmentedControlTextActive}
+                              fontStyle={{ color: theme.colors.text.disabled }}
+                              activeFontStyle={{ color: theme.colors.text.disabled }}
                             />
                             
                             {draftLiquidityType === 'locked' ? (
                               <View style={styles.unlockAgeContainer}>
-                                <Text style={styles.unlockAgeLabel}>Unlock age</Text>
+                                <Text style={[styles.unlockAgeLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Unlock age</Text>
                                 <View style={styles.unlockAgeRow}>
                                   <TextInput
-                                    style={[styles.input, styles.unlockAgeInput]}
+                                    style={[
+                                      styles.input,
+                                      theme.typography.input,
+                                      styles.unlockAgeInput,
+                                      { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                                    ]}
                                     value={draftUnlockAge}
                                     onChangeText={setDraftUnlockAge}
                                     placeholder="e.g. 55"
+                                    placeholderTextColor={theme.colors.text.disabled}
                                     keyboardType="numeric"
                                     returnKeyType="done"
                                     onSubmitEditing={saveEditor}
                                   />
-                                  <Text style={styles.unlockAgeSuffix}>years</Text>
+                                  <Text style={[styles.unlockAgeSuffix, theme.typography.bodySmall, { color: theme.colors.text.disabled }]}>years</Text>
                                 </View>
                               </View>
                             ) : null}
@@ -894,10 +906,16 @@ export default function GroupedListDetailScreen<TItem>({
                           {/* Growth rate */}
                           {secondaryNumberField ? (
                             <TextInput
-                              style={[styles.input, styles.projectionFieldInputCompact]}
+                              style={[
+                                styles.input,
+                                theme.typography.input,
+                                styles.projectionFieldInputCompact,
+                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                              ]}
                               value={draftSecondaryNumber}
                               onChangeText={setDraftSecondaryNumber}
                               placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
+                              placeholderTextColor={theme.colors.text.disabled}
                               keyboardType="numeric"
                               returnKeyType={liquidityField ? 'next' : 'done'}
                               onSubmitEditing={!liquidityField ? saveEditor : undefined}
@@ -923,8 +941,8 @@ export default function GroupedListDetailScreen<TItem>({
                                   }
                                 }}
                                 style={styles.segmentedControlCompact}
-                                fontStyle={styles.segmentedControlText}
-                                activeFontStyle={styles.segmentedControlTextActive}
+                                fontStyle={{ color: theme.colors.text.disabled }}
+                                activeFontStyle={{ color: theme.colors.text.disabled }}
                               />
                             </View>
                           ) : null}
@@ -933,18 +951,24 @@ export default function GroupedListDetailScreen<TItem>({
                         {/* Unlock age (if From age selected) - shown below in compact mode too */}
                         {liquidityField && draftLiquidityType === 'locked' ? (
                           <View style={styles.unlockAgeContainer}>
-                            <Text style={styles.unlockAgeLabel}>Unlock age</Text>
+                            <Text style={[styles.unlockAgeLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Unlock age</Text>
                             <View style={styles.unlockAgeRow}>
                               <TextInput
-                                style={[styles.input, styles.unlockAgeInput]}
+                                style={[
+                                  styles.input,
+                                  theme.typography.input,
+                                  styles.unlockAgeInput,
+                                  { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                                ]}
                                 value={draftUnlockAge}
                                 onChangeText={setDraftUnlockAge}
                                 placeholder="e.g. 55"
+                                placeholderTextColor={theme.colors.text.disabled}
                                 keyboardType="numeric"
                                 returnKeyType="done"
                                 onSubmitEditing={saveEditor}
                               />
-                              <Text style={styles.unlockAgeSuffix}>years</Text>
+                              <Text style={[styles.unlockAgeSuffix, theme.typography.bodySmall, { color: theme.colors.text.disabled }]}>years</Text>
                             </View>
                           </View>
                         ) : null}
@@ -955,25 +979,43 @@ export default function GroupedListDetailScreen<TItem>({
 
                 {/* Action buttons - positioned outside and bottom-right aligned */}
                 <View style={styles.activeEntryActions}>
-                  <View style={styles.activeEntryButtonsContainer}>
+                  <View style={[styles.activeEntryButtonsContainer, { borderColor: theme.colors.border.default, borderRadius: theme.radius.large }]}>
                     <Pressable
                       onPress={saveEditor}
-                      style={styles.activeTickIconButton}
+                      style={({ pressed }) => [
+                        styles.activeTickIconButton,
+                        {
+                          backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
+                          borderTopLeftRadius: theme.radius.large,
+                          borderBottomLeftRadius: theme.radius.large,
+                          borderTopRightRadius: theme.radius.none,
+                          borderBottomRightRadius: theme.radius.none,
+                        },
+                      ]}
                       hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel={editingItemId ? 'Save' : 'Add'}
                     >
-                      <Text style={styles.activeTickText}>✓</Text>
+                      <Text style={[styles.activeTickText, theme.typography.sectionTitle, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
                     </Pressable>
-                    <View style={styles.activeEntryButtonsDivider} />
+                    <View style={[styles.activeEntryButtonsDivider, { backgroundColor: theme.colors.border.default }]} />
                     <Pressable
                       onPress={cancelEditor}
-                      style={styles.activeCancelIconButton}
+                      style={({ pressed }) => [
+                        styles.activeCancelIconButton,
+                        {
+                          backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
+                          borderTopLeftRadius: theme.radius.none,
+                          borderBottomLeftRadius: theme.radius.none,
+                          borderTopRightRadius: theme.radius.large,
+                          borderBottomRightRadius: theme.radius.large,
+                        },
+                      ]}
                       hitSlop={8}
                       accessibilityRole="button"
                       accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
                     >
-                      <Feather name="x" size={14} color={ICON_COLOR} />
+                            <Icon name="x" size="small" color={theme.colors.text.tertiary} />
                     </Pressable>
                   </View>
                 </View>
@@ -1010,43 +1052,36 @@ export default function GroupedListDetailScreen<TItem>({
                     <>
                       <IconButton
                         icon="check"
-                        size={GROUP_ICON_SIZE}
+                        size="small"
                         onPress={() => saveGroupName(group.id)}
                         disabled={false}
-                        baseOpacity={GROUP_ICON_OPACITY}
-                        isTrash={false}
-                        variant="group"
+                        accessibilityLabel="Save"
                       />
                       <IconButton
                         icon="x"
-                        size={GROUP_ICON_SIZE}
+                        size="small"
                         onPress={cancelEditGroupName}
                         disabled={false}
-                        baseOpacity={GROUP_ICON_OPACITY}
-                        isTrash={false}
-                        variant="group"
+                        accessibilityLabel="Cancel"
                       />
                     </>
                   ) : (
                     <>
                       <IconButton
                         icon="edit-2"
-                        size={GROUP_ICON_SIZE}
+                        size="small"
                         onPress={() => startEditGroupName(group)}
                         disabled={!groupEditEnabled}
-                        baseOpacity={GROUP_ICON_OPACITY}
-                        isTrash={false}
-                        variant="group"
+                        accessibilityLabel="Edit group"
                       />
                       {groupItems.length === 0 ? (
                         <IconButton
                           icon="trash-2"
-                          size={GROUP_ICON_SIZE}
+                          size="small"
+                          variant="destructive"
                           onPress={() => deleteGroup(group.id)}
                           disabled={!groupDeleteEnabled}
-                          baseOpacity={GROUP_ICON_OPACITY}
-                          isTrash={true}
-                          variant="group"
+                          accessibilityLabel="Delete group"
                         />
                       ) : null}
                     </>
@@ -1058,11 +1093,16 @@ export default function GroupedListDetailScreen<TItem>({
                 <View style={styles.groupHeaderRow}>
                   {isRenamingThisGroup ? (
                     <View style={styles.groupHeaderLeft}>
-                      {groupNameError.length > 0 ? <Text style={styles.groupNameErrorText}>{groupNameError}</Text> : null}
+                      {groupNameError.length > 0 ? <Text style={[styles.groupNameErrorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{groupNameError}</Text> : null}
                       <TextInput
-                        style={styles.groupNameInput}
+                        style={[
+                          styles.groupNameInput,
+                          theme.typography.sectionTitle,
+                          { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, color: theme.colors.text.primary, borderRadius: theme.radius.medium },
+                        ]}
                         value={groupNameDraft}
                         onChangeText={setGroupNameDraft}
+                        placeholderTextColor={theme.colors.text.disabled}
                         autoFocus={true}
                         returnKeyType="done"
                         onSubmitEditing={() => saveGroupName(group.id)}
@@ -1070,24 +1110,36 @@ export default function GroupedListDetailScreen<TItem>({
                     </View>
                   ) : (
                     canCollapseGroups ? (
-                      <Pressable onPress={() => toggleGroup(group.id)} style={styles.groupHeaderLeft}>
-                        <Text style={styles.groupTitle}>{group.name}</Text>
+                      <Pressable
+                        onPress={() => toggleGroup(group.id)}
+                        style={({ pressed }) => [
+                          styles.groupHeaderLeft,
+                          { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                        ]}
+                      >
+                        <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{group.name}</Text>
                       </Pressable>
                     ) : (
                       <View style={styles.groupHeaderLeft}>
-                        <Text style={styles.groupTitle}>{group.name}</Text>
+                        <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{group.name}</Text>
                       </View>
                     )
                   )}
 
                   <View style={styles.groupHeaderRight}>
                     {canCollapseGroups ? (
-                      <Pressable onPress={() => toggleGroup(group.id)} style={styles.groupTotalPressable}>
-                        <Text style={styles.groupTotal}>{groupTotalText}</Text>
+                      <Pressable
+                        onPress={() => toggleGroup(group.id)}
+                        style={({ pressed }) => [
+                          styles.groupTotalPressable,
+                          { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                        ]}
+                      >
+                        <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>{groupTotalText}</Text>
                       </Pressable>
                     ) : (
                       <View style={styles.groupTotalPressable}>
-                        <Text style={styles.groupTotal}>{groupTotalText}</Text>
+                        <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>{groupTotalText}</Text>
                       </View>
                     )}
                   </View>
@@ -1097,7 +1149,7 @@ export default function GroupedListDetailScreen<TItem>({
                   <View style={styles.groupBody}>
                     {groupItems.length === 0 ? (
                       emptyStateText === null ? null : (
-                        <Text style={styles.emptyText}>{emptyStateText ?? 'No items yet.'}</Text>
+                        <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.text.secondary }]}>{emptyStateText ?? 'No items yet.'}</Text>
                       )
                     ) : null}
 
@@ -1179,30 +1231,76 @@ export default function GroupedListDetailScreen<TItem>({
                                 }
                               }}
                               disabled={isCurrentlyEditing || !onItemPress}
-                              style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}
+                              style={({ pressed }) => [
+                                styles.itemRow,
+                                {
+                                  backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
+                                  borderColor: theme.colors.border.subtle,
+                                  borderRadius: theme.radius.large,
+                                },
+                                dimRow ? styles.itemRowDim : null,
+                                locked ? styles.itemRowLocked : null,
+                                isInactive ? styles.itemRowInactive : null,
+                              ]}
                             >
                               {/* Active/Inactive checkbox */}
                               {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
                                 <Pressable
                                   onPress={handleToggleActive}
-                                  style={styles.activeCheckbox}
+                                  style={({ pressed }) => [
+                                    styles.activeCheckbox,
+                                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                                  ]}
                                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                   accessibilityRole="checkbox"
                                   accessibilityState={{ checked: itemIsActive }}
                                   accessibilityLabel={itemIsActive ? 'Active' : 'Inactive'}
                                 >
-                                  <View style={[styles.checkboxCircle, itemIsActive ? styles.checkboxCircleFilled : null]}>
-                                    {itemIsActive ? <Text style={styles.checkboxCheckmark}>✓</Text> : null}
+                                  <View
+                                    style={[
+                                      styles.checkboxCircle,
+                                      { borderColor: theme.colors.border.default, borderRadius: theme.radius.medium },
+                                      itemIsActive
+                                        ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary }
+                                        : null,
+                                    ]}
+                                  >
+                                    {itemIsActive ? (
+                                      <Text style={[styles.checkboxCheckmark, theme.typography.caption, { fontWeight: '700', color: theme.colors.text.primary }]}>✓</Text>
+                                    ) : null}
                                   </View>
                                 </Pressable>
                               ) : null}
                               <View style={[styles.itemMain, isCurrentlyEditing ? styles.itemMainActive : null, locked ? styles.itemMainLocked : null]}>
                                 <View style={styles.itemLeft}>
-                                  <Text style={[styles.itemName, locked ? styles.itemNameLocked : null]}>{name}</Text>
-                                  {metaText ? <Text style={[styles.itemMeta, locked ? styles.itemMetaLocked : null]}>{metaText}</Text> : null}
+                                  <Text
+                                    style={[
+                                      styles.itemName,
+                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
+                                    ]}
+                                  >
+                                    {name}
+                                  </Text>
+                                  {metaText ? (
+                                    <Text
+                                      style={[
+                                        styles.itemMeta,
+                                        { color: locked ? theme.colors.text.disabled : theme.colors.text.muted },
+                                      ]}
+                                    >
+                                      {metaText}
+                                    </Text>
+                                  ) : null}
                                 </View>
                                 <View style={styles.itemRight}>
-                                  <Text style={[styles.itemAmount, locked ? styles.itemAmountLocked : null]}>{amountText}</Text>
+                                  <Text
+                                    style={[
+                                      styles.itemAmount,
+                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
+                                    ]}
+                                  >
+                                    {amountText}
+                                  </Text>
                                 </View>
                               </View>
                             </Pressable>
@@ -1217,48 +1315,80 @@ export default function GroupedListDetailScreen<TItem>({
                       (editingItemId && activeEditingMeta?.groupId === group.id)) ? (
                       <View style={styles.editorInline}>
                         {editingItemId && activeEditingMeta?.groupId === group.id ? (
-                          <Text style={styles.editorLabel}>Editing: {activeEditingMeta.name}</Text>
+                          <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>Editing: {activeEditingMeta.name}</Text>
                         ) : null}
                         {errorMessage.length > 0 ? (
-                          <View style={styles.errorCard}>
-                            <Text style={styles.errorTitle}>Can’t save</Text>
-                            <Text style={styles.errorText}>{errorMessage}</Text>
+                          <View
+                            style={[
+                              styles.errorCard,
+                              { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium },
+                            ]}
+                          >
+                            <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
+                            <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
                           </View>
                         ) : null}
 
                         <View style={styles.entryRow}>
                           {canEditItemName ? (
                             <TextInput
-                              style={[styles.input, styles.entryName]}
+                              style={[
+                                styles.input,
+                                theme.typography.input,
+                                styles.entryName,
+                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                              ]}
                               value={draftName}
                               onChangeText={setDraftName}
                               placeholder="Name"
+                              placeholderTextColor={theme.colors.text.disabled}
                               autoFocus={autoFocus}
                             />
                           ) : null}
 
                           <TextInput
-                            style={[styles.input, styles.entryAmount]}
+                            style={[
+                              styles.input,
+                              theme.typography.input,
+                              styles.entryAmount,
+                              { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                            ]}
                             value={draftAmount}
                             onChangeText={setDraftAmount}
                             placeholder="Amount"
+                            placeholderTextColor={theme.colors.text.disabled}
                             keyboardType="numeric"
                           />
 
                           <Pressable
                             disabled={canCollapseGroups ? !groupExpanded : false}
                             onPress={saveEditor}
-                            style={styles.tickIconButton}
+                            style={({ pressed }) => [
+                              styles.tickIconButton,
+                              {
+                                backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
+                                borderColor: theme.colors.semantic.successBorder,
+                                borderRadius: theme.radius.medium,
+                                opacity: canCollapseGroups && !groupExpanded ? 0.5 : 1,
+                              },
+                            ]}
                           >
-                            <Text style={styles.tickText}>✓</Text>
+                            <Text style={[styles.tickText, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
                           </Pressable>
                           <Pressable
                             onPress={cancelEditor}
-                            style={styles.cancelIconButton}
+                            style={({ pressed }) => [
+                              styles.cancelIconButton,
+                              {
+                                backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
+                                borderColor: theme.colors.border.default,
+                                borderRadius: theme.radius.medium,
+                              },
+                            ]}
                             accessibilityRole="button"
                             accessibilityLabel="Cancel"
                           >
-                            <Feather name="x" size={16} color={ICON_COLOR} />
+                            <Icon name="x" size="base" color={theme.colors.text.tertiary} />
                           </Pressable>
                         </View>
                       </View>
@@ -1276,7 +1406,7 @@ export default function GroupedListDetailScreen<TItem>({
                 <View style={styles.groupBody}>
                   {items.length === 0 ? (
                     emptyStateText === null ? null : (
-                      <Text style={styles.emptyText}>{emptyStateText ?? 'No items yet.'}</Text>
+                      <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.text.secondary }]}>{emptyStateText ?? 'No items yet.'}</Text>
                     )
                   ) : null}
 
@@ -1357,30 +1487,66 @@ export default function GroupedListDetailScreen<TItem>({
                               }
                             }}
                             disabled={isCurrentlyEditing || !onItemPress}
-                            style={[styles.itemRow, dimRow ? styles.itemRowDim : null, locked ? styles.itemRowLocked : null, isInactive ? styles.itemRowInactive : null]}
+                            style={({ pressed }) => [
+                              styles.itemRow,
+                              {
+                                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
+                                borderColor: theme.colors.border.subtle,
+                                borderRadius: theme.radius.large,
+                              },
+                              dimRow ? styles.itemRowDim : null,
+                              locked ? styles.itemRowLocked : null,
+                              isInactive ? styles.itemRowInactive : null,
+                            ]}
                           >
                             {/* Active/Inactive checkbox */}
                             {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
                               <Pressable
                                 onPress={handleToggleActive}
-                                style={styles.activeCheckbox}
+                                style={({ pressed }) => [
+                                  styles.activeCheckbox,
+                                  { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                                ]}
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                 accessibilityRole="checkbox"
                                 accessibilityState={{ checked: itemIsActive }}
                                 accessibilityLabel={itemIsActive ? 'Active' : 'Inactive'}
                               >
-                                <View style={[styles.checkboxCircle, itemIsActive ? styles.checkboxCircleFilled : null]}>
-                                  {itemIsActive ? <Text style={styles.checkboxCheckmark}>✓</Text> : null}
+                                <View style={[styles.checkboxCircle, { borderColor: theme.colors.border.default, borderRadius: theme.radius.medium }, itemIsActive ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary } : null]}>
+                                  {itemIsActive ? <Text style={[styles.checkboxCheckmark, theme.typography.caption, { fontWeight: '700', color: theme.colors.text.primary }]}>✓</Text> : null}
                                 </View>
                               </Pressable>
                             ) : null}
                               <View style={[styles.itemMain, isCurrentlyEditing ? styles.itemMainActive : null, locked ? styles.itemMainLocked : null]}>
                                 <View style={styles.itemLeft}>
-                                  <Text style={[styles.itemName, locked ? styles.itemNameLocked : null]}>{name}</Text>
-                                  {metaText ? <Text style={[styles.itemMeta, locked ? styles.itemMetaLocked : null]}>{metaText}</Text> : null}
+                                  <Text
+                                    style={[
+                                      styles.itemName,
+                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
+                                    ]}
+                                  >
+                                    {name}
+                                  </Text>
+                                  {metaText ? (
+                                    <Text
+                                      style={[
+                                        styles.itemMeta,
+                                        { color: locked ? theme.colors.text.disabled : theme.colors.text.muted },
+                                      ]}
+                                    >
+                                      {metaText}
+                                    </Text>
+                                  ) : null}
                                 </View>
                                 <View style={styles.itemRight}>
-                                  <Text style={[styles.itemAmount, locked ? styles.itemAmountLocked : null]}>{amountText}</Text>
+                                  <Text
+                                    style={[
+                                      styles.itemAmount,
+                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
+                                    ]}
+                                  >
+                                    {amountText}
+                                  </Text>
                                 </View>
                               </View>
                           </Pressable>
@@ -1392,44 +1558,63 @@ export default function GroupedListDetailScreen<TItem>({
                   {editorVisible && effectiveEditorPlacement === 'inline' ? (
                     <View style={styles.editorInline}>
                       {editingItemId && activeEditingMeta ? (
-                        <Text style={styles.editorLabel}>Editing: {activeEditingMeta.name}</Text>
+                        <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>Editing: {activeEditingMeta.name}</Text>
                       ) : null}
                       {errorMessage.length > 0 ? (
-                        <View style={styles.errorCard}>
-                          <Text style={styles.errorTitle}>Can’t save</Text>
-                          <Text style={styles.errorText}>{errorMessage}</Text>
+                        <View style={[styles.errorCard, { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium }]}>
+                          <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
+                          <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
                         </View>
                       ) : null}
 
                       <View style={styles.entryRow}>
                         {canEditItemName ? (
                           <TextInput
-                            style={[styles.input, styles.entryName]}
+                            style={[styles.input, theme.typography.input, styles.entryName, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary }]}
                             value={draftName}
                             onChangeText={setDraftName}
                             placeholder="Name"
+                            placeholderTextColor={theme.colors.text.disabled}
                             autoFocus={autoFocus}
                           />
                         ) : null}
 
                         <TextInput
-                          style={[styles.input, styles.entryAmount]}
+                          style={[styles.input, theme.typography.input, styles.entryAmount, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary }]}
                           value={draftAmount}
                           onChangeText={setDraftAmount}
                           placeholder="Amount"
+                          placeholderTextColor={theme.colors.text.disabled}
                           keyboardType="numeric"
                         />
 
-                        <Pressable onPress={saveEditor} style={styles.tickIconButton}>
-                          <Text style={styles.tickText}>✓</Text>
+                        <Pressable
+                          onPress={saveEditor}
+                          style={({ pressed }) => [
+                            styles.tickIconButton,
+                            {
+                              backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
+                              borderColor: theme.colors.semantic.successBorder,
+                              borderRadius: theme.radius.medium,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.tickText, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
                         </Pressable>
                         <Pressable
                           onPress={cancelEditor}
-                          style={styles.cancelIconButton}
+                          style={({ pressed }) => [
+                            styles.cancelIconButton,
+                            {
+                              backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
+                              borderColor: theme.colors.border.default,
+                              borderRadius: theme.radius.medium,
+                            },
+                          ]}
                           accessibilityRole="button"
                           accessibilityLabel="Cancel"
                         >
-                          <Feather name="x" size={16} color={ICON_COLOR} />
+                          <Icon name="x" size="base" color={theme.colors.text.tertiary} />
                         </Pressable>
                       </View>
                     </View>
@@ -1440,8 +1625,18 @@ export default function GroupedListDetailScreen<TItem>({
           )}
 
             {groupsEnabled && canEditGroups && canAddGroups ? (
-              <Pressable onPress={addGroup} style={styles.addGroupButton}>
-                <Text style={styles.addGroupButtonText}>+ Add group</Text>
+              <Pressable
+                onPress={addGroup}
+                style={({ pressed }) => [
+                  styles.addGroupButton,
+                  {
+                    borderColor: theme.colors.border.default,
+                    borderRadius: theme.radius.medium,
+                    backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                  },
+                ]}
+              >
+                <Text style={[styles.addGroupButtonText, theme.typography.button, { color: theme.colors.text.secondary }]}>+ Add group</Text>
               </Pressable>
             ) : null}
           </SectionCard>
@@ -1458,37 +1653,38 @@ export default function GroupedListDetailScreen<TItem>({
           onRequestClose={() => setIsHintOpen(false)}
         >
           <>
-            <Pressable style={styles.hintBackdrop} onPress={() => setIsHintOpen(false)} />
-            <View style={styles.hintSheet}>
+            <Pressable style={[styles.hintBackdrop, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setIsHintOpen(false)} />
+            <View style={[styles.hintSheet, { backgroundColor: theme.colors.bg.card, borderTopLeftRadius: theme.radius.large, borderTopRightRadius: theme.radius.large }]}>
               {helpContent ? (
                 <>
-                  <Text style={styles.hintTitle}>{helpContent.title}</Text>
+                  <Text style={[styles.hintTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{helpContent.title}</Text>
                   <ScrollView style={styles.hintScroll} contentContainerStyle={styles.hintScrollContent} showsVerticalScrollIndicator={false}>
                     {helpContent.sections.map((section, sectionIdx) => (
-                      <View key={sectionIdx} style={sectionIdx > 0 ? styles.helpSectionDivider : null}>
+                      <View key={sectionIdx} style={sectionIdx > 0 ? { marginTop: 16, paddingTop: 16 } : null}>
+                        {sectionIdx > 0 && <Divider variant="default" />}
                         {section.heading ? (
-                          <Text style={styles.helpSectionHeading}>{section.heading}</Text>
+                          <Text style={[styles.helpSectionHeading, theme.typography.bodyLarge, { fontWeight: '600', color: theme.colors.text.primary }]}>{section.heading}</Text>
                         ) : null}
                         {section.paragraphs?.map((para, paraIdx) => (
-                          <Text key={paraIdx} style={styles.helpParagraph}>{para}</Text>
+                          <Text key={paraIdx} style={[styles.helpParagraph, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{para}</Text>
                         ))}
                         {section.example ? (
-                          <Text style={styles.helpExample}>
+                          <Text style={[styles.helpExample, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>
                             {section.example.text}
-                            <Text style={styles.helpExampleBold}>{section.example.boldValue}</Text>
+                            <Text style={[styles.helpExampleBold, theme.typography.bodyLarge, { fontWeight: '600', color: theme.colors.text.primary }]}>{section.example.boldValue}</Text>
                           </Text>
                         ) : null}
                         {section.bullets ? (
                           <View style={styles.helpBulletsContainer}>
                             {section.bullets.map((bullet, bulletIdx) => (
-                              <Text key={bulletIdx} style={styles.helpBullet}>
+                              <Text key={bulletIdx} style={[styles.helpBullet, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>
                                 • {bullet}
                               </Text>
                             ))}
                           </View>
                         ) : null}
                         {section.paragraphsAfter?.map((para, paraIdx) => (
-                          <Text key={`after-${paraIdx}`} style={styles.helpParagraph}>{para}</Text>
+                          <Text key={`after-${paraIdx}`} style={[styles.helpParagraph, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{para}</Text>
                         ))}
                       </View>
                     ))}
@@ -1496,11 +1692,11 @@ export default function GroupedListDetailScreen<TItem>({
                 </>
               ) : (
                 <>
-                  <Text style={styles.hintTitle}>Common examples</Text>
-                  <Text style={styles.hintIntro}>These are common examples people include. Use what applies to you.</Text>
+                  <Text style={[styles.hintTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>Common examples</Text>
+                  <Text style={[styles.hintIntro, theme.typography.body, { color: theme.colors.text.muted }]}>These are common examples people include. Use what applies to you.</Text>
                   <ScrollView style={styles.hintScroll} contentContainerStyle={styles.hintScrollContent} showsVerticalScrollIndicator={false}>
                     {(hintExamples ?? []).map((ex, idx) => (
-                      <Text key={`${idx}-${ex}`} style={styles.hintBullet}>
+                      <Text key={`${idx}-${ex}`} style={[styles.hintBullet, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>
                         • {ex}
                       </Text>
                     ))}
@@ -1515,26 +1711,34 @@ export default function GroupedListDetailScreen<TItem>({
       {/* Delete confirmation modal */}
       {pendingDeleteItemId ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelDeleteItem}>
-          <View style={styles.deleteModalBackdrop}>
-            <View style={styles.deleteModalContent}>
-              <Text style={styles.deleteModalTitle}>Delete item?</Text>
-              <Text style={styles.deleteModalMessage}>This action cannot be undone.</Text>
+          <View style={[styles.deleteModalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.deleteModalContent, { backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.large }]}>
+              <Text style={[styles.deleteModalTitle, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.text.primary }]}>Delete item?</Text>
+              <Text style={[styles.deleteModalMessage, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>This action cannot be undone.</Text>
               <View style={styles.deleteModalActions}>
                 <Pressable
                   onPress={cancelDeleteItem}
-                  style={({ pressed }) => [styles.deleteModalButton, styles.deleteModalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.deleteModalButton,
+                    styles.deleteModalButtonCancel,
+                    { backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium },
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.deleteModalButtonCancelText}>Cancel</Text>
+                  <Text style={[styles.deleteModalButtonCancelText, theme.typography.button, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmDeleteItem}
-                  style={({ pressed }) => [styles.deleteModalButton, styles.deleteModalButtonConfirm, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.deleteModalButton,
+                    styles.deleteModalButtonConfirm,
+                    { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error, borderRadius: theme.radius.medium },
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Delete"
                 >
-                  <Text style={styles.deleteModalButtonConfirmText}>Delete</Text>
+                  <Text style={[styles.deleteModalButtonConfirmText, theme.typography.button, { color: theme.colors.text.primary }]}>Delete</Text>
                 </Pressable>
               </View>
             </View>
@@ -1550,7 +1754,6 @@ const ROW_HEIGHT = 44;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: layout.screenBackground,
   },
   keyboardAvoiding: {
     flex: 1,
@@ -1565,13 +1768,9 @@ const styles = StyleSheet.create({
   },
   hintBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'flex-end',
   },
   hintSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
     padding: 16,
     maxHeight: '80%',
   },
@@ -1584,14 +1783,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   hintTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
     marginBottom: 6,
   },
   hintIntro: {
-    fontSize: 12,
-    color: '#888',
     marginBottom: 10,
   },
   hintScroll: {
@@ -1601,27 +1795,12 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   hintBullet: {
-    fontSize: 13,
-    color: '#333',
     marginBottom: 6,
-    lineHeight: 18,
-  },
-  helpSectionDivider: {
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    marginTop: 16,
-    paddingTop: 16,
   },
   helpSectionHeading: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
     marginBottom: 8,
   },
   helpParagraph: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
     marginBottom: 10,
   },
   helpBulletsContainer: {
@@ -1629,21 +1808,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   helpBullet: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
     marginBottom: 6,
   },
   helpExample: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
     marginTop: 4,
     marginBottom: 10,
   },
   helpExampleBold: {
-    fontWeight: '600',
-    color: '#000',
+    // Typography via theme.typography.bodyLarge with fontWeight override
   },
   scrollView: {
     flex: 1,
@@ -1659,16 +1831,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#e6e6e6',
-    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
     marginBottom: 12,
   },
   addGroupButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
+    // Typography via theme.typography.button
   },
   groupWrapper: {
     marginBottom: 12,
@@ -1688,15 +1856,12 @@ const styles = StyleSheet.create({
   activeEntryButtonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 15,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   activeEntryButtonsDivider: {
     width: 1,
     height: 30,
-    backgroundColor: '#e0e0e0',
   },
   groupActionsAbove: {
     flexDirection: 'row',
@@ -1730,34 +1895,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   groupTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    // Typography via theme.typography.sectionTitle
   },
   groupTotal: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    // Typography via theme.typography.valueSmall
   },
   groupNameInput: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    // Typography via theme.typography.sectionTitle (for TextInput, use input token)
   },
   groupNameErrorText: {
-    fontSize: 12,
-    color: '#8a1f1f',
     marginBottom: 6,
   },
   emptyText: {
-    fontSize: 12,
-    color: '#666',
     marginBottom: 8,
   },
   itemRowWrapper: {
@@ -1766,12 +1918,9 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#fff',
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
-    borderRadius: spacing.xl,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
     position: 'relative',
   },
   itemRowDim: {
@@ -1793,21 +1942,13 @@ const styles = StyleSheet.create({
   checkboxCircle: {
     width: 16,
     height: 16,
-    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#ccc',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxCircleFilled: {
-    backgroundColor: '#2F5BEA',
-    borderColor: '#2F5BEA',
-  },
   checkboxCheckmark: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '700',
+    // Typography via theme.typography.caption with fontWeight override
   },
   itemMain: {
     flex: 1,
@@ -1826,22 +1967,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   itemName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
     marginBottom: 1,
   },
   itemNameLocked: {
-    color: '#888',
+    // Legacy style - typography removed, using theme tokens
   },
   itemAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    // Typography via theme.typography.valueSmall
   },
   itemAmountLocked: {
-    color: '#888',
-    fontWeight: '500',
+    // Legacy style - typography removed, using theme tokens
   },
   itemRight: {
     position: 'absolute',
@@ -1850,58 +1985,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   itemMeta: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '400',
     marginTop: spacing.tiny,
-    lineHeight: 14,
   },
   itemMetaLocked: {
-    color: '#bbb',
-  },
-  iconButton: {
-    marginLeft: 6,
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  groupIconButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e6e6e6',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    // Legacy style - typography removed, using theme tokens
   },
   editorInline: {
     marginTop: 10,
   },
   editorLabel: {
-    fontSize: 12,
-    color: '#666',
     marginBottom: 6,
   },
   activeEntryWrapper: {
     marginBottom: 12,
   },
   activeEntryBlock: {
-    backgroundColor: '#f8f8f8',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
     padding: 12,
     marginBottom: 4,
   },
   activeEntryLabel: {
-    fontSize: 12,
-    color: '#666',
     marginBottom: 6,
   },
   activeEntryRow: {
@@ -1933,32 +2036,19 @@ const styles = StyleSheet.create({
   activeTickIconButton: {
     width: 56,
     height: 30,
-    borderTopLeftRadius: 15,
-    borderBottomLeftRadius: 15,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
     borderWidth: 0,
-    backgroundColor: '#eaf7ee',
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeCancelIconButton: {
     width: 56,
     height: 30,
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
-    borderTopRightRadius: 15,
-    borderBottomRightRadius: 15,
     borderWidth: 0,
-    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeTickText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2d8659',
-    lineHeight: 16,
+    // Typography via theme.typography.sectionTitle with fontWeight override
   },
   entryRow: {
     flexDirection: 'row',
@@ -1966,12 +2056,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
     padding: 10,
-    fontSize: 16,
+    // Typography via theme.typography.input (applied to TextInput components)
   },
   entryName: {
     flex: 1,
@@ -1982,45 +2069,30 @@ const styles = StyleSheet.create({
   tickIconButton: {
     width: 44,
     height: 44,
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d0e8d6',
-    backgroundColor: '#eaf7ee',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tickText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2d8659',
+    // Typography via theme.typography.valueLarge with fontWeight override
   },
   cancelIconButton: {
     width: 44,
     height: 44,
-    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorCard: {
-    backgroundColor: '#fff5f5',
     borderWidth: 1,
-    borderColor: '#ffd6d6',
-    borderRadius: 8,
     padding: 10,
     marginBottom: 8,
   },
   errorTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8a1f1f',
     marginBottom: 4,
   },
   errorText: {
-    fontSize: 12,
-    color: '#8a1f1f',
+    // Typography via theme.typography.body
   },
   projectionAssumptionsSection: {
     marginTop: 8,
@@ -2029,30 +2101,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   projectionAssumptionsHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#444',
     marginBottom: 4,
   },
   projectionAssumptionsHelper: {
-    fontSize: 11,
-    color: '#777',
     marginBottom: 8,
-    lineHeight: 14,
   },
   projectionField: {
     marginBottom: 8,
   },
   projectionFieldLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#aaa',
     marginBottom: 4,
   },
   projectionFieldLabelGrey: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#aaa',
     marginBottom: 4,
   },
   projectionFieldInput: {
@@ -2076,19 +2136,16 @@ const styles = StyleSheet.create({
     height: 32,
   },
   segmentedControlText: {
-    color: '#aaa',
+    // Color via theme.colors.text.disabled (applied inline)
   },
   segmentedControlTextActive: {
-    color: '#aaa',
+    // Color via theme.colors.text.disabled (applied inline)
   },
   unlockAgeContainer: {
     marginTop: 4,
     marginBottom: 4,
   },
   unlockAgeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#aaa',
     marginBottom: 4,
   },
   unlockAgeRow: {
@@ -2100,34 +2157,24 @@ const styles = StyleSheet.create({
     width: 100,
   },
   unlockAgeSuffix: {
-    fontSize: 11,
-    color: '#aaa',
+    // Typography via theme.typography.bodySmall
   },
   deleteModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   deleteModalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
     padding: 20,
     width: '100%',
     maxWidth: 320,
   },
   deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
     marginBottom: 8,
   },
   deleteModalMessage: {
-    fontSize: 14,
-    color: '#666',
     marginBottom: 20,
-    lineHeight: 20,
   },
   deleteModalActions: {
     flexDirection: 'row',
@@ -2137,27 +2184,20 @@ const styles = StyleSheet.create({
   deleteModalButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
     minWidth: 80,
     alignItems: 'center',
   },
   deleteModalButtonCancel: {
-    backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   deleteModalButtonConfirm: {
-    backgroundColor: '#dc2626',
+    // Background color via theme.colors.semantic.error (applied inline)
   },
   deleteModalButtonCancelText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    // Typography via theme.typography.button
   },
   deleteModalButtonConfirmText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    // Typography via theme.typography.button
   },
   swipeableContainer: {
     overflow: 'hidden',
@@ -2176,18 +2216,14 @@ const styles = StyleSheet.create({
   swipeActionEdit: {
     width: 35,
     minHeight: 36,
-    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
   },
   swipeActionDelete: {
     width: 35,
     minHeight: 36,
-    backgroundColor: '#dc2626',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
   },
 });
 

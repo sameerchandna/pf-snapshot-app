@@ -20,10 +20,10 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
+import Icon from './Icon';
 
 type Props = {
   onClose: () => void;
@@ -39,7 +39,7 @@ export default function MortgageEducationOverlay({ onClose }: Props) {
           Understanding Mortgage Balances
         </Text>
         <Pressable onPress={onClose}>
-          <Feather name="x" size={24} color={theme.colors.text.secondary} />
+          <Icon name="x" size="large" color={theme.colors.text.secondary} />
         </Pressable>
       </View>
 

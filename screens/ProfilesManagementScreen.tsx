@@ -3,17 +3,21 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Feather } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
+import Divider from '../components/Divider';
+import Icon from '../components/Icon';
+import Row from '../components/Row';
 import { layout } from '../layout';
 import { useSnapshot } from '../SnapshotContext';
+import { useTheme } from '../ui/theme/useTheme';
 import type { ProfileId, ProfileState, ProfilesState } from '../types';
 
 const ROW_HEIGHT = 44;
 
 export default function ProfilesManagementScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
   const { 
     profilesState,
     switchProfile: switchProfileFromContext, 
@@ -195,40 +199,49 @@ export default function ProfilesManagementScreen() {
         <View style={styles.swipeActionsContainer}>
           <Pressable
             onPress={handleRenamePress}
-            style={styles.swipeActionRename}
+            style={({ pressed }) => [
+              styles.swipeActionRename,
+              { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Rename"
           >
-            <Feather name="edit-2" size={14} color="#333" />
+            <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
           </Pressable>
           <Pressable
             onPress={handleResetPress}
-            style={styles.swipeActionReset}
+            style={({ pressed }) => [
+              styles.swipeActionReset,
+              { backgroundColor: pressed ? theme.colors.semantic.warningBg : theme.colors.semantic.warning },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Reset"
           >
-            <Feather name="refresh-cw" size={14} color="#333" />
+            <Icon name="refresh-cw" size="small" color={theme.colors.text.tertiary} />
           </Pressable>
           <Pressable
             onPress={handleDeletePress}
-            style={styles.swipeActionDelete}
+            style={({ pressed }) => [
+              styles.swipeActionDelete,
+              { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Delete"
           >
-            <Feather name="trash-2" size={14} color="#fff" />
+            <Icon name="trash-2" size="small" color="#fff" />
           </Pressable>
         </View>
       );
     },
-    [handleRenameRequest, handleResetRequest, handleDeleteRequest]
+    [handleRenameRequest, handleResetRequest, handleDeleteRequest, theme]
   );
 
   if (!profilesState) {
     return (
-      <SafeAreaView edges={['top']} style={styles.container}>
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
         <ScreenHeader title="Profiles" />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={[styles.loadingText, theme.typography.bodyLarge, { color: theme.colors.text.muted }]}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -237,7 +250,7 @@ export default function ProfilesManagementScreen() {
   const activeProfileId = profilesState.activeProfileId;
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title="Profiles" />
       <ScrollView 
         style={styles.scrollView} 
@@ -250,10 +263,12 @@ export default function ProfilesManagementScreen() {
       >
         <View style={styles.section}>
           <GroupHeader title="Profiles" />
-          <View style={styles.hr} />
+          <View style={{ marginTop: layout.sectionTitleBottom, marginBottom: layout.componentGap }}>
+            <Divider />
+          </View>
           {sortedProfiles.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No profiles</Text>
+              <Text style={[styles.emptyText, theme.typography.bodyLarge]}>No profiles</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -276,7 +291,7 @@ export default function ProfilesManagementScreen() {
                       overshootFriction={8}
                       activeOffsetX={[-10, 10]}
                       failOffsetY={[-5, 5]}
-                      containerStyle={styles.swipeableContainer}
+                      containerStyle={[styles.swipeableContainer, { backgroundColor: theme.colors.bg.card }]}
                       onSwipeableWillOpen={() => {
                         closeAllSwipeables(id);
                         setOpenSwipeableId(id);
@@ -290,8 +305,9 @@ export default function ProfilesManagementScreen() {
                         }
                       }}
                     >
-                      <View style={styles.row}>
-                        <View style={styles.rowMain}>
+                      <Row
+                        onPress={() => handleActivateProfile(id)}
+                        leading={
                           <View style={styles.dotContainer}>
                             <Pressable
                               onPress={() => handleActivateProfile(id)}
@@ -300,14 +316,25 @@ export default function ProfilesManagementScreen() {
                               accessibilityRole="radio"
                               accessibilityState={{ selected: isActive }}
                             >
-                              <View style={[styles.dot, isActive ? styles.dotActive : styles.dotInactive]} />
+                              <View style={[
+                                styles.dot,
+                                isActive
+                                  ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary }
+                                  : { backgroundColor: 'transparent', borderColor: theme.colors.border.default }
+                              ]} />
                             </Pressable>
                           </View>
-                          <View style={styles.rowBody}>
-                            <Text style={[styles.rowTitle, isActive ? styles.rowTitleActive : null]}>{profile.meta.name}</Text>
-                          </View>
-                        </View>
-                      </View>
+                        }
+                        showBottomDivider={true}
+                      >
+                        <Text style={[
+                          styles.rowTitle,
+                          theme.typography.value,
+                          { color: isActive ? theme.colors.brand.primary : theme.colors.text.primary }
+                        ]}>
+                          {profile.meta.name}
+                        </Text>
+                      </Row>
                     </Swipeable>
                   </View>
                 );
@@ -318,9 +345,15 @@ export default function ProfilesManagementScreen() {
           {/* Create Profile Row */}
           <Pressable
             onPress={handleCreateRequest}
-            style={({ pressed }) => [styles.createRow, pressed ? styles.rowPressed : null]}
+            style={({ pressed }) => [
+              styles.createRow,
+              {
+                backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                borderTopColor: theme.colors.border.subtle,
+              }
+            ]}
           >
-            <Text style={styles.createRowText}>+ Add new profile</Text>
+            <Text style={[styles.createRowText, theme.typography.value, { color: theme.colors.brand.primary }]}>+ Add new profile</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -328,11 +361,19 @@ export default function ProfilesManagementScreen() {
       {/* Rename modal */}
       {pendingRenameId ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelRename}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Rename profile</Text>
+          <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>Rename profile</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[
+                  styles.modalInput,
+                  theme.typography.input,
+                  {
+                    borderColor: theme.colors.border.default,
+                    color: theme.colors.text.primary,
+                    backgroundColor: theme.colors.bg.card,
+                  }
+                ]}
                 value={pendingRenameName}
                 onChangeText={setPendingRenameName}
                 placeholder="Profile name"
@@ -342,20 +383,31 @@ export default function ProfilesManagementScreen() {
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelRename}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                  <Text style={[styles.modalButtonCancelText, theme.typography.button, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmRename}
                   disabled={!pendingRenameName.trim()}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonConfirm, { opacity: pressed || !pendingRenameName.trim() ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed || !pendingRenameName.trim() ? theme.colors.bg.subtle : theme.colors.brand.primary,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Save"
                 >
-                  <Text style={styles.modalButtonConfirmText}>Save</Text>
+                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: '#fff' }]}>Save</Text>
                 </Pressable>
               </View>
             </View>
@@ -366,26 +418,35 @@ export default function ProfilesManagementScreen() {
       {/* Reset confirmation modal */}
       {pendingResetId ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelReset}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Reset profile?</Text>
-              <Text style={styles.modalMessage}>This will clear all snapshot data, scenarios, and settings. Profile name will be kept.</Text>
+          <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>Reset profile?</Text>
+              <Text style={[styles.modalMessage, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>This will clear all snapshot data, scenarios, and settings. Profile name will be kept.</Text>
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelReset}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                  <Text style={[styles.modalButtonCancelText, theme.typography.button, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmReset}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonReset, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    { backgroundColor: pressed ? theme.colors.semantic.warningBg : theme.colors.semantic.warning }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Reset"
                 >
-                  <Text style={styles.modalButtonResetText}>Reset</Text>
+                  <Text style={[styles.modalButtonResetText, theme.typography.button, { color: '#fff' }]}>Reset</Text>
                 </Pressable>
               </View>
             </View>
@@ -396,26 +457,35 @@ export default function ProfilesManagementScreen() {
       {/* Delete confirmation modal */}
       {pendingDeleteId ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelDelete}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Delete profile?</Text>
-              <Text style={styles.modalMessage}>All data will be permanently deleted. This cannot be undone.</Text>
+          <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>Delete profile?</Text>
+              <Text style={[styles.modalMessage, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>All data will be permanently deleted. This cannot be undone.</Text>
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelDelete}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                  <Text style={[styles.modalButtonCancelText, theme.typography.button, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmDelete}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonConfirm, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Delete"
                 >
-                  <Text style={styles.modalButtonDeleteText}>Delete</Text>
+                  <Text style={[styles.modalButtonDeleteText, theme.typography.button, { color: '#fff' }]}>Delete</Text>
                 </Pressable>
               </View>
             </View>
@@ -426,11 +496,19 @@ export default function ProfilesManagementScreen() {
       {/* Create profile modal */}
       {pendingCreate ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelCreate}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>New profile</Text>
+          <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>New profile</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[
+                  styles.modalInput,
+                  theme.typography.input,
+                  {
+                    borderColor: theme.colors.border.default,
+                    color: theme.colors.text.primary,
+                    backgroundColor: theme.colors.bg.card,
+                  }
+                ]}
                 value={pendingCreateName}
                 onChangeText={setPendingCreateName}
                 placeholder="Profile name"
@@ -440,20 +518,31 @@ export default function ProfilesManagementScreen() {
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelCreate}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                  <Text style={[styles.modalButtonCancelText, theme.typography.button, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmCreate}
                   disabled={!pendingCreateName.trim()}
-                  style={({ pressed }) => [styles.modalButton, styles.modalButtonConfirm, { opacity: pressed || !pendingCreateName.trim() ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.modalButton,
+                    {
+                      backgroundColor: pressed || !pendingCreateName.trim() ? theme.colors.bg.subtle : theme.colors.brand.primary,
+                    }
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Create"
                 >
-                  <Text style={styles.modalButtonConfirmText}>Create</Text>
+                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: '#fff' }]}>Create</Text>
                 </Pressable>
               </View>
             </View>
@@ -467,7 +556,6 @@ export default function ProfilesManagementScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -475,8 +563,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14,
-    color: '#999',
+    // Typography moved to inline style with theme token
   },
   scrollView: {
     flex: 1,
@@ -489,30 +576,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
   },
   hr: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginTop: layout.sectionTitleBottom,
-    marginBottom: layout.componentGap,
+    // Divider component handles visual styling
   },
   list: {
     gap: 0,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  rowPressed: {
-    opacity: 0.6,
-  },
-  rowMain: {
-    flex: 1,
-    height: ROW_HEIGHT,
-    paddingHorizontal: layout.rowPaddingHorizontal,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
   },
   dotContainer: {
     width: 20,
@@ -530,33 +597,16 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#2F5BEA',
-  },
-  dotActive: {
-    backgroundColor: '#2F5BEA',
-  },
-  dotInactive: {
-    backgroundColor: 'transparent',
-    borderColor: '#ccc',
-  },
-  rowBody: {
-    flex: 1,
   },
   rowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
-  },
-  rowTitleActive: {
-    color: '#2F5BEA',
+    // Typography moved to inline style with theme token
   },
   emptyState: {
     paddingVertical: layout.sectionGap,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
-    color: '#999',
+    // Typography moved to inline style with theme token
     fontStyle: 'italic',
   },
   createRow: {
@@ -564,17 +614,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.rowPaddingHorizontal,
     marginTop: layout.componentGap,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   createRowText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#2F5BEA',
+    // Typography moved to inline style with theme token
   },
   swipeableContainer: {
     height: ROW_HEIGHT,
     overflow: 'hidden',
-    backgroundColor: '#fff',
   },
   swipeActionsContainer: {
     flexDirection: 'row',
@@ -589,7 +635,6 @@ const styles = StyleSheet.create({
   swipeActionRename: {
     width: 35,
     height: ROW_HEIGHT - 8,
-    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -597,7 +642,6 @@ const styles = StyleSheet.create({
   swipeActionReset: {
     width: 35,
     height: ROW_HEIGHT - 8,
-    backgroundColor: '#f59e0b',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -606,7 +650,6 @@ const styles = StyleSheet.create({
   swipeActionDelete: {
     width: 35,
     height: ROW_HEIGHT - 8,
-    backgroundColor: '#dc2626',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
@@ -614,39 +657,31 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     width: '100%',
     maxWidth: 320,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
+    // Typography moved to inline style with theme token (18px/700 → 18px/600 via theme.typography.valueLarge)
     marginBottom: 8,
   },
   modalMessage: {
-    fontSize: 14,
-    color: '#666',
+    // Typography moved to inline style with theme token
     marginBottom: 20,
     lineHeight: 20,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 12,
-    fontSize: 15,
-    color: '#111',
+    // Typography moved to inline style with theme token
     marginBottom: 20,
-    backgroundColor: '#fff',
   },
   modalActions: {
     flexDirection: 'row',
@@ -660,35 +695,16 @@ const styles = StyleSheet.create({
     minWidth: 80,
     alignItems: 'center',
   },
-  modalButtonCancel: {
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  modalButtonConfirm: {
-    backgroundColor: '#2F5BEA',
-  },
-  modalButtonReset: {
-    backgroundColor: '#f59e0b',
-  },
   modalButtonCancelText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    // Typography moved to inline style with theme token
   },
   modalButtonConfirmText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    // Typography moved to inline style with theme token
   },
   modalButtonResetText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    // Typography moved to inline style with theme token
   },
   modalButtonDeleteText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    // Typography moved to inline style with theme token
   },
 });

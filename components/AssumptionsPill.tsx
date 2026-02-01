@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { spacing } from '../spacing';
 import type { AssetItem } from '../types';
 import { formatCurrencyFull } from '../formatters';
+import { useTheme } from '../ui/theme/useTheme';
+import Icon from './Icon';
 
 type Props = {
   title: string;
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export default function AssumptionsPill({ title, subtitle, onPress, assets, scenarioState, onScenarioChange, onClearScenario, availableToAllocate, scenarioValidationError }: Props) {
+  const { theme } = useTheme();
   const [whatIfExpanded, setWhatIfExpanded] = useState(false);
   const [selectedScenarioType, setSelectedScenarioType] = useState<string | null>(null);
   // Phase Two: use controlled state from parent if provided, otherwise local state
@@ -122,7 +124,7 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
         style={({ pressed }) => [
           styles.pill,
           {
-            backgroundColor: pressed ? styles.pillPressed.backgroundColor : styles.pill.backgroundColor,
+            backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
           },
         ]}
         accessibilityRole="button"
@@ -130,28 +132,28 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
       >
         <View style={styles.row}>
           <View style={styles.textBlock}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
               {title}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]} numberOfLines={1}>
               {subtitle}
             </Text>
           </View>
-          <Text style={styles.triangle} accessible={false}>
+          <Text style={[styles.triangle, { color: theme.colors.text.tertiary }]} accessible={false}>
             {'\u25B6'}
           </Text>
         </View>
       </Pressable>
 
       {/* Try a what-if Section (separate card, expandable) */}
-      <View style={[styles.pill, styles.whatIfPill]}>
+      <View style={[styles.pill, styles.whatIfPill, { backgroundColor: theme.colors.bg.subtle }]}>
         <Pressable
           onPress={handleWhatIfToggle}
           hitSlop={8}
           style={({ pressed }) => [
             styles.whatIfButton,
             {
-              backgroundColor: pressed ? styles.pillPressed.backgroundColor : 'transparent',
+              backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
             },
           ]}
           accessibilityRole="button"
@@ -160,18 +162,18 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
           <View style={styles.row}>
             <View style={styles.textBlock}>
               <View style={styles.titleRow}>
-                <Text style={styles.title} numberOfLines={1}>
+                <Text style={[styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
                   Try a what-if
                 </Text>
                 {scenarioState && scenarioState.assetId && scenarioState.monthlyAmount > 0 && (
-                  <View style={styles.activeDot} />
+                  <View style={[styles.activeDot, { backgroundColor: theme.colors.brand.primary }]} />
                 )}
               </View>
-              <Text style={styles.subtitle} numberOfLines={1}>
+              <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]} numberOfLines={1}>
                 Explore how a small monthly change affects your future
               </Text>
             </View>
-            <Animated.Text style={[styles.triangle, { transform: [{ rotate }] }]} accessible={false}>
+            <Animated.Text style={[styles.triangle, { color: theme.colors.text.tertiary, transform: [{ rotate }] }]} accessible={false}>
               {'\u25B6'}
             </Animated.Text>
           </View>
@@ -182,7 +184,7 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
           <View style={styles.expandedContent}>
             {/* Asset Selector */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Apply to</Text>
+              <Text style={[styles.fieldLabel, { color: theme.colors.text.tertiary }]}>Apply to</Text>
               <Pressable
                 onPress={() => {
                   if (assets.length === 0) {
@@ -192,31 +194,49 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
                   }
                   setAssetPickerOpen(true);
                 }}
-                style={({ pressed }) => [styles.selector, { opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [
+                  styles.selector,
+                  {
+                    backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
+                    borderColor: theme.colors.border.default,
+                  }
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Select asset"
               >
                 <View style={styles.selectorRow}>
                   <Text
-                    style={[styles.selectorValue, !selectedAsset ? styles.selectorPlaceholder : null]}
+                    style={[
+                      styles.selectorValue,
+                      { color: theme.colors.text.primary },
+                      !selectedAsset ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
+                    ]}
                     numberOfLines={1}
                   >
                     {selectedAsset ? getAssetName(selectedAsset) : 'Select asset'}
                   </Text>
-                  <Feather name="chevron-down" size={16} color="#777" />
+                  <Icon name="chevron-down" size="small" color={theme.colors.text.muted} />
                 </View>
               </Pressable>
               {/* Helper Text - moved here with minimal spacing */}
-              <Text style={styles.helperText}>
+              <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
                 Uses this asset's growth assumptions and applies during your earning years only.
               </Text>
             </View>
 
             {/* Amount Input */}
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Extra amount per month</Text>
+              <Text style={[styles.fieldLabel, { color: theme.colors.text.tertiary }]}>Extra amount per month</Text>
               <TextInput
-                style={[styles.amountInput, scenarioValidationError ? styles.amountInputError : null]}
+                style={[
+                  styles.amountInput,
+                  {
+                    backgroundColor: theme.colors.bg.card,
+                    borderColor: theme.colors.border.default,
+                    color: theme.colors.text.primary,
+                  },
+                  scenarioValidationError ? [styles.amountInputError, { borderColor: theme.colors.semantic.error }] : null
+                ]}
                 value={amountInput}
                 onChangeText={handleAmountChange}
                 placeholder="0"
@@ -225,29 +245,32 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
               />
               {/* Available to Allocate Display - muted, italic, minimal spacing */}
               {availableToAllocate !== undefined && (
-                <Text style={styles.availableCashText}>
+                <Text style={[styles.availableCashText, { color: theme.colors.text.secondary }]}>
                   Available to invest: {formatCurrencyFull(availableToAllocate)} / month
                 </Text>
               )}
               {/* Conditional: Show validation error */}
               {scenarioValidationError ? (
                 <View style={styles.validationErrorContainer}>
-                  <Text style={styles.validationErrorText}>{scenarioValidationError}</Text>
+                  <Text style={[styles.validationErrorText, { color: theme.colors.semantic.errorText }]}>{scenarioValidationError}</Text>
                 </View>
               ) : null}
             </View>
 
             {/* Divider above Clear Scenario */}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.colors.border.default }]} />
 
             {/* Clear Scenario Button */}
             <Pressable
               onPress={handleClearScenario}
-              style={({ pressed }) => [styles.clearButton, { opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [
+                styles.clearButton,
+                { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Clear scenario"
             >
-              <Text style={styles.clearButtonText}>Clear scenario</Text>
+              <Text style={[styles.clearButtonText, { color: theme.colors.text.secondary }]}>Clear scenario</Text>
             </Pressable>
           </View>
         ) : null}
@@ -261,9 +284,9 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
         onRequestClose={() => setAssetPickerOpen(false)}
       >
         <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setAssetPickerOpen(false)} />
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Select asset</Text>
+          <Pressable style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setAssetPickerOpen(false)} />
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {assets.map(asset => {
                 const metadata = formatAssetMetadata(asset);
@@ -271,19 +294,25 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
                   <Pressable
                     key={asset.id}
                     onPress={() => handleSelectAsset(asset.id)}
-                    style={({ pressed }) => [styles.modalOption, { opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [
+                      styles.modalOption,
+                      {
+                        backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                        borderBottomColor: theme.colors.border.subtle,
+                      }
+                    ]}
                   >
                     <View style={styles.modalOptionContent}>
-                      <Text style={styles.modalOptionText}>{asset.name}</Text>
+                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{asset.name}</Text>
                       {metadata ? (
-                        <Text style={styles.modalOptionMetadata}>{metadata}</Text>
+                        <Text style={[styles.modalOptionMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
                       ) : null}
                     </View>
                   </Pressable>
                 );
               })}
               {assets.length === 0 ? (
-                <Text style={styles.modalEmptyText}>No assets available</Text>
+                <Text style={[styles.modalEmptyText, { color: theme.colors.text.muted }]}>No assets available</Text>
               ) : null}
             </ScrollView>
           </View>
@@ -296,12 +325,8 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
 const styles = StyleSheet.create({
   pill: {
     width: '100%',
-    backgroundColor: '#fafafa',
     borderRadius: 12,
     padding: spacing.sm,
-  },
-  pillPressed: {
-    backgroundColor: '#f5f5f5',
   },
   whatIfPill: {
     marginTop: spacing.xs,
@@ -328,27 +353,22 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#2F5BEA',
   },
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111',
   },
   subtitle: {
     fontSize: 12,
-    color: '#667085',
   },
   triangle: {
     fontSize: 12,
-    color: '#6f7a8c',
   },
   expandedContent: {
     marginTop: spacing.sm,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
@@ -358,13 +378,10 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#444',
     marginBottom: spacing.xs,
   },
   selector: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -379,30 +396,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#111',
   },
   selectorPlaceholder: {
     fontWeight: '500',
-    color: '#777',
   },
   availableCashText: {
     fontSize: 11,
     fontStyle: 'italic',
-    color: '#666',
     marginTop: spacing.xs,
   },
   amountInput: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 10,
     fontSize: 14,
     fontWeight: '600',
-    color: '#111',
   },
   amountInputError: {
-    borderColor: '#d32f2f',
     borderWidth: 1.5,
   },
   validationErrorContainer: {
@@ -410,7 +420,6 @@ const styles = StyleSheet.create({
   },
   validationErrorText: {
     fontSize: 12,
-    color: '#d32f2f',
     lineHeight: 16,
   },
   helperTextContainer: {
@@ -419,7 +428,6 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 11,
     fontStyle: 'italic',
-    color: '#666',
     marginTop: spacing.xs,
   },
   clearButton: {
@@ -430,7 +438,6 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#667085',
     textAlign: 'left',
   },
   modalRoot: {
@@ -439,10 +446,8 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   modalSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
     paddingHorizontal: 16,
@@ -453,7 +458,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111',
     marginBottom: 10,
   },
   modalList: {
@@ -465,7 +469,6 @@ const styles = StyleSheet.create({
   modalOption: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalOptionContent: {
     flexDirection: 'column',
@@ -473,17 +476,14 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontSize: 14,
-    color: '#111',
     fontWeight: '600',
   },
   modalOptionMetadata: {
     fontSize: 12,
-    color: '#777',
     fontWeight: '400',
   },
   modalEmptyText: {
     fontSize: 14,
-    color: '#777',
     fontStyle: 'italic',
     paddingVertical: 12,
   },

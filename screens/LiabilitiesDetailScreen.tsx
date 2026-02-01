@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { formatCurrencyFull } from '../formatters';
 import EducationBox from '../components/EducationBox';
+import { useTheme } from '../ui/theme/useTheme';
 
 const liabilitiesHelpContent: HelpContent = {
   title: 'Liabilities',
@@ -47,6 +48,7 @@ const liabilitiesHelpContent: HelpContent = {
 };
 
 export default function LiabilitiesDetailScreen() {
+  const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const { state, setExpenses, setLiabilityGroups, setLiabilities, setLiabilityReductions } = useSnapshot();
 
@@ -123,14 +125,14 @@ export default function LiabilitiesDetailScreen() {
           <View style={styles.templateRow}>
             <Pressable
               onPress={() => navigation.navigate('LoanDetail', { template: 'mortgage', groupId: ensureGroup('Mortgages') })}
-              style={({ pressed }) => [styles.templateCard, { opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [styles.templateCard, { backgroundColor: pressed ? theme.colors.bg.subtle : undefined }]}
             >
               <Text style={styles.templateTitle}>Mortgage</Text>
               <Text style={styles.templateSub}>Balance, rate, term</Text>
             </Pressable>
             <Pressable
               onPress={() => navigation.navigate('LoanDetail', { template: 'loan', groupId: ensureGroup('Loans') })}
-              style={({ pressed }) => [styles.templateCard, { opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [styles.templateCard, { backgroundColor: pressed ? theme.colors.bg.subtle : undefined }]}
             >
               <Text style={styles.templateTitle}>Loan</Text>
               <Text style={styles.templateSub}>Balance, rate, term</Text>

@@ -5,6 +5,7 @@ import { Group } from '../types';
 import GroupedListDetailScreen from './GroupedListDetailScreen';
 import { useSnapshot } from '../SnapshotContext';
 import { formatPercent } from '../formatters';
+import { useTheme } from '../ui/theme/useTheme';
 
 type ProjectionFieldItem = {
   id: string;
@@ -32,6 +33,7 @@ function formatGBPInt(value: number): string {
 
 
 export default function ProjectionSettingsScreen() {
+  const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const { state, setProjection } = useSnapshot();
 
@@ -133,7 +135,7 @@ export default function ProjectionSettingsScreen() {
       headerRightAccessory={
         <Pressable
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.doneButton, { opacity: pressed ? 0.75 : 1 }]}
+          style={({ pressed }) => [styles.doneButton, { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }]}
           accessibilityRole="button"
           accessibilityLabel="Done"
         >

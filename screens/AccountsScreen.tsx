@@ -5,10 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
+import Divider from '../components/Divider';
+import Row from '../components/Row';
 import { useSnapshot } from '../SnapshotContext';
 import { formatCurrencyFull } from '../formatters';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
+import { useTheme } from '../ui/theme/useTheme';
 import type { AssetItem, LiabilityItem } from '../types';
 
 const ROUTE_ASSETS_DETAIL: string = 'AccountsAssetsDetail';
@@ -101,6 +104,7 @@ function buildLiabilityMetadata(liability: LiabilityItem): string {
 
 export default function AccountsScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
   const { state } = useSnapshot();
 
   const assetRows = useMemo(() => state.assets, [state.assets]);
@@ -133,21 +137,29 @@ export default function AccountsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <ScreenHeader title="Accounts" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <SectionCard>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>ASSETS</Text>
-            <Text style={styles.sectionTotal}>{formatCurrencyFull(assetsTotal)}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>ASSETS</Text>
+            <Text style={[styles.sectionTotal, { color: theme.colors.text.muted }]}>{formatCurrencyFull(assetsTotal)}</Text>
           </View>
-          <View style={styles.hr} />
+          <View style={{ marginBottom: spacing.base }}>
+            <Divider />
+          </View>
 
           {assetRows.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No assets added yet</Text>
-              <Pressable onPress={navigateToAssets} style={({ pressed }) => [styles.emptyButton, pressed ? styles.pressed : null]}>
-                <Text style={styles.emptyButtonText}>[ Add asset ]</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>No assets added yet</Text>
+              <Pressable
+                onPress={navigateToAssets}
+                style={({ pressed }) => [
+                  styles.emptyButton,
+                  { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }
+                ]}
+              >
+                <Text style={[styles.emptyButtonText, { color: theme.colors.text.tertiary }]}>[ Add asset ]</Text>
               </Pressable>
             </View>
           ) : (
@@ -157,18 +169,18 @@ export default function AccountsScreen() {
                 const metadata = buildAssetMetadata(item, contributionAmount);
                 
                 return (
-                  <Pressable
+                  <Row
                     key={item.id}
                     onPress={navigateToAssets}
-                    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+                    leading={<Text style={[styles.bullet, { color: theme.colors.text.tertiary }]}>•</Text>}
+                    showBottomDivider={false}
                   >
-                    <Text style={styles.bullet}>•</Text>
                     <View style={styles.rowBody}>
-                      <Text style={styles.rowTitle}>{item.name}</Text>
-                      <Text style={styles.rowSubtext}>{formatCurrencyFull(item.balance)}</Text>
-                      <Text style={styles.rowMetadata}>{metadata}</Text>
+                      <Text style={[styles.rowTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowSubtext, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
+                      <Text style={[styles.rowMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
-                  </Pressable>
+                  </Row>
                 );
               })}
             </View>
@@ -177,16 +189,24 @@ export default function AccountsScreen() {
 
         <SectionCard>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>LIABILITIES</Text>
-            <Text style={styles.sectionTotal}>{formatCurrencyFull(liabilitiesTotal)}</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>LIABILITIES</Text>
+            <Text style={[styles.sectionTotal, { color: theme.colors.text.muted }]}>{formatCurrencyFull(liabilitiesTotal)}</Text>
           </View>
-          <View style={styles.hr} />
+          <View style={{ marginBottom: spacing.base }}>
+            <Divider />
+          </View>
 
           {liabilityRows.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No liabilities added yet</Text>
-              <Pressable onPress={navigateToLiabilities} style={({ pressed }) => [styles.emptyButton, pressed ? styles.pressed : null]}>
-                <Text style={styles.emptyButtonText}>[ Add liability ]</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>No liabilities added yet</Text>
+              <Pressable
+                onPress={navigateToLiabilities}
+                style={({ pressed }) => [
+                  styles.emptyButton,
+                  { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }
+                ]}
+              >
+                <Text style={[styles.emptyButtonText, { color: theme.colors.text.tertiary }]}>[ Add liability ]</Text>
               </Pressable>
             </View>
           ) : (
@@ -195,18 +215,18 @@ export default function AccountsScreen() {
                 const metadata = buildLiabilityMetadata(item);
                 
                 return (
-                  <Pressable
+                  <Row
                     key={item.id}
                     onPress={navigateToLiabilities}
-                    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+                    leading={<Text style={[styles.bullet, { color: theme.colors.text.tertiary }]}>•</Text>}
+                    showBottomDivider={false}
                   >
-                    <Text style={styles.bullet}>•</Text>
                     <View style={styles.rowBody}>
-                      <Text style={styles.rowTitle}>{item.name}</Text>
-                      <Text style={styles.rowSubtext}>{formatCurrencyFull(item.balance)}</Text>
-                      <Text style={styles.rowMetadata}>{metadata}</Text>
+                      <Text style={[styles.rowTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowSubtext, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
+                      <Text style={[styles.rowMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
-                  </Pressable>
+                  </Row>
                 );
               })}
             </View>
@@ -220,7 +240,6 @@ export default function AccountsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6F8',
   },
   scrollView: {
     flex: 1,
@@ -238,34 +257,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#666',
     letterSpacing: 0.6,
   },
   sectionTotal: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
-  },
-  hr: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    marginBottom: spacing.base,
   },
   list: {
     gap: spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.sm,
-  },
-  rowPressed: {
-    opacity: 0.7,
-  },
   bullet: {
     width: 16,
     fontSize: 14,
-    color: '#444',
     marginTop: 1,
   },
   rowBody: {
@@ -274,16 +277,13 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#111',
   },
   rowSubtext: {
     fontSize: 13,
-    color: '#444',
     marginTop: layout.micro,
   },
   rowMetadata: {
     fontSize: 11,
-    color: '#777',
     marginTop: spacing.tiny,
     lineHeight: 14,
   },
@@ -292,7 +292,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
     marginBottom: spacing.sm,
   },
   emptyButton: {
@@ -301,10 +300,6 @@ const styles = StyleSheet.create({
   },
   emptyButtonText: {
     fontSize: 14,
-    color: '#444',
-  },
-  pressed: {
-    opacity: 0.7,
   },
 });
 

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
+import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
   title: string;
@@ -22,6 +23,7 @@ export default function SingleValueDetailScreen({
   maxValue,
   validate,
 }: Props) {
+  const { theme } = useTheme();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [draft, setDraft] = useState<string>(value.toString());
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -80,40 +82,76 @@ export default function SingleValueDetailScreen({
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title={title} />
 
       <View style={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.label}>{label}</Text>
+        <View style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.bg.subtle,
+            borderColor: theme.colors.border.default,
+          }
+        ]}>
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>{label}</Text>
           {isEditing ? (
             <View>
               {hasError ? (
-                <View style={styles.errorCard}>
-                  <Text style={styles.errorTitle}>Can’t save</Text>
-                  <Text style={styles.errorText}>{errorMessage}</Text>
+                <View style={[
+                  styles.errorCard,
+                  {
+                    backgroundColor: theme.colors.semantic.errorBg,
+                    borderColor: theme.colors.semantic.errorBorder,
+                  }
+                ]}>
+                  <Text style={[styles.errorTitle, { color: theme.colors.semantic.errorText }]}>Can't save</Text>
+                  <Text style={[styles.errorText, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
                 </View>
               ) : null}
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.bg.card,
+                    borderColor: theme.colors.border.default,
+                  }
+                ]}
                 value={draft}
                 onChangeText={setDraft}
                 keyboardType="numeric"
                 autoFocus={true}
               />
               <View style={styles.actionsRow}>
-                <Pressable onPress={save} style={styles.actionButton}>
-                  <Text style={styles.actionButtonText}>Save</Text>
+                <Pressable
+                  onPress={save}
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
+                >
+                  <Text style={[styles.actionButtonText, { color: theme.colors.text.tertiary }]}>Save</Text>
                 </Pressable>
-                <Pressable onPress={cancelEdit} style={styles.actionButton}>
-                  <Text style={styles.actionButtonText}>Cancel</Text>
+                <Pressable
+                  onPress={cancelEdit}
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                    }
+                  ]}
+                >
+                  <Text style={[styles.actionButtonText, { color: theme.colors.text.tertiary }]}>Cancel</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
             <Pressable disabled={!canEdit} onPress={startEdit} style={styles.valueRow}>
-              <Text style={styles.value}>{formattedValue}</Text>
-              <Text style={styles.editHint}>{helperText}</Text>
+              <Text style={[styles.value, { color: theme.colors.text.primary }]}>{formattedValue}</Text>
+              <Text style={[styles.editHint, { color: theme.colors.text.muted }]}>{helperText}</Text>
             </Pressable>
           )}
         </View>
@@ -125,7 +163,6 @@ export default function SingleValueDetailScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -133,17 +170,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#f8f8f8',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   label: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#666',
     marginBottom: 6,
   },
   valueRow: {
@@ -152,25 +186,19 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#000',
   },
   editHint: {
     fontSize: 12,
-    color: '#888',
     marginTop: 4,
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 6,
     padding: 10,
     fontSize: 18,
   },
   errorCard: {
-    backgroundColor: '#fff5f5',
     borderWidth: 1,
-    borderColor: '#ffd6d6',
     borderRadius: 6,
     padding: 10,
     marginBottom: 8,
@@ -178,12 +206,10 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8a1f1f',
     marginBottom: 4,
   },
   errorText: {
     fontSize: 12,
-    color: '#8a1f1f',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -195,14 +221,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: '#eee',
     borderWidth: 1,
-    borderColor: '#ddd',
   },
   actionButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
   },
 });
 

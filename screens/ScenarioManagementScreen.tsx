@@ -3,9 +3,9 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Feather } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
+import Icon from '../components/Icon';
 import { useSnapshot } from '../SnapshotContext';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
@@ -15,6 +15,7 @@ import type { Scenario, ScenarioId } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { getScenarios, getActiveScenarioId, setActiveScenarioId, getActiveScenario, deleteScenario } from '../scenarioState';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
+import { useTheme } from '../ui/theme/useTheme';
 
 // Generate preview text for a scenario
 function getScenarioPreviewText(scenario: Scenario, assets: Array<{ id: string; name: string }>, liabilities: Array<{ id: string; name: string }>): string {
@@ -36,6 +37,7 @@ const ROW_HEIGHT = 44;
 export default function ScenarioManagementScreen() {
   const navigation = useNavigation<any>();
   const { state } = useSnapshot();
+  const { theme } = useTheme();
   const [savedScenarios, setSavedScenarios] = useState<Scenario[]>([]);
   const [activeScenarioId, setActiveScenarioIdLocal] = useState<ScenarioId | undefined>(undefined);
   const [pendingDeleteId, setPendingDeleteId] = useState<ScenarioId | null>(null);
@@ -159,24 +161,30 @@ export default function ScenarioManagementScreen() {
         <View style={styles.swipeActionsContainer}>
           <Pressable
             onPress={handleEditPress}
-            style={styles.swipeActionEdit}
+            style={({ pressed }) => [
+              styles.swipeActionEdit,
+              { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.default, borderRadius: theme.radius.medium },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Edit"
           >
-            <Feather name="edit-2" size={14} color="#333" />
+            <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
           </Pressable>
           <Pressable
             onPress={handleDeletePress}
-            style={styles.swipeActionDelete}
+            style={({ pressed }) => [
+              styles.swipeActionDelete,
+              { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error, borderRadius: theme.radius.medium },
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Delete"
           >
-            <Feather name="trash-2" size={14} color="#fff" />
+            <Icon name="trash-2" size="small" color={theme.colors.text.primary} />
           </Pressable>
         </View>
       );
     },
-    [handleEdit, handleDeleteRequest]
+    [handleEdit, handleDeleteRequest, theme]
   );
 
   const activeScenario = useMemo(() => 
@@ -185,7 +193,7 @@ export default function ScenarioManagementScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title="Scenario Management" />
       <ScrollView 
         style={styles.scrollView} 
@@ -198,8 +206,8 @@ export default function ScenarioManagementScreen() {
       >
         {/* Negative Surplus Banner */}
         {isSurplusNegative && (
-          <View style={styles.warningBanner}>
-            <Text style={styles.warningBannerText}>
+          <View style={[styles.warningBanner, { backgroundColor: theme.colors.semantic.warningBg, borderColor: theme.colors.semantic.warning, borderRadius: theme.radius.medium }]}>
+            <Text style={[styles.warningBannerText, { color: theme.colors.semantic.warningText, fontSize: theme.typography.bodyLarge.fontSize, lineHeight: theme.typography.bodyLarge.lineHeight }]}>
               Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
             </Text>
           </View>
@@ -208,18 +216,19 @@ export default function ScenarioManagementScreen() {
         {/* Baseline Section */}
         <View style={styles.section}>
           <GroupHeader title="Baseline" />
-          <View style={styles.hr} />
+          <View style={[styles.hr, { backgroundColor: theme.colors.border.default }]} />
           <View style={styles.list}>
             <Pressable
               onPress={handleActivateBaseline}
               disabled={isSurplusNegative}
               style={({ pressed }) => [
-                styles.row, 
-                pressed ? styles.rowPressed : null,
+                styles.row,
+                { backgroundColor: theme.colors.bg.card },
+                pressed ? { backgroundColor: theme.colors.bg.subtle } : null,
                 isSurplusNegative ? styles.rowDisabled : null
               ]}
             >
-              <View style={styles.rowMain}>
+              <View style={[styles.rowMain, { backgroundColor: theme.colors.bg.card }]}>
                 <View style={styles.dotContainer}>
                   <Pressable
                     onPress={handleActivateBaseline}
@@ -228,12 +237,20 @@ export default function ScenarioManagementScreen() {
                     accessibilityRole="radio"
                     accessibilityState={{ selected: !activeScenarioId }}
                   >
-                    <View style={[styles.dot, !activeScenarioId ? styles.dotActive : styles.dotInactive]} />
+                    <View style={[
+                      styles.dot,
+                      { borderColor: theme.colors.brand.primary },
+                      !activeScenarioId ? { backgroundColor: theme.colors.brand.primary } : { backgroundColor: 'transparent', borderColor: theme.colors.border.default }
+                    ]} />
                   </Pressable>
                 </View>
                 <View style={styles.rowBody}>
-                  <Text style={[styles.rowTitle, !activeScenarioId ? styles.rowTitleActive : null]}>Baseline</Text>
-                  <Text style={styles.rowSubtext}>Default view</Text>
+                  <Text style={[
+                    styles.rowTitle,
+                    { color: theme.colors.text.primary, fontSize: theme.typography.value.fontSize, fontWeight: theme.typography.value.fontWeight },
+                    !activeScenarioId ? { color: theme.colors.brand.primary } : null
+                  ]}>Baseline</Text>
+                  <Text style={[styles.rowSubtext, { color: theme.colors.text.secondary }]}>Default view</Text>
                 </View>
               </View>
             </Pressable>
@@ -243,10 +260,10 @@ export default function ScenarioManagementScreen() {
         {/* Scenarios Section */}
         <View style={styles.section}>
           <GroupHeader title="Scenarios" />
-          <View style={styles.hr} />
+          <View style={[styles.hr, { backgroundColor: theme.colors.border.default }]} />
           {savedScenarios.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No scenarios yet</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.text.muted, fontSize: theme.typography.bodyLarge.fontSize }]}>No scenarios yet</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -272,7 +289,7 @@ export default function ScenarioManagementScreen() {
                       overshootFriction={8}
                       activeOffsetX={[-10, 10]}
                       failOffsetY={[-5, 5]}
-                      containerStyle={styles.swipeableContainer}
+                      containerStyle={[styles.swipeableContainer, { backgroundColor: theme.colors.bg.card }]}
                       onSwipeableWillOpen={() => {
                         closeAllSwipeables(scenario.id);
                         setOpenSwipeableId(scenario.id);
@@ -286,8 +303,8 @@ export default function ScenarioManagementScreen() {
                         }
                       }}
                     >
-                      <View style={styles.row}>
-                        <View style={styles.rowMain}>
+                      <View style={[styles.row, { backgroundColor: theme.colors.bg.card }]}>
+                        <View style={[styles.rowMain, { backgroundColor: theme.colors.bg.card }]}>
                           <View style={styles.dotContainer}>
                             <Pressable
                               onPress={() => handleActivateScenario(scenario.id)}
@@ -298,15 +315,20 @@ export default function ScenarioManagementScreen() {
                               accessibilityState={{ selected: isActive, disabled: isSurplusNegative }}
                             >
                               <View style={[
-                                styles.dot, 
-                                isActive ? styles.dotActive : styles.dotInactive,
-                                isSurplusNegative ? styles.dotDisabled : null
+                                styles.dot,
+                                { borderColor: theme.colors.brand.primary },
+                                isActive ? { backgroundColor: theme.colors.brand.primary } : { backgroundColor: 'transparent', borderColor: theme.colors.border.default },
+                                isSurplusNegative ? { borderColor: theme.colors.border.default, opacity: 0.5 } : null
                               ]} />
                             </Pressable>
                           </View>
                           <View style={styles.rowBody}>
-                            <Text style={[styles.rowTitle, isActive ? styles.rowTitleActive : null]}>{scenario.name}</Text>
-                            <Text style={styles.rowSubtext}>{previewText}</Text>
+                            <Text style={[
+                              styles.rowTitle,
+                              { color: theme.colors.text.primary, fontSize: theme.typography.value.fontSize, fontWeight: theme.typography.value.fontWeight },
+                              isActive ? { color: theme.colors.brand.primary } : null
+                            ]}>{scenario.name}</Text>
+                            <Text style={[styles.rowSubtext, { color: theme.colors.text.secondary }]}>{previewText}</Text>
                           </View>
                         </View>
                       </View>
@@ -326,12 +348,17 @@ export default function ScenarioManagementScreen() {
             }}
             disabled={isSurplusNegative}
             style={({ pressed }) => [
-              styles.createRow, 
-              pressed ? styles.rowPressed : null,
+              styles.createRow,
+              { borderTopColor: theme.colors.border.subtle },
+              pressed ? { backgroundColor: theme.colors.bg.subtle } : null,
               isSurplusNegative ? styles.createRowDisabled : null
             ]}
           >
-            <Text style={[styles.createRowText, isSurplusNegative ? styles.createRowTextDisabled : null]}>
+            <Text style={[
+              styles.createRowText,
+              { color: theme.colors.brand.primary, fontSize: theme.typography.value.fontSize, fontWeight: theme.typography.value.fontWeight },
+              isSurplusNegative ? { color: theme.colors.text.muted } : null
+            ]}>
               + Create Scenario
             </Text>
           </Pressable>
@@ -341,26 +368,52 @@ export default function ScenarioManagementScreen() {
       {/* Delete confirmation modal */}
       {pendingDeleteId ? (
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelDelete}>
-          <View style={styles.deleteModalBackdrop}>
-            <View style={styles.deleteModalContent}>
-              <Text style={styles.deleteModalTitle}>Delete scenario?</Text>
-              <Text style={styles.deleteModalMessage}>This action cannot be undone.</Text>
+          <View style={[styles.deleteModalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
+            <View style={[styles.deleteModalContent, { backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.large }]}>
+              <Text style={[
+                styles.deleteModalTitle,
+                { color: theme.colors.text.primary, fontSize: theme.typography.valueLarge.fontSize, fontWeight: theme.typography.valueLarge.fontWeight }
+              ]}>Delete scenario?</Text>
+              <Text style={[
+                styles.deleteModalMessage,
+                { color: theme.colors.text.secondary, fontSize: theme.typography.bodyLarge.fontSize, lineHeight: theme.typography.bodyLarge.lineHeight }
+              ]}>This action cannot be undone.</Text>
               <View style={styles.deleteModalActions}>
                 <Pressable
                   onPress={cancelDelete}
-                  style={({ pressed }) => [styles.deleteModalButton, styles.deleteModalButtonCancel, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.deleteModalButton,
+                    styles.deleteModalButtonCancel,
+                    {
+                      backgroundColor: theme.colors.bg.subtle,
+                      borderColor: theme.colors.border.default,
+                      borderRadius: theme.radius.medium,
+                    },
+                    pressed ? { backgroundColor: theme.colors.border.subtle } : null
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Cancel"
                 >
-                  <Text style={styles.deleteModalButtonCancelText}>Cancel</Text>
+                  <Text style={[
+                    styles.deleteModalButtonCancelText,
+                    { color: theme.colors.text.tertiary, fontSize: theme.typography.button.fontSize, fontWeight: theme.typography.button.fontWeight }
+                  ]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   onPress={confirmDelete}
-                  style={({ pressed }) => [styles.deleteModalButton, styles.deleteModalButtonConfirm, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    styles.deleteModalButton,
+                    styles.deleteModalButtonConfirm,
+                    { backgroundColor: theme.colors.semantic.error, borderRadius: theme.radius.medium },
+                    pressed ? { backgroundColor: theme.colors.semantic.errorBg } : null
+                  ]}
                   accessibilityRole="button"
                   accessibilityLabel="Delete"
                 >
-                  <Text style={styles.deleteModalButtonConfirmText}>Delete</Text>
+                  <Text style={[
+                    styles.deleteModalButtonConfirmText,
+                    { color: theme.colors.text.primary, fontSize: theme.typography.button.fontSize, fontWeight: theme.typography.button.fontWeight }
+                  ]}>Delete</Text>
                 </Pressable>
               </View>
             </View>
@@ -374,7 +427,6 @@ export default function ScenarioManagementScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
@@ -388,7 +440,6 @@ const styles = StyleSheet.create({
   },
   hr: {
     height: 1,
-    backgroundColor: '#e0e0e0',
     marginTop: layout.sectionTitleBottom,
     marginBottom: layout.componentGap,
   },
@@ -398,16 +449,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  rowPressed: {
-    opacity: 0.6,
   },
   rowMain: {
     flex: 1,
     height: ROW_HEIGHT,
     paddingHorizontal: layout.rowPaddingHorizontal,
-    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
     position: 'relative',
@@ -428,14 +474,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#2F5BEA',
-  },
-  dotActive: {
-    backgroundColor: '#2F5BEA',
-  },
-  dotInactive: {
-    backgroundColor: 'transparent',
-    borderColor: '#ccc',
   },
   rowBody: {
     flex: 1,
@@ -443,15 +481,10 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111',
     marginBottom: 2,
-  },
-  rowTitleActive: {
-    color: '#2F5BEA',
   },
   rowSubtext: {
     fontSize: 13,
-    color: '#666',
     lineHeight: 18,
   },
   emptyState: {
@@ -460,7 +493,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
     fontStyle: 'italic',
   },
   createRow: {
@@ -468,17 +500,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.rowPaddingHorizontal,
     marginTop: layout.componentGap,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   createRowText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#2F5BEA',
   },
   swipeableContainer: {
     height: ROW_HEIGHT,
     overflow: 'hidden',
-    backgroundColor: '#fff',
   },
   swipeActionsContainer: {
     flexDirection: 'row',
@@ -493,30 +522,26 @@ const styles = StyleSheet.create({
   swipeActionEdit: {
     width: 35,
     height: ROW_HEIGHT - 8,
-    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    // borderRadius set inline with theme.radius.medium
   },
   swipeActionDelete: {
     width: 35,
     height: ROW_HEIGHT - 8,
-    backgroundColor: '#dc2626',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    // borderRadius set inline with theme.radius.medium
     marginLeft: 6,
   },
   deleteModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   deleteModalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    // borderRadius set inline with theme.radius.large
     padding: 20,
     width: '100%',
     maxWidth: 320,
@@ -524,12 +549,10 @@ const styles = StyleSheet.create({
   deleteModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 8,
   },
   deleteModalMessage: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 20,
     lineHeight: 20,
   },
@@ -541,40 +564,33 @@ const styles = StyleSheet.create({
   deleteModalButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    // borderRadius set inline with theme.radius.medium
     minWidth: 80,
     alignItems: 'center',
   },
   deleteModalButtonCancel: {
-    backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   deleteModalButtonConfirm: {
-    backgroundColor: '#dc2626',
+    // backgroundColor set inline
   },
   deleteModalButtonCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
   },
   deleteModalButtonConfirmText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
   },
   warningBanner: {
     marginTop: layout.sectionGap,
     marginHorizontal: layout.screenPadding,
     padding: layout.blockPadding,
-    backgroundColor: '#fff3cd',
-    borderRadius: 8,
+    // borderRadius set inline with theme.radius.medium
     borderWidth: 1,
-    borderColor: '#ffc107',
   },
   warningBannerText: {
     fontSize: 14,
-    color: '#856404',
     lineHeight: 20,
   },
   rowDisabled: {
@@ -584,13 +600,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   dotDisabled: {
-    borderColor: '#ccc',
     opacity: 0.5,
   },
   createRowDisabled: {
     opacity: 0.5,
   },
   createRowTextDisabled: {
-    color: '#999',
+    // color set inline
   },
 });

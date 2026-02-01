@@ -12,6 +12,7 @@ import type { AssetItem } from '../types';
 import { computeProjectionSummary, computeProjectionSeries, type ProjectionEngineInputs } from '../projectionEngine';
 import { computeA3Attribution } from '../computeA3Attribution';
 import { serializeDebugState } from '../debug/serializeDebugState';
+import { useTheme } from '../ui/theme/useTheme';
 
 function formatLiquidity(asset: AssetItem): string {
   if (!asset.availability) return 'immediate';
@@ -23,6 +24,7 @@ function formatSnapshotDate(): string {
 }
 
 export default function SnapshotDataSummaryScreen() {
+  const { theme } = useTheme();
   const { state, isSwitching } = useSnapshot();
   const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
 
@@ -239,7 +241,7 @@ export default function SnapshotDataSummaryScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader
         title="Snapshot Data Summary"
         subtitle="View raw financial inputs (read-only)"
@@ -248,56 +250,71 @@ export default function SnapshotDataSummaryScreen() {
             {__DEV__ && (
               <Pressable
                 onPress={handleExportDebugJSON}
-                style={({ pressed }) => [styles.copyButton, styles.debugButton, { opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [
+                  styles.copyButton,
+                  styles.debugButton,
+                  {
+                    borderRadius: theme.radius.base,
+                    backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.semantic.warningBg,
+                    borderColor: theme.colors.semantic.warning,
+                  },
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel="Export debug JSON"
               >
-                <Text style={[styles.copyButtonText, styles.debugButtonText]}>Export Debug JSON</Text>
+                <Text style={[styles.copyButtonText, { color: theme.colors.semantic.warningText }]}>Export Debug JSON</Text>
               </Pressable>
             )}
             <Pressable
               onPress={handleCopyAll}
-              style={({ pressed }) => [styles.copyButton, { opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [
+                styles.copyButton,
+                {
+                  borderRadius: theme.radius.base,
+                  backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                  borderColor: theme.colors.border.default,
+                },
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Copy all"
             >
-              <Text style={styles.copyButtonText}>Copy All</Text>
+              <Text style={[styles.copyButtonText, { color: theme.colors.text.tertiary }]}>Copy All</Text>
             </Pressable>
           </View>
         }
       />
       {showCopiedFeedback ? (
-        <View style={styles.feedbackContainer}>
-          <Text style={styles.feedbackText}>Copied</Text>
+        <View style={[styles.feedbackContainer, { backgroundColor: theme.colors.semantic.successBg }]}>
+          <Text style={[styles.feedbackText, { color: theme.colors.semantic.successText }]}>Copied</Text>
         </View>
       ) : null}
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Section 1: Meta */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Section 1: Meta</Text>
-          <Text style={styles.monoText}>Current age: {state.projection.currentAge}</Text>
-          <Text style={styles.monoText}>Snapshot date: {formatSnapshotDate()}</Text>
+        <View style={[styles.section, { borderRadius: theme.radius.medium, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.subtle }]}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.text.primary }]}>Section 1: Meta</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Current age: {state.projection.currentAge}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Snapshot date: {formatSnapshotDate()}</Text>
         </View>
 
         {/* Section 2: Assets */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Section 2: Assets</Text>
+        <View style={[styles.section, { borderRadius: theme.radius.medium, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.subtle }]}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.text.primary }]}>Section 2: Assets</Text>
           {state.assets.length === 0 ? (
-            <Text style={styles.monoText}>(no assets)</Text>
+            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>(no assets)</Text>
           ) : (
             state.assets.map((asset, index) => {
               const monthlyContribution = assetContributionsMap.get(asset.id) ?? 0;
               return (
-                <View key={asset.id} style={styles.assetBlock}>
-                  <Text style={styles.monoText}>Asset ID: {asset.id}</Text>
-                  <Text style={styles.monoText}>Name: {asset.name}</Text>
-                  <Text style={styles.monoText}>Balance: {formatCurrencyFull(asset.balance)}</Text>
-                  <Text style={styles.monoText}>
+                <View key={asset.id} style={[styles.assetBlock, { borderBottomColor: theme.colors.border.default }]}>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Asset ID: {asset.id}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {asset.name}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Balance: {formatCurrencyFull(asset.balance)}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
                     Growth rate: {formatPercent(asset.annualGrowthRatePct, { decimals: 2 })} per year
                   </Text>
-                  <Text style={styles.monoText}>Liquidity: {formatLiquidity(asset)}</Text>
-                  <Text style={styles.monoText}>Monthly contribution: {formatCurrencyFull(monthlyContribution)}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Liquidity: {formatLiquidity(asset)}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Monthly contribution: {formatCurrencyFull(monthlyContribution)}</Text>
                 </View>
               );
             })
@@ -305,34 +322,34 @@ export default function SnapshotDataSummaryScreen() {
         </View>
 
         {/* Section 3: Liabilities / Loans */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Section 3: Liabilities / Loans</Text>
+        <View style={[styles.section, { borderRadius: theme.radius.medium, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.subtle }]}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.text.primary }]}>Section 3: Liabilities / Loans</Text>
           {state.liabilities.length === 0 ? (
-            <Text style={styles.monoText}>(no liabilities)</Text>
+            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>(no liabilities)</Text>
           ) : (
             state.liabilities.map(liability => {
               const derived = loanDerived.get(liability.id);
               const isLoan = liability.kind === 'loan';
               return (
-                <View key={liability.id} style={styles.loanBlock}>
-                  <Text style={styles.monoText}>Loan ID: {liability.id}</Text>
-                  <Text style={styles.monoText}>Name: {liability.name}</Text>
-                  <Text style={styles.monoText}>Outstanding balance: {formatCurrencyFull(liability.balance)}</Text>
-                  <Text style={styles.monoText}>
+                <View key={liability.id} style={[styles.loanBlock, { borderBottomColor: theme.colors.border.default }]}>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan ID: {liability.id}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {liability.name}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Outstanding balance: {formatCurrencyFull(liability.balance)}</Text>
+                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
                     Interest rate: {formatPercent(liability.annualInterestRatePct, { decimals: 2 })} per year
                   </Text>
                   {isLoan && typeof liability.remainingTermYears === 'number' ? (
                     <>
-                      <Text style={styles.monoText}>Remaining term: {liability.remainingTermYears} years</Text>
-                      <Text style={styles.monoText}>Loan start date: null</Text>
+                      <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Remaining term: {liability.remainingTermYears} years</Text>
+                      <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan start date: null</Text>
                       {derived ? (
                         <>
-                          <Text style={styles.monoText}>Derived (monthly):</Text>
-                          <Text style={styles.monoText}>- Monthly payment: {formatCurrencyFull(derived.monthlyPayment)}</Text>
-                          <Text style={styles.monoText}>
+                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Derived (monthly):</Text>
+                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>- Monthly payment: {formatCurrencyFull(derived.monthlyPayment)}</Text>
+                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
                             - Monthly interest (initial): {formatCurrencyFull(derived.monthlyInterest)}
                           </Text>
-                          <Text style={styles.monoText}>
+                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
                             - Monthly principal (initial): {formatCurrencyFull(derived.monthlyPrincipal)}
                           </Text>
                         </>
@@ -346,17 +363,17 @@ export default function SnapshotDataSummaryScreen() {
         </View>
 
         {/* Section 4: Snapshot Cash Flow (Monthly Inputs) */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Section 4: Snapshot Cash Flow (Monthly Inputs)</Text>
-          <Text style={styles.monoText}>Gross income: {formatCurrencyFull(totals.grossIncome)}</Text>
-          <Text style={styles.monoText}>Pension deduction: {formatCurrencyFull(totals.pension)}</Text>
-          <Text style={styles.monoText}>Other deductions: {formatCurrencyFull(totals.deductions)}</Text>
-          <Text style={styles.monoText}>Net income: {formatCurrencyFull(totals.netIncome)}</Text>
-          <Text style={styles.monoText}>Expenses: {formatCurrencyFull(totals.expenses)}</Text>
-          <Text style={styles.monoText}>Available cash: {formatCurrencyFull(totals.availableCash)}</Text>
-          <Text style={styles.monoText}>Asset contributions: {formatCurrencyFull(totals.assetContributions)}</Text>
-          <Text style={styles.monoText}>Debt repayment: {formatCurrencyFull(totals.liabilityReduction)}</Text>
-          <Text style={styles.monoText}>Monthly surplus: {formatCurrencyFull(totals.monthlySurplus)}</Text>
+        <View style={[styles.section, { borderRadius: theme.radius.medium, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.subtle }]}>
+          <Text style={[styles.sectionHeader, { color: theme.colors.text.primary }]}>Section 4: Snapshot Cash Flow (Monthly Inputs)</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Gross income: {formatCurrencyFull(totals.grossIncome)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Pension deduction: {formatCurrencyFull(totals.pension)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Other deductions: {formatCurrencyFull(totals.deductions)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Net income: {formatCurrencyFull(totals.netIncome)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Expenses: {formatCurrencyFull(totals.expenses)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Available cash: {formatCurrencyFull(totals.availableCash)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Asset contributions: {formatCurrencyFull(totals.assetContributions)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Debt repayment: {formatCurrencyFull(totals.liabilityReduction)}</Text>
+          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Monthly surplus: {formatCurrencyFull(totals.monthlySurplus)}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -366,7 +383,7 @@ export default function SnapshotDataSummaryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    // backgroundColor moved to inline style with theme.colors.bg.card
   },
   scrollView: {
     flex: 1,
@@ -378,21 +395,21 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
+    // borderColor moved to inline style with theme.colors.border.default
+    // borderRadius applied inline with theme.radius.medium
     padding: 12,
-    backgroundColor: '#fafafa',
+    // backgroundColor moved to inline style with theme.colors.bg.subtle
   },
   sectionHeader: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111',
+    // color moved to inline style with theme.colors.text.primary
     marginBottom: 10,
   },
   monoText: {
     fontSize: 12,
     fontFamily: 'monospace',
-    color: '#333',
+    // color moved to inline style with theme.colors.text.tertiary
     lineHeight: 18,
     marginBottom: 2,
   },
@@ -400,43 +417,43 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    // borderBottomColor moved to inline style with theme.colors.border.default
   },
   loanBlock: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    // borderBottomColor moved to inline style with theme.colors.border.default
   },
   copyButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#f2f3f5',
+    // borderRadius applied inline with theme.radius.base
+    // backgroundColor moved to inline style with theme.colors.bg.subtle
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    // borderColor moved to inline style with theme.colors.border.default
   },
   copyButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
+    // color moved to inline style with theme.colors.text.tertiary
   },
   feedbackContainer: {
-    backgroundColor: '#4caf50',
+    // backgroundColor moved to inline style with theme.colors.semantic.successBg
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   feedbackText: {
-    color: '#fff',
+    // color moved to inline style with theme.colors.semantic.successText
     fontSize: 13,
     fontWeight: '600',
   },
   debugButton: {
-    backgroundColor: '#fff3cd',
-    borderColor: '#ffc107',
+    // backgroundColor moved to inline style with theme.colors.semantic.warningBg
+    // borderColor moved to inline style with theme.colors.semantic.warning
   },
   debugButtonText: {
-    color: '#856404',
+    // color moved to inline style with theme.colors.semantic.warningText
   },
 });

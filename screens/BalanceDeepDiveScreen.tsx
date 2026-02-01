@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dimensions, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import { VictoryArea, VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryStack } from 'victory-native';
 
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
+import Icon from '../components/Icon';
+import IconButton from '../components/IconButton';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -778,13 +779,14 @@ export default function BalanceDeepDiveScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Toolbar */}
         <View style={styles.toolbarContainer}>
-          <View style={[styles.toolbarSurface, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+          <View style={[styles.toolbarSurface, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderRadius: theme.radius.medium }, theme.shadows.medium]}>
             <View style={styles.toolbarRow}>
               <View style={styles.toolbarLeftGroup}>
                 <Pressable
                   onPress={() => setItemPickerOpen(true)}
                   style={({ pressed }) => [
                     styles.toolbarItemButton,
+                    { borderRadius: theme.radius.base },
                     pressed && { backgroundColor: theme.colors.bg.subtle },
                   ]}
                 >
@@ -798,7 +800,7 @@ export default function BalanceDeepDiveScreen() {
                       </Text>
                     )}
                   </View>
-                  <Feather name="chevron-down" size={16} color={theme.colors.text.secondary} style={styles.toolbarChevron} />
+                  <Icon name="chevron-down" size="base" color={theme.colors.text.secondary} style={styles.toolbarChevron} />
                 </Pressable>
               </View>
 
@@ -808,49 +810,40 @@ export default function BalanceDeepDiveScreen() {
                 {/* Phase 5.8: Educational overlay toggle (only shown when relevant item type is selected) */}
                 {/* Overlays are separate from insights: overlays explain concepts, insights explain data */}
                 {isSavingsAsset && (
-                  <Pressable
+                  <IconButton
+                    icon="info"
+                    size="base"
                     onPress={handleToggleSavingsEducation}
-                    style={({ pressed }) => [
-                      styles.toolbarEducationButton,
-                      { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
+                    accessibilityLabel="Savings information"
+                    style={[
                       savingsEducationOpen && { backgroundColor: theme.colors.brand.primary },
                     ]}
-                  >
-                    <Feather 
-                      name="info" 
-                      size={16} 
-                      color={savingsEducationOpen ? theme.colors.bg.app : theme.colors.text.secondary} 
-                    />
-                  </Pressable>
+                  />
                 )}
                 {isMortgageLiability && (
-                  <Pressable
+                  <IconButton
+                    icon="info"
+                    size="base"
                     onPress={handleToggleMortgageEducation}
-                    style={({ pressed }) => [
-                      styles.toolbarEducationButton,
-                      { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
+                    accessibilityLabel="Mortgage information"
+                    style={[
                       mortgageEducationOpen && { backgroundColor: theme.colors.brand.primary },
                     ]}
-                  >
-                    <Feather 
-                      name="info" 
-                      size={16} 
-                      color={mortgageEducationOpen ? theme.colors.bg.app : theme.colors.text.secondary} 
-                    />
-                  </Pressable>
+                  />
                 )}
 
                 <Pressable
                   onPress={() => setAgeSelectorOpen(true)}
                   style={({ pressed }) => [
                     styles.toolbarAgeBadge,
+                    { borderRadius: theme.radius.base },
                     { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
                   ]}
                 >
                   <Text style={[styles.toolbarAgeText, { color: theme.colors.text.secondary }]}>
                     Age {selectedAge}
                   </Text>
-                  <Feather name="chevron-down" size={14} color={theme.colors.text.secondary} style={{ marginLeft: spacing.xs }} />
+                  <Icon name="chevron-down" size="small" color={theme.colors.text.secondary} style={{ marginLeft: spacing.xs }} />
                 </Pressable>
               </View>
             </View>
@@ -1092,7 +1085,7 @@ export default function BalanceDeepDiveScreen() {
               <View style={styles.valueBarRow}>
                 {/* Contributions */}
                 <View style={styles.valueBarItem}>
-                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.contributions }]} />
+                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.contributions, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Contributions</Text>
                   <View style={styles.valueBarValueContainer}>
                     <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
@@ -1108,7 +1101,7 @@ export default function BalanceDeepDiveScreen() {
 
                 {/* Growth */}
                 <View style={styles.valueBarItem}>
-                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.growth }]} />
+                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.growth, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Growth</Text>
                   <View style={styles.valueBarValueContainer}>
                     <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
@@ -1174,7 +1167,7 @@ export default function BalanceDeepDiveScreen() {
               <View style={styles.valueBarRow}>
                 {/* Principal Paid */}
                 <View style={styles.valueBarItem}>
-                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.principal }]} />
+                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.principal, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Principal paid</Text>
                   <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
                     {formatCurrencyCompact(mortgageBreakdown.rows[1].value)}
@@ -1183,7 +1176,7 @@ export default function BalanceDeepDiveScreen() {
 
                 {/* Interest Paid */}
                 <View style={styles.valueBarItem}>
-                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.interest }]} />
+                  <View style={[styles.valueBarDot, { backgroundColor: chartPalette.interest, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Interest paid</Text>
                   <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
                     {formatCurrencyCompact(mortgageBreakdown.rows[2].value)}
@@ -1240,9 +1233,12 @@ export default function BalanceDeepDiveScreen() {
           <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border.subtle }]}>
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Item</Text>
-              <Pressable onPress={() => setItemPickerOpen(false)}>
-                <Feather name="x" size={24} color={theme.colors.text.secondary} />
-              </Pressable>
+              <IconButton
+                icon="x"
+                size="large"
+                onPress={() => setItemPickerOpen(false)}
+                accessibilityLabel="Close"
+              />
             </View>
             
             <ScrollView style={styles.modalList}>
@@ -1376,18 +1372,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   toolbarSurface: {
-    borderRadius: 8,
+    // borderRadius applied inline with theme.radius.medium
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    // Shadow applied inline with theme.shadows.medium
   },
   toolbarRow: {
     flexDirection: 'row',
@@ -1411,7 +1400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-    borderRadius: 6,
+    // borderRadius applied inline with theme.radius.base
     minWidth: 0,
     flexShrink: 1,
   },
@@ -1438,7 +1427,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
-    borderRadius: 6,
+    // borderRadius applied inline with theme.radius.base
   },
   toolbarAgeText: {
     fontSize: 12,
@@ -1555,7 +1544,7 @@ const styles = StyleSheet.create({
   valueBarDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    // borderRadius applied inline with theme.radius.small
   },
   valueBarLabel: {
     fontSize: 12,
@@ -1609,7 +1598,7 @@ const styles = StyleSheet.create({
   toolbarEducationButton: {
     width: 32,
     height: 32,
-    borderRadius: 6,
+    // borderRadius applied inline with theme.radius.base
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.xs,
