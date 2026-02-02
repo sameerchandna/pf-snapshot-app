@@ -432,7 +432,7 @@ export default function GroupedListDetailScreen<TItem>({
     if (editingItemId) {
       const next = items.map(it =>
         getItemId(it) === editingItemId
-          ? updateItem(it, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity })
+          ? updateItem(it, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity ?? undefined })
           : it,
       );
       setItems(next);
@@ -445,7 +445,7 @@ export default function GroupedListDetailScreen<TItem>({
         const key = upsertKey(validated.name);
         const existing = findExistingByKey(key);
         if (existing) {
-          const updated = updateItem(existing, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity });
+          const updated = updateItem(existing, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity ?? undefined });
           const next = items.map(it =>
             getItemId(it) === getItemId(existing) ? updated : it,
           );
@@ -456,7 +456,7 @@ export default function GroupedListDetailScreen<TItem>({
         }
       }
       
-      const newItem = makeNewItem(targetGroupId, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity });
+      const newItem = makeNewItem(targetGroupId, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity ?? undefined });
       setItems([...items, newItem]);
     }
 

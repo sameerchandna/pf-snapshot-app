@@ -68,6 +68,7 @@ Theme must NOT include:
 **Border Colors:**
 - `border.default` - Default border color (standard dividers)
 - `border.subtle` - Subtle border color (light dividers, grid lines)
+- `border.muted` - Very subtle border color (low-salience structural borders for dense UI surfaces, ~35–40% opacity) - Used to reduce visual noise without removing affordance, not semantic (not success/error/warning)
 
 **Semantic Colors:**
 - `semantic.error` - Error color
@@ -253,6 +254,18 @@ Opacity-based pressed states break dark mode compatibility and violate theme pri
 - Intended for: Active button/toggle backgrounds, brand-related surface highlights, active state indicators
 - NOT for: Text colors, border colors, general backgrounds, error/warning/success states
 - Usage context: Toolbar pill active states, chart toggle active states, brand-related active indicators
+
+## Border Color Usage Rules
+
+**Border Tokens (`border.default`, `border.subtle`, `border.muted`):**
+- `border.default` - Standard dividers, card borders, input borders (full opacity, clear separation)
+- `border.subtle` - Light dividers, grid lines, secondary separators (reduced opacity, gentle separation)
+- `border.muted` - Very subtle structural borders for dense UI surfaces (~35–40% opacity, minimal visual noise)
+  - Intended for: Dense list rows, grouped card borders, structural elements where borders should signal grouping without competing with content
+  - NOT for: Semantic borders (use `semantic.successBorder`, `semantic.errorBorder`), primary card borders, interactive element borders
+  - Usage context: Snapshot Cash Flow rows, dense grouped lists, vertical narrative layouts
+  - Dark mode: Uses ~40% opacity (slightly higher than light mode's ~35%) to maintain sufficient contrast
+  - Purpose: Reduces visual noise while preserving hierarchy, grouping, and interaction affordances
 
 ## Inline Style Exceptions (React Native Constraints)
 

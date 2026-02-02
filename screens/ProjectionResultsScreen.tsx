@@ -418,7 +418,7 @@ function SnapshotComparisonCard({
           ]}>
             {title}
           </Text>
-          <Text style={[styles.snapshotCardDescription, { color: theme.colors.text.muted }]}>
+          <Text style={[styles.snapshotCardDescription, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">
             {description}
           </Text>
         </View>
@@ -3770,7 +3770,6 @@ export default function ProjectionResultsScreen() {
                 padding={chartPadding}
                 domain={{ y: [chartData.domainMin, chartData.domainMax] }}
                 domainPadding={{ x: 12, y: 6 }}
-                nice={false}
               >
                 <VictoryAxis
                   tickFormat={t => `${Number(t)}`}
@@ -3783,7 +3782,6 @@ export default function ProjectionResultsScreen() {
                 />
                 <VictoryAxis
                   dependentAxis
-                  nice={false}
                   tickValues={chartData.yTicks}
                   tickFormat={t => formatCurrencyCompact(Number(t))}
                   style={{
@@ -4091,7 +4089,7 @@ export default function ProjectionResultsScreen() {
                 {/* Gross Income */}
                 <SnapshotComparisonCard
                   title="Gross Income"
-                  description="Total earnings over the period"
+                  description="Income before deductions"
                   baselineValue={valuesAtAge.grossIncome}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.grossIncome : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4101,7 +4099,7 @@ export default function ProjectionResultsScreen() {
                 <View style={styles.cashflowSubGroup}>
                   <SnapshotComparisonCard
                     title="Pension"
-                    description="Total pension contributions"
+                    description="Pre-tax savings"
                     baselineValue={valuesAtAge.pensionContributions}
                     scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.pensionContributions : undefined}
                     showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4109,7 +4107,7 @@ export default function ProjectionResultsScreen() {
                   />
                   <SnapshotComparisonCard
                     title="Other Deductions"
-                    description="Tax and other deductions"
+                    description="Tax and payroll deductions"
                     baselineValue={valuesAtAge.taxes}
                     scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.taxes : undefined}
                     showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4120,7 +4118,7 @@ export default function ProjectionResultsScreen() {
                 {/* Net Income */}
                 <SnapshotComparisonCard
                   title="Net Income"
-                  description="Income after deductions"
+                  description="Take-home pay"
                   baselineValue={valuesAtAge.grossIncome - valuesAtAge.pensionContributions - valuesAtAge.taxes}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge 
                     ? scenarioValuesAtAge.grossIncome - scenarioValuesAtAge.pensionContributions - scenarioValuesAtAge.taxes
@@ -4132,7 +4130,7 @@ export default function ProjectionResultsScreen() {
                 <View style={styles.cashflowSubGroup}>
                   <SnapshotComparisonCard
                     title="Expenses"
-                    description="Total spending over time"
+                    description="Monthly spending"
                     baselineValue={valuesAtAge.livingExpenses}
                     scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.livingExpenses : undefined}
                     showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4143,7 +4141,7 @@ export default function ProjectionResultsScreen() {
                 {/* Available Cash */}
                 <SnapshotComparisonCard
                   title="Available Cash"
-                  description="Cash remaining after expenses"
+                  description="After expenses"
                   baselineValue={valuesAtAge.netSurplus}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4154,7 +4152,7 @@ export default function ProjectionResultsScreen() {
                 <View style={styles.cashflowSubGroup}>
                   <SnapshotComparisonCard
                     title="Asset Contribution"
-                    description="Total invested contributions"
+                    description="Saved or invested"
                     baselineValue={valuesAtAge.postTaxContributions}
                     scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.postTaxContributions : undefined}
                     showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4162,7 +4160,7 @@ export default function ProjectionResultsScreen() {
                   />
                   <SnapshotComparisonCard
                     title="Liability Reduction"
-                    description="Debt repaid over time"
+                    description="Debt repayments"
                     baselineValue={valuesAtAge.debtRepayment}
                     scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.debtRepayment : undefined}
                     showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
@@ -4173,7 +4171,7 @@ export default function ProjectionResultsScreen() {
                 {/* Unallocated Cash */}
                 <SnapshotComparisonCard
                   title="Monthly Surplus"
-                  description="Net surplus accumulated over time"
+                  description="Unallocated cash"
                   baselineValue={valuesAtAge.netSurplus - valuesAtAge.postTaxContributions - valuesAtAge.debtRepayment}
                   scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus - scenarioValuesAtAge.postTaxContributions - scenarioValuesAtAge.debtRepayment : undefined}
                   showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}

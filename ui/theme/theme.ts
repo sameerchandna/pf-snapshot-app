@@ -30,6 +30,7 @@ export const lightTheme = {
     border: {
       default: '#e0e0e0',
       subtle: '#f0f0f0',
+      muted: 'rgba(240, 240, 240, 0.35)', // Very subtle border for reduced visual noise (~35% opacity)
     },
     semantic: {
       error: '#dc2626',
@@ -157,14 +158,14 @@ export const lightTheme = {
 export const darkTheme = {
   colors: {
     brand: {
-      primary: '#2F5BEA', // Keep brand color same in dark mode
+      primary: '#4C7DFF', // Brighter, more saturated blue for dark mode visibility
       tint: '#1a2f5a', // Darker blue tint for dark mode active states
     },
     text: {
       primary: '#ffffff',
       secondary: '#b3b3b3',
       tertiary: '#cccccc',
-      muted: '#999999',
+      muted: '#707070',
       disabled: '#666666',
     },
     bg: {
@@ -175,6 +176,7 @@ export const darkTheme = {
     border: {
       default: '#404040',
       subtle: '#333333',
+      muted: 'rgba(51, 51, 51, 0.4)', // Very subtle border for reduced visual noise (~40% opacity, slightly higher for dark mode contrast)
     },
     semantic: {
       error: '#ef4444',

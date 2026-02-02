@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTheme } from './ui/theme/useTheme';
 import SnapshotScreen from './screens/SnapshotScreen';
 import GrossIncomeDetailScreen from './screens/GrossIncomeDetailScreen';
 import PensionDetailScreen from './screens/PensionDetailScreen';
@@ -111,8 +112,21 @@ function SettingsStackNavigator() {
 }
 
 function MainTabsNavigator() {
+  const { theme } = useTheme();
+
   return (
-    <Tab.Navigator initialRouteName={TAB_INITIAL_ROUTE_NAME} screenOptions={{ headerShown: TAB_HEADER_SHOWN }}>
+    <Tab.Navigator
+      initialRouteName={TAB_INITIAL_ROUTE_NAME}
+      screenOptions={{
+        headerShown: TAB_HEADER_SHOWN,
+        tabBarStyle: {
+          backgroundColor: theme.colors.bg.card,
+          borderTopColor: theme.colors.border.default,
+        },
+        tabBarActiveTintColor: theme.colors.brand.primary,
+        tabBarInactiveTintColor: theme.colors.text.secondary,
+      }}
+    >
       <Tab.Screen
         name={TAB_ROUTE_SNAPSHOT}
         component={SnapshotStackNavigator}

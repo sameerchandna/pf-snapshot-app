@@ -69,48 +69,14 @@ Only unchecked items may be worked on.
 
 ## Phase 8 — UI Fixes
 
-### Visual Semantics & Readability
-
 - [x] Sign (+ / −) all numbers in Snapshot → Cash Flow  
-  Clarify inflow vs outflow direction at a glance without relying on color alone.
-
-- [ ] Add semantic colors to Snapshot → Cash Flow numbers  
-  Use muted, non-judgmental tones to encode direction (outflows = dull warm/red, allocations/contributions = dull cool/green); avoid success/error framing.
-
-- [ ] Standardise directional iconography for Snapshot rows  
-  Reinforce flow semantics (inflow, outflow, allocation) consistently using arrows/icons.
-
----
-
-### Density & De-cluttering
-
-- [ ] Remove redundant sub-text from Snapshot cards  
-  Eliminate explanatory copy for obvious rows (income, expenses, contributions) to reduce visual noise.
-
-- [ ] Retain minimal annotation only for derived rows  
-  Keep short, non-instructional hints for aggregates (e.g. "After deductions", "After expenses", "After allocations").
-
----
-
-### Interaction Contract (Snapshot)
-
-- [ ] Make Snapshot cards read-only (no tap navigation)  
-  Cards represent financial truth only; remove implicit navigation to avoid accidental edits.
-
-- [ ] Introduce explicit edit affordance via plus (➕) icon  
-  All Snapshot data modification must be intentional and exposed through a single, consistent affordance.
-
-- [ ] Place ➕ icon outside Snapshot cards (right-aligned)  
-  Visually separate observation (card) from intervention (edit) to reinforce read vs change semantics.
-
-- [ ] Scope ➕ to section-level editing only  
-  One ➕ per editable card/section (e.g. Cash Flow, Balance Sheet); avoid row-level clutter.
-
-- [ ] Define ➕ navigation targets explicitly  
-  ➕ always routes to the relevant manage/edit screen for that section; no secondary meanings.
-
----
-
+- [x] Add semantic colors to Snapshot → Cash Flow borders  
+- [x] Add icons for Snapshot rows  
+- [x] Remove redundant sub-text from Snapshot cards  
+- [x] Change Detailed Entry Interaction - add + Icon
+- [x] Change Balance Sheet card structure  
+  
+  
 ### Education Surface (Conceptual)
 
 - [ ] Introduce 🧠 icon as the sole conceptual explanation affordance  
@@ -121,13 +87,6 @@ Only unchecked items may be worked on.
 
 - [ ] Design lightweight 🧠 explanation modals  
   Each modal includes: one-sentence summary, simple flow diagram, and 2–4 clarifying bullets; no advice or actions.
-
----
-
-### Balance Sheet Structure
-
-- [ ] Change Balance Sheet card structure  
-  Improve symmetry and scanability between Assets and Liabilities, reinforcing stock semantics.
 
 ---
 

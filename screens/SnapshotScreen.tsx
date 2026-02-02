@@ -3,15 +3,17 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View, ScrollView, Pressable, Dimensions } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown } from 'phosphor-react-native';
 import { useSnapshot } from '../SnapshotContext';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
+import Icon from '../components/Icon';
 import { selectSnapshotTotals, selectMonthlySurplusWithScenario } from '../selectors';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyFullAlwaysSigned, formatPercent } from '../formatters';
-import { getActiveScenario } from '../scenarioState';
+import { getActiveScenario, getScenarios, getActiveScenarioId } from '../scenarioState';
 import type { Scenario } from '../domain/scenario/types';
 import { UI_TOLERANCE } from '../constants';
 import { useTheme } from '../ui/theme/useTheme';
@@ -26,7 +28,9 @@ export default function SnapshotScreen() {
   useFocusEffect(
     useCallback(() => {
       async function loadActiveScenario() {
-        const scenario = await getActiveScenario();
+        const scenarios = await getScenarios();
+        const activeId = await getActiveScenarioId();
+        const scenario = getActiveScenario(scenarios, activeId);
         setActiveScenario(scenario);
       }
       loadActiveScenario();
@@ -35,6 +39,34 @@ export default function SnapshotScreen() {
 
   const handlePress = (itemName: string) => {
     console.log(`${itemName} pressed`);
+  };
+
+  // Helper to determine if a card is editable (should show ➕ icon)
+  const isEditableCard = (screenName: string): boolean => {
+    const editableScreens = [
+      'GrossIncomeDetail',
+      'PensionDetail',
+      'NetIncomeDetail',
+      'ExpensesDetail',
+      'AssetContributionDetail',
+      'LiabilityReductionDetail',
+      'AssetsDetail',
+      'LiabilitiesDetail',
+    ];
+    return editableScreens.includes(screenName);
+  };
+
+  // Helper to convert hex color to rgba with reduced opacity for muted borders
+  // Uses ~35% opacity for light mode, ~40% for dark mode to maintain contrast
+  const getMutedBorderColor = (hexColor: string): string => {
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    // Use 35% opacity for light mode, 40% for dark mode (detected by checking if bg.card is dark)
+    const opacity = theme.colors.bg.card === '#fff' ? 0.35 : 0.4;
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
   const screenWidth = Dimensions.get('window').width;
@@ -133,181 +165,356 @@ export default function SnapshotScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* CASH FLOW SECTION */}
         <SectionCard>
-          <SectionHeader title="Cash Flow" subtitle="Average monthly flow (annual costs smoothed)" />
+          <SectionHeader title="Cash Flow" />
+
+          {/* Cash Flow Hero Value */}
+          <View style={styles.cashFlowHero}>
+            <Text style={[styles.cashFlowHeroValue, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>{monthlySurplusText}</Text>
+            <Text style={[styles.cashFlowHeroSubtext, theme.typography.body, { color: theme.colors.text.muted }]}>Remaining Free Cash per month</Text>
+          </View>
 
           <View style={styles.cashflowCardStack}>
-            <View style={[styles.cashflowSpine, { backgroundColor: theme.colors.border.subtle }]} />
-            <View style={styles.cashflowCentered}>
-            <Pressable
-              onPress={() => navigation.navigate('GrossIncomeDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 1, borderLeftColor: theme.colors.border.subtle }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeft}>
-                  <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Gross Income</Text>
+            <View style={styles.cashflowCardsWrapper}>
+              <View style={[styles.cashflowSpine, { backgroundColor: theme.colors.border.subtle, opacity: 0.3 }]} />
+              <View style={styles.cashflowCentered}>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 1, borderLeftColor: theme.colors.border.muted }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <Coins size={18} color={theme.colors.text.secondary} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.text.primary }]}>{grossIncomeText}</Text>
-                </View>
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() => navigation.navigate('PensionDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 2, borderLeftColor: theme.colors.semantic.successBorder }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>Pension</Text>
-                </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.pension) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{pensionText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Gross Income</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Income before deductions</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.text.primary }]}>{grossIncomeText}</Text>
+                  </View>
                 </View>
               </View>
-            </Pressable>
+              {isEditableCard('GrossIncomeDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('GrossIncomeDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('DeductionsDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 2, borderLeftColor: theme.colors.semantic.errorBorder }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
-                    Other Deductions
-                  </Text>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 2, borderLeftColor: getMutedBorderColor(theme.colors.semantic.successBorder) }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <PiggyBank size={18} color={theme.colors.domain.asset} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.deductions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{deductionsText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>Pension</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Pre-tax savings</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.pension) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{pensionText}</Text>
+                  </View>
                 </View>
               </View>
-            </Pressable>
+              {isEditableCard('PensionDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('PensionDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('NetIncomeDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 1, borderLeftColor: theme.colors.border.subtle, marginTop: spacing.base }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeft}>
-                  <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Net Income</Text>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 2, borderLeftColor: getMutedBorderColor(theme.colors.semantic.errorBorder) }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <Receipt size={18} color={theme.colors.semantic.error} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.text.primary }]}>{netIncomeText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
+                      Other Deductions
+                    </Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Tax and payroll deductions</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.deductions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{deductionsText}</Text>
+                  </View>
                 </View>
               </View>
-              <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]}>Money you actually take home</Text>
-            </Pressable>
+              <View style={styles.actionColumnSpacer} />
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('ExpensesDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 2, borderLeftColor: theme.colors.semantic.errorBorder }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>Expenses</Text>
+            <View style={[styles.cashflowCardWrapper, { marginTop: spacing.base }]}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 1, borderLeftColor: theme.colors.border.muted }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <Coin size={18} color={theme.colors.text.secondary} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.expenses) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{expensesText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Net Income</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Take-home pay</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.text.primary }]}>{netIncomeText}</Text>
+                  </View>
                 </View>
               </View>
-            </Pressable>
+              {isEditableCard('NetIncomeDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('NetIncomeDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('AvailableCashDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 1, borderLeftColor: theme.colors.border.subtle, marginTop: spacing.base }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeft}>
-                  <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Available Cash</Text>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 2, borderLeftColor: getMutedBorderColor(theme.colors.semantic.errorBorder) }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <ShoppingCart size={18} color={theme.colors.semantic.error} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.brand.primary }]}>{availableCashText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>Expenses</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Monthly spending</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.expenses) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{expensesText}</Text>
+                  </View>
                 </View>
               </View>
-              <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]}>
-                Money left after expenses
-              </Text>
-            </Pressable>
+              {isEditableCard('ExpensesDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('ExpensesDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('AssetContributionDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 2, borderLeftColor: theme.colors.semantic.successBorder }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
-                    Asset Contribution
-                  </Text>
+            <View style={[styles.cashflowCardWrapper, { marginTop: spacing.base }]}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 1, borderLeftColor: theme.colors.border.muted }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <HandCoins size={18} color={theme.colors.text.secondary} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.assetContributions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{assetContributionText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Available Cash</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">
+                      After expenses
+                    </Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.brand.primary }]}>{availableCashText}</Text>
+                  </View>
                 </View>
               </View>
-            </Pressable>
+              <View style={styles.actionColumnSpacer} />
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('LiabilityReductionDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 2, borderLeftColor: theme.colors.semantic.successBorder }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeftIndented}>
-                  <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
-                    Liability Reduction
-                  </Text>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 2, borderLeftColor: getMutedBorderColor(theme.colors.semantic.successBorder) }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <TrendUp size={18} color={theme.colors.semantic.success} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.liabilityReduction) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{liabilityReductionText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
+                      Asset Contribution
+                    </Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Saved or invested</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.assetContributions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{assetContributionText}</Text>
+                  </View>
                 </View>
               </View>
-            </Pressable>
+              {isEditableCard('AssetContributionDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('AssetContributionDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
-            <Pressable
-              onPress={() => navigation.navigate('MonthlySurplusDetail')}
-              style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, styles.cashflowLastCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderLeftWidth: 1, borderLeftColor: theme.colors.border.subtle, marginTop: spacing.base }]}
-            >
-              <View style={styles.cashflowBaseRow}>
-                <View style={styles.cashflowCardLeft}>
-                  <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Remaining Free Cash</Text>
+            <View style={styles.cashflowCardWrapper}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowSubCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 2, borderLeftColor: getMutedBorderColor(theme.colors.semantic.successBorder) }]}
+              >
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <TrendDown size={18} color={theme.colors.semantic.success} weight="regular" style={{ opacity: 0.6 }} />
                 </View>
-                <View style={styles.cashflowCardRight}>
-                  <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.brand.primary }]}>{monthlySurplusText}</Text>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, styles.subCardTitle, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>
+                      Liability Reduction
+                    </Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">Debt repayments</Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.subCardValue, styles.cashflowValueRight, theme.typography.value, { color: Math.abs(totals.liabilityReduction) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary }]}>{liabilityReductionText}</Text>
+                  </View>
                 </View>
               </View>
-              <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]}>
-                Money left after all allocations
-              </Text>
-            </Pressable>
+              {isEditableCard('LiabilityReductionDetail') ? (
+                <Pressable
+                  onPress={() => navigation.navigate('LiabilityReductionDetail')}
+                  style={({ pressed }) => [
+                    styles.addIconContainer,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                    <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              ) : (
+                <View style={styles.actionColumnSpacer} />
+              )}
+            </View>
 
+            <View style={[styles.cashflowCardWrapper, styles.cashflowLastCard, { marginTop: spacing.base }]}>
+              <View
+                style={[styles.cashflowRowContainer, styles.cashflowCard, styles.cashflowPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.muted, borderLeftWidth: 1, borderLeftColor: theme.colors.border.muted }]}
+              >
+                {/* Subtle semantic tint overlay for visual emphasis */}
+                <View style={[styles.remainingFreeCashTint, { backgroundColor: theme.colors.semantic.info, opacity: 0.06 }]} />
+                <View style={{ position: 'absolute', left: spacing.sm, top: 0, bottom: 0, justifyContent: 'center', paddingRight: spacing.sm, zIndex: 1 }}>
+                  <Target size={18} color={theme.colors.brand.primary} weight="regular" style={{ opacity: 0.6 }} />
+                </View>
+                <View style={styles.cashflowRowInner}>
+                  <View style={[styles.cashflowLabelStack, { paddingLeft: 18 + spacing.sm }]}>
+                    <Text style={[styles.cardTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Remaining Free Cash</Text>
+                    <Text style={[styles.cardDescription, theme.typography.body, { color: theme.colors.text.muted }]} numberOfLines={1} ellipsizeMode="tail">
+                      Unallocated cash
+                    </Text>
+                  </View>
+                  <View style={styles.cashflowValueCol}>
+                    <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowValueRight, theme.typography.value, { color: theme.colors.brand.primary }]}>{monthlySurplusText}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.actionColumnSpacer} />
+            </View>
+
+            </View>
+            </View>
             {/* End padding for Cash Flow section */}
             <View style={styles.cashflowEndSpacer} />
-            </View>
           </View>
         </SectionCard>
 
         {/* BALANCE SHEET SECTION */}
         <SectionCard>
-          <SectionHeader title="Balance Sheet" subtitle="What you own vs what you owe today" />
+          <SectionHeader title="Balance Sheet" />
 
-          <View style={styles.balanceSheetCentered}>
-            <Pressable onPress={() => navigation.navigate('AssetsDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Assets</Text>
-              <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.asset }]}>{totalAssetsText}</Text>
-              <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you own</Text>
-            </Pressable>
+          {/* Net Worth Hero Value */}
+          <View style={styles.netWorthHero}>
+            <Text style={[styles.netWorthHeroValue, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>{netWorthText}</Text>
+            <Text style={[styles.netWorthHeroLabel, theme.typography.body, { color: theme.colors.text.muted }]}>Net Worth</Text>
+          </View>
 
-            <Text style={[styles.equationText, theme.typography.bodyLarge, { color: theme.colors.text.muted }]}>−</Text>
+          {/* Assets and Liabilities Cards */}
+          <View style={styles.balanceSheetCardsRow}>
+            <View style={styles.balanceSheetCardWrapper}>
+              <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+                <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Assets</Text>
+                <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.asset }]}>{totalAssetsText}</Text>
+                <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you own</Text>
+                {isEditableCard('AssetsDetail') ? (
+                  <Pressable
+                    onPress={() => navigation.navigate('AssetsDetail')}
+                    style={({ pressed }) => [
+                      styles.addIconAbsolute,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
+                  >
+                    <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                      <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                    </View>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
 
-            <Pressable onPress={() => navigation.navigate('LiabilitiesDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Liabilities</Text>
-              <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.liability }]}>{totalLiabilitiesText}</Text>
-              <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you owe</Text>
-            </Pressable>
-
-            <Text style={[styles.equationText, theme.typography.bodyLarge, { color: theme.colors.text.muted }]}>=</Text>
-
-            <Pressable onPress={() => navigation.navigate('NetWorthDetail')} style={[styles.balanceSheetPrimaryCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
-              <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Net Worth</Text>
-              <Text style={[styles.primaryValue, styles.primaryValueOutcome, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.brand.primary }]}>{netWorthText}</Text>
-            </Pressable>
+            <View style={styles.balanceSheetCardWrapper}>
+              <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+                <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Liabilities</Text>
+                <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.liability }]}>{totalLiabilitiesText}</Text>
+                <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you owe</Text>
+                {isEditableCard('LiabilitiesDetail') ? (
+                  <Pressable
+                    onPress={() => navigation.navigate('LiabilitiesDetail')}
+                    style={({ pressed }) => [
+                      styles.addIconAbsolute,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                    hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.sm, right: spacing.sm }}
+                  >
+                    <View style={[styles.addIconVisualCircle, { borderColor: theme.colors.border.subtle }]}>
+                      <Icon name="plus" size="base" color={theme.colors.text.muted} />
+                    </View>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
           </View>
         </SectionCard>
 
@@ -368,6 +575,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   cashflowRowContainer: {
+    flex: 1,
+    flexShrink: 1,
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
@@ -378,16 +587,30 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'stretch',
   },
+  remainingFreeCashTint: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: spacing.xl,
+    zIndex: 0,
+  },
   cashflowCardStack: {
     position: 'relative',
     width: '100%',
-    paddingHorizontal: layout.inputPadding,
+    paddingLeft: layout.inputPadding - 4, // 6px - shifted right
+    paddingRight: 0, // Eliminated to reclaim space and anchor cards to right edge
+  },
+  cashflowCardsWrapper: {
+    position: 'relative',
+    width: '100%',
   },
   cashflowSpine: {
     position: 'absolute',
-    left: spacing.xl + spacing.sm,
+    left: spacing.xl,
     top: spacing.xs,
-    bottom: spacing.xs,
+    bottom: spacing.sm,
     width: 1,
     zIndex: 0,
   },
@@ -410,9 +633,62 @@ const styles = StyleSheet.create({
   cashflowLastCard: {
     marginBottom: 0,
   },
+  cashFlowHero: {
+    alignItems: 'center',
+    marginTop: layout.sectionTitleBottom,
+    marginBottom: spacing.base,
+  },
+  cashFlowHeroValue: {
+    textAlign: 'center',
+  },
+  cashFlowHeroSubtext: {
+    textAlign: 'center',
+    marginTop: spacing.tiny,
+  },
+  netWorthHero: {
+    alignItems: 'center',
+    marginTop: layout.sectionTitleBottom,
+    marginBottom: spacing.base,
+  },
+  netWorthHeroValue: {
+    textAlign: 'center',
+  },
+  netWorthHeroLabel: {
+    textAlign: 'center',
+    marginTop: spacing.tiny,
+  },
+  netWorthHeroSubtext: {
+    textAlign: 'center',
+    marginTop: spacing.tiny,
+  },
+  balanceSheetCardsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: layout.inputPadding,
+    gap: spacing.sm,
+  },
+  balanceSheetCard: {
+    flex: 1,
+    minWidth: 0,
+    padding: spacing.sm,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+    position: 'relative',
+  },
+  addIconAbsolute: {
+    position: 'absolute',
+    top: spacing.base,
+    right: spacing.base,
+    zIndex: 1,
+  },
   balanceSheetPrimaryCard: {
     flex: 1,
-    minWidth: 90,
+    minWidth: 0,
     padding: spacing.sm,
     borderRadius: 24,
     borderWidth: 1,
@@ -434,15 +710,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   cashflowMbMd: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.base,
   },
   cashflowGapMd: {
-    height: spacing.md,
+    height: spacing.base,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cashflowGapLg: {
-    height: spacing.lg,
+    height: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -453,8 +729,23 @@ const styles = StyleSheet.create({
     height: spacing.sm,
   },
   cashflowSubCard: {
-    width: '90%',
-    alignSelf: 'flex-end',
+    marginLeft: spacing.xl + spacing.sm - layout.inputPadding + 16, // Increased by 16px for stronger indent
+  },
+  cashflowRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: spacing.base,
+  },
+  cashflowLabelStack: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  cashflowValueCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: spacing.base,
   },
   cashflowBaseRow: {
     flexDirection: 'row',
@@ -483,6 +774,7 @@ const styles = StyleSheet.create({
   },
   cashflowCardRight: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   cashflowValueRight: {
     textAlign: 'right',
@@ -519,6 +811,47 @@ const styles = StyleSheet.create({
     // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
     marginBottom: spacing.xs,
     lineHeight: 18,
+  },
+  // Wrapper styles for card + ➕ icon layout
+  cashflowCardWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: spacing.tiny, // Reduced from spacing.xs (6px) to spacing.tiny (4px)
+  },
+  balanceSheetCardWrapper: {
+    flex: 1,
+    minWidth: 90,
+    flexShrink: 1,
+  },
+  addIconContainer: {
+    width: 32,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    transform: [{ translateY: -4 }],
+  },
+  addIconVisualCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+  },
+  actionColumnSpacer: {
+    width: 32,
+    height: 44,
+  },
+  cashflowIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
   },
 });
 
