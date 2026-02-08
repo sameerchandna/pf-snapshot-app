@@ -183,7 +183,13 @@ export function SnapshotProvider({ children, mode }: { children: React.ReactNode
       () => profilesStateRef.current,
       (updater) => {
         hasLocalEditsRef.current = true;
-        setProfilesState(updater);
+        setProfilesState((prev) => {
+          if (prev === null) {
+            // If state is null, return null (shouldn't happen in practice, but handle gracefully)
+            return null;
+          }
+          return updater(prev);
+        });
       }
     );
   }, [mode]); // Re-register when mode changes

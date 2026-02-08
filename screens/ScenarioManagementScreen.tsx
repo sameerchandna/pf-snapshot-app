@@ -6,6 +6,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import Icon from '../components/Icon';
+import SwipeAction from '../components/SwipeAction';
 import { useSnapshot } from '../SnapshotContext';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
@@ -159,32 +160,20 @@ export default function ScenarioManagementScreen() {
 
       return (
         <View style={styles.swipeActionsContainer}>
-          <Pressable
+          <SwipeAction
+            variant="edit"
             onPress={handleEditPress}
-            style={({ pressed }) => [
-              styles.swipeActionEdit,
-              { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.default, borderRadius: theme.radius.medium },
-            ]}
-            accessibilityRole="button"
             accessibilityLabel="Edit"
-          >
-            <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
-          </Pressable>
-          <Pressable
+          />
+          <SwipeAction
+            variant="delete"
             onPress={handleDeletePress}
-            style={({ pressed }) => [
-              styles.swipeActionDelete,
-              { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error, borderRadius: theme.radius.medium },
-            ]}
-            accessibilityRole="button"
             accessibilityLabel="Delete"
-          >
-            <Icon name="trash-2" size="small" color={theme.colors.text.primary} />
-          </Pressable>
+          />
         </View>
       );
     },
-    [handleEdit, handleDeleteRequest, theme]
+    [handleEdit, handleDeleteRequest]
   );
 
   const activeScenario = useMemo(() => 
@@ -514,10 +503,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: ROW_HEIGHT,
-    paddingLeft: 6,
-    paddingRight: 6,
+    paddingLeft: 2,
+    paddingRight: 2,
     paddingVertical: 4,
     backgroundColor: 'transparent',
+    gap: 4,
   },
   swipeActionEdit: {
     width: 35,

@@ -223,7 +223,7 @@ export function generateSavingsInsights(
         const recentPoints = timeSeries.slice(Math.max(0, currentPointIndex - 2), currentPointIndex + 1);
         if (recentPoints.length >= 3) {
           // Calculate growth increments between consecutive points
-          const growthIncrements = [];
+          const growthIncrements: number[] = [];
           for (let i = 1; i < recentPoints.length; i++) {
             const prevGrowth = recentPoints[i - 1].cumulativeGrowth;
             const currGrowth = recentPoints[i].cumulativeGrowth;
@@ -458,7 +458,7 @@ export function generateMortgageInsights(
         const recentPoints = timeSeries.slice(Math.max(0, currentPointIndex - 2), currentPointIndex + 1);
         if (recentPoints.length >= 3) {
           // Calculate principal increments between consecutive points
-          const principalIncrements = [];
+          const principalIncrements: number[] = [];
           for (let i = 1; i < recentPoints.length; i++) {
             const prevPrincipal = recentPoints[i - 1].cumulativePrincipalPaid;
             const currPrincipal = recentPoints[i].cumulativePrincipalPaid;

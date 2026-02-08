@@ -23,7 +23,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
-import Icon from './Icon';
+import IconButton from './IconButton';
 
 type Props = {
   onClose: () => void;
@@ -38,9 +38,13 @@ export default function MortgageEducationOverlay({ onClose }: Props) {
         <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
           Understanding Mortgage Balances
         </Text>
-        <Pressable onPress={onClose}>
-          <Icon name="x" size="large" color={theme.colors.text.secondary} />
-        </Pressable>
+        <IconButton
+          icon="x"
+          size="md"
+          variant="default"
+          onPress={onClose}
+          accessibilityLabel="Close"
+        />
       </View>
 
       <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>

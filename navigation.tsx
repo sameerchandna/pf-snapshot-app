@@ -83,6 +83,7 @@ function AccountsStackNavigator() {
       <AccountsStack.Screen name="AccountsAssetsDetail" component={AssetsDetailScreen} />
       <AccountsStack.Screen name="LiabilitiesDetail" component={LiabilitiesDetailScreen} />
       <AccountsStack.Screen name="LoanDetail" component={LoanDetailScreen} />
+      <AccountsStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
     </AccountsStack.Navigator>
   );
 }

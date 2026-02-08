@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSnapshot } from '../SnapshotContext';
-import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, LiabilityItem } from '../types';
 import { selectLiabilities } from '../selectors';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -94,7 +94,7 @@ export default function LiabilitiesDetailScreen() {
   };
 
   return (
-    <GroupedListDetailScreen<LiabilityItem>
+    <EditableCollectionScreen<LiabilityItem>
       title="Liabilities"
       totalText={totalText}
       subtextMain="Grouped liabilities"

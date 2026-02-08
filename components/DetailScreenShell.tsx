@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from './ScreenHeader';
-import { HelpContent } from '../screens/GroupedListDetailScreen';
+import { HelpContent } from '../screens/EditableCollectionScreen';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from './Icon';
 
@@ -36,17 +36,13 @@ export default function DetailScreenShell({
         subtitleFootnote={subtextFootnote}
         rightAccessory={
           hasHints ? (
-            <Pressable
+            <IconButton
+              icon="help-circle"
+              size="md"
+              variant="neutral"
               onPress={() => setIsHintOpen(true)}
-              style={({ pressed }) => [
-                styles.hintButton,
-                { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' }
-              ]}
-              accessibilityRole="button"
               accessibilityLabel="Help"
-            >
-              <Icon name="help-circle" size="medium" color={theme.colors.text.tertiary} />
-            </Pressable>
+            />
           ) : null
         }
       />

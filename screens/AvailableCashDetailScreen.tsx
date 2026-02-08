@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { useSnapshot } from '../SnapshotContext';
 import DetailScreenShell from '../components/DetailScreenShell';
-import { HelpContent } from './GroupedListDetailScreen';
+import { HelpContent } from './EditableCollectionScreen';
 import { selectAvailableCash, selectNetIncome, selectSnapshotExpenses } from '../selectors';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 

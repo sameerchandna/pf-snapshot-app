@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Group } from '../types';
-import GroupedListDetailScreen from './GroupedListDetailScreen';
+import EditableCollectionScreen from './EditableCollectionScreen';
 import { useSnapshot } from '../SnapshotContext';
 import { formatPercent } from '../formatters';
 import { useTheme } from '../ui/theme/useTheme';
@@ -122,7 +122,7 @@ export default function ProjectionSettingsScreen() {
   };
 
   return (
-    <GroupedListDetailScreen<ProjectionFieldItem>
+    <EditableCollectionScreen<ProjectionFieldItem>
       title="Projection settings"
       totalText=""
       subtextMain="Adjust the assumptions behind the projection."

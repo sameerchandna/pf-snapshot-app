@@ -27,6 +27,7 @@ const SIZE_MAP: Record<IconSize, number> = {
  * Provides consistent sizing and coloring across the app.
  * Defaults to base size (16px) and secondary text color from theme.
  * 
+ * Feather icons are stroke-based (outline-only) by default - no fill.
  * For interactive icons, use IconButton component instead.
  */
 export default function Icon({ name, size = 'base', color, style }: Props) {

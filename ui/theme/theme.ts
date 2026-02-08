@@ -26,6 +26,8 @@ export const lightTheme = {
       app: '#F5F6F8',
       card: '#fff',
       subtle: '#fafafa',
+      cardGradientTop: '#fff', // Derived from bg.card (same value for subtle gradient start)
+      cardGradientBottom: '#f8f8f8', // Derived from bg.subtle, slightly darker than card for subtle gradient end
     },
     border: {
       default: '#e0e0e0',
@@ -58,6 +60,7 @@ export const lightTheme = {
     overlay: {
       scrim25: 'rgba(0,0,0,0.25)',
       scrim50: 'rgba(0,0,0,0.5)',
+      heroNumberGlow: 'rgba(47, 91, 234, 0.12)', // Derived from brand.primary (#2F5BEA) at 12% opacity for subtle glow
     },
   },
   typography: {
@@ -172,6 +175,8 @@ export const darkTheme = {
       app: '#000000',
       card: '#1a1a1a',
       subtle: '#2a2a2a',
+      cardGradientTop: '#1f1f1f', // Derived from bg.card, slightly lighter for subtle gradient start
+      cardGradientBottom: '#1a1a1a', // Derived from bg.card (same value for subtle gradient end)
     },
     border: {
       default: '#404040',
@@ -204,6 +209,7 @@ export const darkTheme = {
     overlay: {
       scrim25: 'rgba(0,0,0,0.5)',
       scrim50: 'rgba(0,0,0,0.75)',
+      heroNumberGlow: 'rgba(76, 125, 255, 0.18)', // Derived from brand.primary (#4C7DFF) at 18% opacity for subtle glow
     },
   },
   typography: {

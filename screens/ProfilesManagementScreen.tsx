@@ -7,6 +7,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
+import SwipeAction from '../components/SwipeAction';
 import Row from '../components/Row';
 import { layout } from '../layout';
 import { useSnapshot } from '../SnapshotContext';
@@ -197,43 +198,25 @@ export default function ProfilesManagementScreen() {
 
       return (
         <View style={styles.swipeActionsContainer}>
-          <Pressable
+          <SwipeAction
+            variant="rename"
             onPress={handleRenamePress}
-            style={({ pressed }) => [
-              styles.swipeActionRename,
-              { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
-            ]}
-            accessibilityRole="button"
             accessibilityLabel="Rename"
-          >
-            <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
-          </Pressable>
-          <Pressable
+          />
+          <SwipeAction
+            variant="reset"
             onPress={handleResetPress}
-            style={({ pressed }) => [
-              styles.swipeActionReset,
-              { backgroundColor: pressed ? theme.colors.semantic.warningBg : theme.colors.semantic.warning },
-            ]}
-            accessibilityRole="button"
             accessibilityLabel="Reset"
-          >
-            <Icon name="refresh-cw" size="small" color={theme.colors.text.tertiary} />
-          </Pressable>
-          <Pressable
+          />
+          <SwipeAction
+            variant="delete"
             onPress={handleDeletePress}
-            style={({ pressed }) => [
-              styles.swipeActionDelete,
-              { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error },
-            ]}
-            accessibilityRole="button"
             accessibilityLabel="Delete"
-          >
-            <Icon name="trash-2" size="small" color="#fff" />
-          </Pressable>
+          />
         </View>
       );
     },
-    [handleRenameRequest, handleResetRequest, handleDeleteRequest, theme]
+    [handleRenameRequest, handleResetRequest, handleDeleteRequest]
   );
 
   if (!profilesState) {
@@ -627,10 +610,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: ROW_HEIGHT,
-    paddingLeft: 6,
-    paddingRight: 6,
+    paddingLeft: 2,
+    paddingRight: 2,
     paddingVertical: 4,
     backgroundColor: 'transparent',
+    gap: 4,
   },
   swipeActionRename: {
     width: 35,

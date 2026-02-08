@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
-import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { ContributionItem } from '../types';
 import { selectPension } from '../selectors';
 import { formatCurrencyFullSigned } from '../formatters';
@@ -226,7 +226,7 @@ export default function PensionDetailScreen() {
   };
 
   return (
-    <GroupedListDetailScreen<ContributionItem>
+    <EditableCollectionScreen<ContributionItem>
       title="Pension"
       totalText={totalText}
       subtextMain="Monthly pension contributions"

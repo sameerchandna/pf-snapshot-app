@@ -1,7 +1,7 @@
 // Profile persistence layer using AsyncStorage
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ProfilesState, ProfileState, ProfileId } from './types';
+import type { ProfilesState, ProfileState, ProfileId, SnapshotState } from './types';
 import { emptySnapshotState, coerceSnapshotState } from './domainValidation';
 import { createBaselineScenario, BASELINE_SCENARIO_ID } from './domain/scenario/types';
 import type { Scenario, ScenarioId } from './domain/scenario/types';

@@ -176,9 +176,9 @@ export default function AccountsScreen() {
                     showBottomDivider={false}
                   >
                     <View style={styles.rowBody}>
-                      <Text style={[styles.rowTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
-                      <Text style={[styles.rowSubtext, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
-                      <Text style={[styles.rowMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
+                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { fontWeight: '500', color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowSubtext, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
+                      <Text style={[styles.rowMetadata, theme.typography.bodySmall, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
                   </Row>
                 );
@@ -222,9 +222,9 @@ export default function AccountsScreen() {
                     showBottomDivider={false}
                   >
                     <View style={styles.rowBody}>
-                      <Text style={[styles.rowTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
-                      <Text style={[styles.rowSubtext, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
-                      <Text style={[styles.rowMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
+                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { fontWeight: '500', color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowSubtext, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
+                      <Text style={[styles.rowMetadata, theme.typography.bodySmall, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
                   </Row>
                 );
@@ -275,17 +275,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+    // Typography via theme.typography.bodyLarge with fontWeight override
   },
   rowSubtext: {
-    fontSize: 13,
+    // Typography via theme.typography.bodyLarge
     marginTop: layout.micro,
   },
   rowMetadata: {
-    fontSize: 11,
+    // Typography via theme.typography.bodySmall
     marginTop: spacing.tiny,
-    lineHeight: 14,
   },
   emptyState: {
     paddingVertical: spacing.xs,

@@ -223,12 +223,12 @@ export default function SnapshotDataSummaryScreen() {
           summary: baselineSummary,
           series: baselineSeries,
         },
-        scenario: null, // Scenario state is only available in ProjectionResultsScreen
+        scenario: undefined, // Scenario state is only available in ProjectionResultsScreen
         attribution: {
           baseline: baselineA3,
-          scenario: null,
+          scenario: undefined,
         },
-        checks: null,
+        checks: undefined,
       };
 
       const jsonString = serializeDebugState(payload);

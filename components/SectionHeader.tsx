@@ -19,7 +19,7 @@ export default function SectionHeader({ title, subtitle }: Props) {
   const { theme } = useTheme();
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.brand.primary }]}>{title}</Text>
+      <Text style={[styles.sectionTitle, theme.typography.sectionTitle, { color: theme.colors.brand.primary }]}>{title}</Text>
       {subtitle ? <Text style={[styles.sectionSubtext, { color: theme.colors.text.muted }]}>{subtitle}</Text> : null}
     </View>
   );
@@ -30,8 +30,7 @@ const styles = StyleSheet.create({
     // Snapshot uses tight vertical rhythm: a little separation before blocks.
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    // Typography via theme.typography.sectionTitle
     marginBottom: layout.sectionTitleBottom, // 4 - matches SnapshotScreen pattern
   },
   sectionSubtext: {

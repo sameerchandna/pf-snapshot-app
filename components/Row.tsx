@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, ReactNode, StyleProp, View, ViewStyle } from 'react-native';
+import React, { ReactNode } from 'react';
+import { Pressable, StyleProp, View, ViewStyle } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
 import { layout } from '../layout';
 import { spacing } from '../spacing';

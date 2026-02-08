@@ -9,6 +9,7 @@ import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
+import ControlBar, { type ControlBarItemButton, type ControlBarPillItem, type ControlBarIconItem } from '../components/ControlBar';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -778,77 +779,45 @@ export default function BalanceDeepDiveScreen() {
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Toolbar */}
-        <View style={styles.toolbarContainer}>
-          <View style={[styles.toolbarSurface, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle, borderRadius: theme.radius.medium }, theme.shadows.medium]}>
-            <View style={styles.toolbarRow}>
-              <View style={styles.toolbarLeftGroup}>
-                <Pressable
-                  onPress={() => setItemPickerOpen(true)}
-                  style={({ pressed }) => [
-                    styles.toolbarItemButton,
-                    { borderRadius: theme.radius.base },
-                    pressed && { backgroundColor: theme.colors.bg.subtle },
-                  ]}
-                >
-                  <View style={styles.toolbarItemContent}>
-                    <Text style={[styles.toolbarItemTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>
-                      {itemName}
-                    </Text>
-                    {itemMetadata && (
-                      <Text style={[styles.toolbarItemSubtype, { color: theme.colors.text.muted }]} numberOfLines={1}>
-                        {itemMetadata}
-                      </Text>
-                    )}
-                  </View>
-                  <Icon name="chevron-down" size="base" color={theme.colors.text.secondary} style={styles.toolbarChevron} />
-                </Pressable>
-              </View>
-
-              <View style={{ flex: 1 }} />
-
-              <View style={styles.toolbarRightGroup}>
-                {/* Phase 5.8: Educational overlay toggle (only shown when relevant item type is selected) */}
-                {/* Overlays are separate from insights: overlays explain concepts, insights explain data */}
-                {isSavingsAsset && (
-                  <IconButton
-                    icon="info"
-                    size="base"
-                    onPress={handleToggleSavingsEducation}
-                    accessibilityLabel="Savings information"
-                    style={[
-                      savingsEducationOpen && { backgroundColor: theme.colors.brand.primary },
-                    ]}
-                  />
-                )}
-                {isMortgageLiability && (
-                  <IconButton
-                    icon="info"
-                    size="base"
-                    onPress={handleToggleMortgageEducation}
-                    accessibilityLabel="Mortgage information"
-                    style={[
-                      mortgageEducationOpen && { backgroundColor: theme.colors.brand.primary },
-                    ]}
-                  />
-                )}
-
-                <Pressable
-                  onPress={() => setAgeSelectorOpen(true)}
-                  style={({ pressed }) => [
-                    styles.toolbarAgeBadge,
-                    { borderRadius: theme.radius.base },
-                    { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle },
-                  ]}
-                >
-                  <Text style={[styles.toolbarAgeText, { color: theme.colors.text.secondary }]}>
-                    Age {selectedAge}
-                  </Text>
-                  <Icon name="chevron-down" size="small" color={theme.colors.text.secondary} style={{ marginLeft: spacing.xs }} />
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </View>
+        <ControlBar
+          leftItems={[
+            {
+              type: 'itemButton',
+              title: itemName,
+              subtitle: itemMetadata ?? undefined,
+              onPress: () => setItemPickerOpen(true),
+            },
+          ]}
+          rightItems={[
+            ...(isSavingsAsset
+              ? [
+                  {
+                    type: 'icon' as const,
+                    icon: 'info' as const,
+                    onPress: handleToggleSavingsEducation,
+                    accessibilityLabel: 'Savings information',
+                    active: savingsEducationOpen,
+                  },
+                ]
+              : []),
+            ...(isMortgageLiability
+              ? [
+                  {
+                    type: 'icon' as const,
+                    icon: 'info' as const,
+                    onPress: handleToggleMortgageEducation,
+                    accessibilityLabel: 'Mortgage information',
+                    active: mortgageEducationOpen,
+                  },
+                ]
+              : []),
+            {
+              type: 'pill',
+              title: `Age ${selectedAge}`,
+              onPress: () => setAgeSelectorOpen(true),
+            },
+          ]}
+        />
 
         <View style={styles.innerContent}>
           {/* Chart */}
@@ -870,7 +839,6 @@ export default function BalanceDeepDiveScreen() {
                     padding={chartPadding}
                     domain={{ y: [chartData.yMin, chartData.yMax] }}
                     domainPadding={{ x: 12, y: 6 }}
-                    nice={false}
                   >
                     <VictoryAxis
                       tickFormat={t => `${Number(t)}`}
@@ -883,7 +851,6 @@ export default function BalanceDeepDiveScreen() {
                     />
                     <VictoryAxis
                       dependentAxis
-                      nice={false}
                       tickFormat={t => formatCurrencyCompact(Number(t))}
                       style={{
                         axis: { stroke: chartPalette.axis },
@@ -965,7 +932,6 @@ export default function BalanceDeepDiveScreen() {
                     padding={chartPadding}
                     domain={{ y: [mortgageChartData.yMin, mortgageChartData.yMax] }}
                     domainPadding={{ x: 12, y: 6 }}
-                    nice={false}
                   >
                     <VictoryAxis
                       tickFormat={t => `${Number(t)}`}
@@ -978,7 +944,6 @@ export default function BalanceDeepDiveScreen() {
                     />
                     <VictoryAxis
                       dependentAxis
-                      nice={false}
                       tickFormat={t => formatCurrencyCompact(Number(t))}
                       style={{
                         axis: { stroke: chartPalette.axis },
@@ -1235,7 +1200,7 @@ export default function BalanceDeepDiveScreen() {
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Item</Text>
               <IconButton
                 icon="x"
-                size="large"
+                size="md"
                 onPress={() => setItemPickerOpen(false)}
                 accessibilityLabel="Close"
               />
@@ -1367,71 +1332,6 @@ const styles = StyleSheet.create({
   innerContent: {
     padding: 12,
     paddingTop: 12,
-  },
-  toolbarContainer: {
-    paddingBottom: spacing.sm,
-  },
-  toolbarSurface: {
-    // borderRadius applied inline with theme.radius.medium
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    // Shadow applied inline with theme.shadows.medium
-  },
-  toolbarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  toolbarLeftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  toolbarRightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 0,
-  },
-  toolbarItemButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    // borderRadius applied inline with theme.radius.base
-    minWidth: 0,
-    flexShrink: 1,
-  },
-  toolbarItemContent: {
-    flex: 1,
-    minWidth: 0,
-    marginRight: spacing.xs,
-  },
-  toolbarItemTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  toolbarItemSubtype: {
-    fontSize: 11,
-    fontWeight: '400',
-  },
-  toolbarChevron: {
-    marginLeft: spacing.xs,
-    flexShrink: 0,
-  },
-  toolbarAgeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    // borderRadius applied inline with theme.radius.base
-  },
-  toolbarAgeText: {
-    fontSize: 12,
-    fontWeight: '500',
   },
   placeholderContainer: {
     paddingVertical: spacing.xl,

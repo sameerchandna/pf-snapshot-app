@@ -11,6 +11,9 @@ import SectionCard from '../components/SectionCard';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
+import SwipeAction from '../components/SwipeAction';
+import GroupedList, { Group as GroupedListGroup } from '../components/list/GroupedList';
+import FinancialItemRow from '../components/rows/FinancialItemRow';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -147,9 +150,16 @@ type Props<TItem> = {
 
   // Optional item press handler (for navigation to detail screens)
   onItemPress?: (item: TItem) => void;
+
+  // Swipe reveal mode: 'replace' (default) or 'overlay' (row stays fixed, actions slide underneath)
+  swipeRevealMode?: 'replace' | 'overlay';
 };
 
-export default function GroupedListDetailScreen<TItem>({
+/**
+ * Screen-level orchestrator for editable collections of financial items.
+ * Owns add/edit lifecycle and Snapshot mutation; delegates rendering to list/row components.
+ */
+export default function EditableCollectionScreen<TItem>({
   title,
   totalText,
   subtextMain,
@@ -200,6 +210,7 @@ export default function GroupedListDetailScreen<TItem>({
   getItemIsActive,
   setItemIsActive,
   onItemPress,
+  swipeRevealMode = 'replace',
 }: Props<TItem>) {
   const { theme } = useTheme();
   // Education cleanup (phase 1): detail/editor screens should focus purely on entry & inspection.
@@ -315,7 +326,7 @@ export default function GroupedListDetailScreen<TItem>({
     if (groupsEnabled) setExpandedGroupId(groupId);
   };
 
-  // Auto-expand when exactly one group exists (used by “flat” screens with one Generic group)
+  // Auto-expand when exactly one group exists (used by "flat" screens with one Generic group)
   useEffect(() => {
     if (!groupsEnabled) return;
     if (autoExpandSingleGroup === true && groups.length === 1 && expandedGroupId === null) {
@@ -475,6 +486,52 @@ export default function GroupedListDetailScreen<TItem>({
     });
   };
 
+  // Swipeable coordination handlers (all coordination decisions made here)
+  const handleSwipeableWillOpen = (itemId: string) => {
+    // Close all other swipeables when one opens
+    closeAllSwipeables(itemId);
+    setOpenSwipeableId(itemId);
+    if (Platform.OS === 'ios') {
+      try {
+        const Haptics = require('expo-haptics');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        // Haptics not available, ignore
+      }
+    }
+  };
+
+  const handleSwipeableOpen = (itemId: string) => {
+    setOpenSwipeableId(itemId);
+  };
+
+  const handleSwipeableClose = (itemId: string) => {
+    // Only clear state if this was the open one
+    if (openSwipeableId === itemId) {
+      setOpenSwipeableId(null);
+    }
+  };
+
+  const handleScrollBeginDrag = () => {
+    // Close all swipeables when scrolling starts
+    closeAllSwipeables();
+    setOpenSwipeableId(null);
+  };
+
+  const handleTouchOutside = () => {
+    // Close all swipeables when touching outside (handled by ScrollView responder)
+    if (openSwipeableId !== null) {
+      closeAllSwipeables();
+      setOpenSwipeableId(null);
+    }
+  };
+
+  const getSwipeableEnabled = (itemId: string, groupId: string | undefined) => {
+    const isCurrentlyEditing = Boolean(editingItemId && editingItemId === itemId);
+    const groupExpanded = groupsEnabled && groupId ? isExpanded(groupId) : true;
+    return !isCurrentlyEditing && (openSwipeableId === null || openSwipeableId === itemId) && (groupsEnabled && groupId ? (groupExpanded || !canCollapseGroups) : true);
+  };
+
   const startEditItem = (item: TItem) => {
     if (shouldDismissKeyboardOnAction) Keyboard.dismiss();
     closeAllSwipeables();
@@ -607,36 +664,24 @@ export default function GroupedListDetailScreen<TItem>({
     // Edit action (shown for all items that can be edited, including locked items)
     if (canEdit) {
       actions.push(
-        <Pressable
+        <SwipeAction
           key="edit"
+          variant="edit"
           onPress={handleEdit}
-          style={({ pressed }) => [
-            styles.swipeActionEdit,
-            { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.default, borderRadius: theme.radius.medium },
-          ]}
-          accessibilityRole="button"
           accessibilityLabel="Edit"
-        >
-          <Icon name="edit-2" size="small" color={theme.colors.text.tertiary} />
-        </Pressable>
+        />
       );
     }
 
     // Delete action (only if not locked and deletion is allowed)
     if (!locked && canDelete && canDeleteItems) {
       actions.push(
-        <Pressable
+        <SwipeAction
           key="delete"
+          variant="delete"
           onPress={handleDelete}
-          style={({ pressed }) => [
-            styles.swipeActionDelete,
-            { backgroundColor: pressed ? theme.colors.semantic.errorBg : theme.colors.semantic.error, borderRadius: theme.radius.medium },
-          ]}
-          accessibilityRole="button"
           accessibilityLabel="Delete"
-        >
-          <Icon name="trash-2" size="small" color={theme.colors.text.primary} />
-        </Pressable>
+        />
       );
     }
 
@@ -646,14 +691,345 @@ export default function GroupedListDetailScreen<TItem>({
 
     return (
       <View style={styles.swipeActionsContainer}>
-        {actions.map((action, index) => (
-          <View key={index} style={index > 0 ? { marginLeft: 6 } : undefined}>
-            {action}
-          </View>
-        ))}
+        {actions}
       </View>
     );
   };
+
+  // Render row using FinancialItemRow
+  const renderRow = (
+    item: TItem,
+    index: number,
+    groupId: string | undefined,
+    swipeableCallbacks: {
+      swipeableRef: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen: () => void;
+      onSwipeableOpen: () => void;
+      onSwipeableClose: () => void;
+      swipeableEnabled: boolean;
+    },
+  ) => {
+    const id = getItemId(item);
+    const name = typeof getItemDisplayName === 'function' ? getItemDisplayName(item) : getItemName(item);
+    const amount = getItemAmount(item);
+    const amountText =
+      typeof formatItemAmountText === 'function' ? formatItemAmountText(item, amount) : formatAmountText(amount);
+    const metaText = typeof formatItemMetaText === 'function' ? formatItemMetaText(item) : null;
+    const locked = isLocked(item);
+    const deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId));
+    const editDisabled = locked || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId));
+    const inlineEditable = isInlineEditable(item);
+    const canExternalEdit = typeof onExternalEditItem === 'function';
+
+    const isEditingInThisGroup: boolean = Boolean(editingItemId && activeEditingMeta?.groupId === (groupId || implicitGroupId));
+    const isCurrentlyEditing: boolean = Boolean(editingItemId && editingItemId === id);
+    const dimRow: boolean = isEditingInThisGroup && !isCurrentlyEditing;
+
+    const itemIsActive = typeof getItemIsActive === 'function' ? getItemIsActive(item) : true;
+    const isInactive = itemIsActive === false;
+
+    const handleToggleActive = () => {
+      if (typeof setItemIsActive === 'function') {
+        const updated = setItemIsActive(item, !itemIsActive);
+        const updatedItems = items.map(i => getItemId(i) === id ? updated : i);
+        setItems(updatedItems);
+      }
+    };
+
+    const showTopDivider = index > 0;
+
+    return (
+      <FinancialItemRow
+        key={id}
+        item={item}
+        itemId={id}
+        name={name}
+        amountText={amountText}
+        metaText={metaText}
+        locked={locked}
+        isActive={itemIsActive}
+        isCurrentlyEditing={isCurrentlyEditing}
+        dimRow={dimRow}
+        isInactive={isInactive}
+        showTopDivider={showTopDivider}
+        onPress={
+          onItemPress && !isCurrentlyEditing
+            ? () => {
+                onItemPress(item);
+              }
+            : undefined
+        }
+        onToggleActive={typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? handleToggleActive : undefined}
+        renderSwipeActions={() => renderSwipeActions(item, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit)}
+        swipeableEnabled={swipeableCallbacks.swipeableEnabled}
+        onSwipeableWillOpen={swipeableCallbacks.onSwipeableWillOpen}
+        onSwipeableOpen={swipeableCallbacks.onSwipeableOpen}
+        onSwipeableClose={swipeableCallbacks.onSwipeableClose}
+        swipeableRef={swipeableCallbacks.swipeableRef}
+        swipeRevealMode={swipeRevealMode}
+      />
+    );
+  };
+
+  // Render group header
+  const renderGroupHeader = (group: GroupedListGroup<TItem>) => {
+    const groupItems = itemsByGroupId[group.id] ?? [];
+    const groupTotal = groupItems.reduce((sum, it) => sum + getItemAmount(it), 0);
+    const groupTotalText = formatGroupTotalText(groupTotal);
+
+    const groupExpanded = isExpanded(group.id);
+    const isRenamingThisGroup = editingGroupId === group.id;
+    const groupDeleteEnabled = groupExpanded && groupItems.length === 0 && !isRenamingThisGroup;
+    const groupEditEnabled = groupExpanded && !isRenamingThisGroup;
+
+    return (
+      <View style={styles.groupWrapper}>
+        {groupExpanded && canEditGroups ? (
+          <View style={styles.groupActionsAbove}>
+            {isRenamingThisGroup ? (
+              <>
+                <IconButton
+                  icon="check"
+                  size="md"
+                  variant="success"
+                  onPress={() => saveGroupName(group.id)}
+                  disabled={false}
+                  accessibilityLabel="Save"
+                />
+                <IconButton
+                  icon="x"
+                  size="md"
+                  variant="neutral"
+                  onPress={cancelEditGroupName}
+                  disabled={false}
+                  accessibilityLabel="Cancel"
+                />
+              </>
+            ) : (
+              <>
+                <IconButton
+                  icon="edit-2"
+                  size="md"
+                  variant="neutral"
+                  onPress={() => startEditGroupName(group)}
+                  disabled={!groupEditEnabled}
+                  accessibilityLabel="Edit group"
+                />
+                {groupItems.length === 0 ? (
+                  <IconButton
+                    icon="trash-2"
+                    size="md"
+                    variant="destructive"
+                    onPress={() => deleteGroup(group.id)}
+                    disabled={!groupDeleteEnabled}
+                    accessibilityLabel="Delete group"
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
+        ) : null}
+
+        <View style={styles.groupCard}>
+          <View style={styles.groupHeaderRow}>
+            {isRenamingThisGroup ? (
+              <View style={styles.groupHeaderLeft}>
+                {groupNameError.length > 0 ? (
+                  <Text style={[styles.groupNameErrorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>
+                    {groupNameError}
+                  </Text>
+                ) : null}
+                <TextInput
+                  style={[
+                    styles.groupNameInput,
+                    theme.typography.sectionTitle,
+                    {
+                      backgroundColor: theme.colors.bg.card,
+                      borderColor: theme.colors.border.default,
+                      color: theme.colors.text.primary,
+                      borderRadius: theme.radius.medium,
+                    },
+                  ]}
+                  value={groupNameDraft}
+                  onChangeText={setGroupNameDraft}
+                  placeholderTextColor={theme.colors.text.disabled}
+                  autoFocus={true}
+                  returnKeyType="done"
+                  onSubmitEditing={() => saveGroupName(group.id)}
+                />
+              </View>
+            ) : canCollapseGroups ? (
+              <Pressable
+                onPress={() => toggleGroup(group.id)}
+                style={({ pressed }) => [
+                  styles.groupHeaderLeft,
+                  { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                ]}
+              >
+                <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>
+                  {group.name}
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={styles.groupHeaderLeft}>
+                <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>
+                  {group.name}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.groupHeaderRight}>
+              {canCollapseGroups ? (
+                <Pressable
+                  onPress={() => toggleGroup(group.id)}
+                  style={({ pressed }) => [
+                    styles.groupTotalPressable,
+                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                  ]}
+                >
+                  <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>
+                    {groupTotalText}
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={styles.groupTotalPressable}>
+                  <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>
+                    {groupTotalText}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render inline editor
+  const renderInlineEditor = (groupId?: string) => {
+    if (!editorVisible || effectiveEditorPlacement !== 'inline') {
+      return null;
+    }
+
+    const targetGroupId = groupId || implicitGroupId;
+    const groupExpanded = groupsEnabled ? isExpanded(targetGroupId) : true;
+    const shouldShow =
+      (canAddItems && (groupExpanded || !canCollapseGroups)) ||
+      (editingItemId && activeEditingMeta?.groupId === targetGroupId);
+
+    if (!shouldShow) {
+      return null;
+    }
+
+    return (
+      <View style={styles.editorInline}>
+        {editingItemId && activeEditingMeta?.groupId === targetGroupId ? (
+          <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>
+            Editing: {activeEditingMeta.name}
+          </Text>
+        ) : null}
+        {errorMessage.length > 0 ? (
+          <View
+            style={[
+              styles.errorCard,
+              {
+                backgroundColor: theme.colors.semantic.errorBg,
+                borderColor: theme.colors.semantic.errorBorder,
+                borderRadius: theme.radius.medium,
+              },
+            ]}
+          >
+            <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>
+              Can't save
+            </Text>
+            <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.entryRow}>
+          {canEditItemName ? (
+            <TextInput
+              style={[
+                styles.input,
+                theme.typography.input,
+                styles.entryName,
+                {
+                  backgroundColor: theme.colors.bg.card,
+                  borderColor: theme.colors.border.default,
+                  borderRadius: theme.radius.medium,
+                  color: theme.colors.text.primary,
+                },
+              ]}
+              value={draftName}
+              onChangeText={setDraftName}
+              placeholder="Name"
+              placeholderTextColor={theme.colors.text.disabled}
+              autoFocus={autoFocus}
+            />
+          ) : null}
+
+          <TextInput
+            style={[
+              styles.input,
+              theme.typography.input,
+              styles.entryAmount,
+              {
+                backgroundColor: theme.colors.bg.card,
+                borderColor: theme.colors.border.default,
+                borderRadius: theme.radius.medium,
+                color: theme.colors.text.primary,
+              },
+            ]}
+            value={draftAmount}
+            onChangeText={setDraftAmount}
+            placeholder="Amount"
+            placeholderTextColor={theme.colors.text.disabled}
+            keyboardType="numeric"
+          />
+
+          <IconButton
+            icon="check"
+            size="md"
+            variant="success"
+            onPress={saveEditor}
+            disabled={canCollapseGroups && groupsEnabled && groupId ? !isExpanded(groupId) : false}
+            accessibilityLabel="Save"
+            style={[
+              styles.tickIconButton,
+              {
+                borderColor: theme.colors.semantic.successBorder,
+                borderRadius: theme.radius.medium,
+                opacity: canCollapseGroups && groupsEnabled && groupId && !isExpanded(groupId) ? 0.5 : 1,
+              },
+            ]}
+          />
+          <IconButton
+            icon="x"
+            size="md"
+            variant="neutral"
+            onPress={cancelEditor}
+            accessibilityLabel="Cancel"
+            style={[
+              styles.cancelIconButton,
+              {
+                borderColor: theme.colors.border.default,
+                borderRadius: theme.radius.medium,
+              },
+            ]}
+          />
+        </View>
+      </View>
+    );
+  };
+
+  // Prepare groups for GroupedList
+  const groupedListGroups: GroupedListGroup<TItem>[] | undefined = groupsEnabled
+    ? effectiveGroups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        items: itemsByGroupId[group.id] ?? [],
+      }))
+    : undefined;
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
@@ -666,17 +1042,13 @@ export default function GroupedListDetailScreen<TItem>({
           showHeaderRight ? (
             <View style={styles.headerRightRow}>
               {hasHints ? (
-                <Pressable
+                <IconButton
+                  icon="help-circle"
+                  size="md"
+                  variant="neutral"
                   onPress={() => setIsHintOpen(true)}
-                  style={({ pressed }) => [
-                    styles.hintButton,
-                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
-                  ]}
-                  accessibilityRole="button"
                   accessibilityLabel="Common examples"
-                >
-                  <Icon name="help-circle" size="medium" color={theme.colors.text.tertiary} />
-                </Pressable>
+                />
               ) : null}
               {headerRightAccessory ? headerRightAccessory : null}
             </View>
@@ -697,6 +1069,11 @@ export default function GroupedListDetailScreen<TItem>({
           automaticallyAdjustKeyboardInsets={true}
           directionalLockEnabled={true}
           scrollEnabled={openSwipeableId === null}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onStartShouldSetResponderCapture={() => {
+            handleTouchOutside();
+            return false; // Allow touch to continue to children
+          }}
         >
           {renderIntro ? <View style={styles.introBlock}>{renderIntro}</View> : null}
 
@@ -980,43 +1357,39 @@ export default function GroupedListDetailScreen<TItem>({
                 {/* Action buttons - positioned outside and bottom-right aligned */}
                 <View style={styles.activeEntryActions}>
                   <View style={[styles.activeEntryButtonsContainer, { borderColor: theme.colors.border.default, borderRadius: theme.radius.large }]}>
-                    <Pressable
+                    <IconButton
+                      icon="check"
+                      size="md"
+                      variant="success"
                       onPress={saveEditor}
-                      style={({ pressed }) => [
+                      accessibilityLabel={editingItemId ? 'Save' : 'Add'}
+                      style={[
                         styles.activeTickIconButton,
                         {
-                          backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
                           borderTopLeftRadius: theme.radius.large,
                           borderBottomLeftRadius: theme.radius.large,
                           borderTopRightRadius: theme.radius.none,
                           borderBottomRightRadius: theme.radius.none,
                         },
                       ]}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={editingItemId ? 'Save' : 'Add'}
-                    >
-                      <Text style={[styles.activeTickText, theme.typography.sectionTitle, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
-                    </Pressable>
+                    />
                     <View style={[styles.activeEntryButtonsDivider, { backgroundColor: theme.colors.border.default }]} />
-                    <Pressable
+                    <IconButton
+                      icon="x"
+                      size="md"
+                      variant="neutral"
                       onPress={cancelEditor}
-                      style={({ pressed }) => [
+                      accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
+                      style={[
                         styles.activeCancelIconButton,
                         {
-                          backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
                           borderTopLeftRadius: theme.radius.none,
                           borderBottomLeftRadius: theme.radius.none,
                           borderTopRightRadius: theme.radius.large,
                           borderBottomRightRadius: theme.radius.large,
                         },
                       ]}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
-                    >
-                            <Icon name="x" size="small" color={theme.colors.text.tertiary} />
-                    </Pressable>
+                    />
                   </View>
                 </View>
               </View>
@@ -1032,597 +1405,37 @@ export default function GroupedListDetailScreen<TItem>({
               </View>
             ) : null}
 
-            {/* Grouped mode */}
-            {groupsEnabled ? (
-            effectiveGroups.map(group => {
-          const groupItems = itemsByGroupId[group.id] ?? [];
-          const groupTotal = groupItems.reduce((sum, it) => sum + getItemAmount(it), 0);
-          const groupTotalText = formatGroupTotalText(groupTotal);
-
-          const groupExpanded = isExpanded(group.id);
-          const isRenamingThisGroup = editingGroupId === group.id;
-          const groupDeleteEnabled = groupExpanded && groupItems.length === 0 && !isRenamingThisGroup;
-          const groupEditEnabled = groupExpanded && !isRenamingThisGroup;
-
-          return (
-            <View key={group.id} style={styles.groupWrapper}>
-              {groupExpanded && canEditGroups ? (
-                <View style={styles.groupActionsAbove}>
-                  {isRenamingThisGroup ? (
-                    <>
-                      <IconButton
-                        icon="check"
-                        size="small"
-                        onPress={() => saveGroupName(group.id)}
-                        disabled={false}
-                        accessibilityLabel="Save"
-                      />
-                      <IconButton
-                        icon="x"
-                        size="small"
-                        onPress={cancelEditGroupName}
-                        disabled={false}
-                        accessibilityLabel="Cancel"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        icon="edit-2"
-                        size="small"
-                        onPress={() => startEditGroupName(group)}
-                        disabled={!groupEditEnabled}
-                        accessibilityLabel="Edit group"
-                      />
-                      {groupItems.length === 0 ? (
-                        <IconButton
-                          icon="trash-2"
-                          size="small"
-                          variant="destructive"
-                          onPress={() => deleteGroup(group.id)}
-                          disabled={!groupDeleteEnabled}
-                          accessibilityLabel="Delete group"
-                        />
-                      ) : null}
-                    </>
-                  )}
-                </View>
-              ) : null}
-
-              <View style={styles.groupCard}>
-                <View style={styles.groupHeaderRow}>
-                  {isRenamingThisGroup ? (
-                    <View style={styles.groupHeaderLeft}>
-                      {groupNameError.length > 0 ? <Text style={[styles.groupNameErrorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{groupNameError}</Text> : null}
-                      <TextInput
-                        style={[
-                          styles.groupNameInput,
-                          theme.typography.sectionTitle,
-                          { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, color: theme.colors.text.primary, borderRadius: theme.radius.medium },
-                        ]}
-                        value={groupNameDraft}
-                        onChangeText={setGroupNameDraft}
-                        placeholderTextColor={theme.colors.text.disabled}
-                        autoFocus={true}
-                        returnKeyType="done"
-                        onSubmitEditing={() => saveGroupName(group.id)}
-                      />
-                    </View>
-                  ) : (
-                    canCollapseGroups ? (
-                      <Pressable
-                        onPress={() => toggleGroup(group.id)}
-                        style={({ pressed }) => [
-                          styles.groupHeaderLeft,
-                          { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
-                        ]}
-                      >
-                        <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{group.name}</Text>
-                      </Pressable>
-                    ) : (
-                      <View style={styles.groupHeaderLeft}>
-                        <Text style={[styles.groupTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{group.name}</Text>
-                      </View>
-                    )
-                  )}
-
-                  <View style={styles.groupHeaderRight}>
-                    {canCollapseGroups ? (
-                      <Pressable
-                        onPress={() => toggleGroup(group.id)}
-                        style={({ pressed }) => [
-                          styles.groupTotalPressable,
-                          { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
-                        ]}
-                      >
-                        <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>{groupTotalText}</Text>
-                      </Pressable>
-                    ) : (
-                      <View style={styles.groupTotalPressable}>
-                        <Text style={[styles.groupTotal, theme.typography.valueSmall, { color: theme.colors.text.primary }]}>{groupTotalText}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                {groupExpanded || !canCollapseGroups ? (
-                  <View style={styles.groupBody}>
-                    {groupItems.length === 0 ? (
-                      emptyStateText === null ? null : (
-                        <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.text.secondary }]}>{emptyStateText ?? 'No items yet.'}</Text>
-                      )
-                    ) : null}
-
-                    {groupItems.map(it => {
-                      const id = getItemId(it);
-                      const name = typeof getItemDisplayName === 'function' ? getItemDisplayName(it) : getItemName(it);
-                      const amount = getItemAmount(it);
-                      const amountText =
-                        typeof formatItemAmountText === 'function' ? formatItemAmountText(it, amount) : formatAmountText(amount);
-                      const metaText = typeof formatItemMetaText === 'function' ? formatItemMetaText(it) : null;
-                      const locked = isLocked(it);
-                      const deleteDisabled = locked || !canDeleteItems || (canCollapseGroups && !groupExpanded);
-                      const editDisabled = locked || (canCollapseGroups && !groupExpanded);
-                      const inlineEditable = isInlineEditable(it);
-                      const canExternalEdit = typeof onExternalEditItem === 'function';
-
-                      const isEditingInThisGroup: boolean = Boolean(editingItemId && activeEditingMeta?.groupId === group.id);
-                      const isCurrentlyEditing: boolean = Boolean(editingItemId && editingItemId === id);
-                      const dimRow: boolean = isEditingInThisGroup && !isCurrentlyEditing;
-                      
-                      // Get isActive state (defaults to true if not provided)
-                      const itemIsActive = typeof getItemIsActive === 'function' ? getItemIsActive(it) : true;
-                      const isInactive = itemIsActive === false;
-                      
-                      // Toggle isActive handler
-                      const handleToggleActive = () => {
-                        if (typeof setItemIsActive === 'function') {
-                          const updated = setItemIsActive(it, !itemIsActive);
-                          const updatedItems = items.map(i => getItemId(i) === id ? updated : i);
-                          setItems(updatedItems);
-                        }
-                      };
-
-                      return (
-                        <View key={id} style={styles.itemRowWrapper}>
-                          <Swipeable
-                            ref={(ref) => {
-                              if (ref) {
-                                swipeableRefs.current.set(id, ref);
-                              } else {
-                                swipeableRefs.current.delete(id);
-                              }
-                            }}
-                            renderRightActions={() => renderSwipeActions(it, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit)}
-                            overshootRight={false}
-                            friction={2}
-                            rightThreshold={30}
-                            overshootFriction={8}
-                            enabled={!isCurrentlyEditing && (groupExpanded || !canCollapseGroups)}
-                            activeOffsetX={[-10, 10]}
-                            failOffsetY={[-5, 5]}
-                            containerStyle={styles.swipeableContainer}
-                            onSwipeableWillOpen={() => {
-                              closeAllSwipeables(id);
-                              setOpenSwipeableId(id);
-                              if (Platform.OS === 'ios') {
-                                try {
-                                  // Optional haptic feedback
-                                  const Haptics = require('expo-haptics');
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                } catch (e) {
-                                  // Haptics not available, ignore
-                                }
-                              }
-                            }}
-                            onSwipeableOpen={() => {
-                              setOpenSwipeableId(id);
-                            }}
-                            onSwipeableClose={() => {
-                              if (openSwipeableId === id) {
-                                setOpenSwipeableId(null);
-                              }
-                            }}
-                          >
-                            <Pressable
-                              onPress={() => {
-                                if (onItemPress && !isCurrentlyEditing) {
-                                  onItemPress(it);
-                                }
-                              }}
-                              disabled={isCurrentlyEditing || !onItemPress}
-                              style={({ pressed }) => [
-                                styles.itemRow,
-                                {
-                                  backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
-                                  borderColor: theme.colors.border.subtle,
-                                  borderRadius: theme.radius.large,
-                                },
-                                dimRow ? styles.itemRowDim : null,
-                                locked ? styles.itemRowLocked : null,
-                                isInactive ? styles.itemRowInactive : null,
-                              ]}
-                            >
-                              {/* Active/Inactive checkbox */}
-                              {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
-                                <Pressable
-                                  onPress={handleToggleActive}
-                                  style={({ pressed }) => [
-                                    styles.activeCheckbox,
-                                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
-                                  ]}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                  accessibilityRole="checkbox"
-                                  accessibilityState={{ checked: itemIsActive }}
-                                  accessibilityLabel={itemIsActive ? 'Active' : 'Inactive'}
-                                >
-                                  <View
-                                    style={[
-                                      styles.checkboxCircle,
-                                      { borderColor: theme.colors.border.default, borderRadius: theme.radius.medium },
-                                      itemIsActive
-                                        ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary }
-                                        : null,
-                                    ]}
-                                  >
-                                    {itemIsActive ? (
-                                      <Text style={[styles.checkboxCheckmark, theme.typography.caption, { fontWeight: '700', color: theme.colors.text.primary }]}>✓</Text>
-                                    ) : null}
-                                  </View>
-                                </Pressable>
-                              ) : null}
-                              <View style={[styles.itemMain, isCurrentlyEditing ? styles.itemMainActive : null, locked ? styles.itemMainLocked : null]}>
-                                <View style={styles.itemLeft}>
-                                  <Text
-                                    style={[
-                                      styles.itemName,
-                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
-                                    ]}
-                                  >
-                                    {name}
-                                  </Text>
-                                  {metaText ? (
-                                    <Text
-                                      style={[
-                                        styles.itemMeta,
-                                        { color: locked ? theme.colors.text.disabled : theme.colors.text.muted },
-                                      ]}
-                                    >
-                                      {metaText}
-                                    </Text>
-                                  ) : null}
-                                </View>
-                                <View style={styles.itemRight}>
-                                  <Text
-                                    style={[
-                                      styles.itemAmount,
-                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
-                                    ]}
-                                  >
-                                    {amountText}
-                                  </Text>
-                                </View>
-                              </View>
-                            </Pressable>
-                          </Swipeable>
-                        </View>
-                      );
-                    })}
-
-                    {editorVisible &&
-                    effectiveEditorPlacement === 'inline' &&
-                    ((canAddItems && (groupExpanded || !canCollapseGroups)) ||
-                      (editingItemId && activeEditingMeta?.groupId === group.id)) ? (
-                      <View style={styles.editorInline}>
-                        {editingItemId && activeEditingMeta?.groupId === group.id ? (
-                          <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>Editing: {activeEditingMeta.name}</Text>
-                        ) : null}
-                        {errorMessage.length > 0 ? (
-                          <View
-                            style={[
-                              styles.errorCard,
-                              { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium },
-                            ]}
-                          >
-                            <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
-                            <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
-                          </View>
-                        ) : null}
-
-                        <View style={styles.entryRow}>
-                          {canEditItemName ? (
-                            <TextInput
-                              style={[
-                                styles.input,
-                                theme.typography.input,
-                                styles.entryName,
-                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                              ]}
-                              value={draftName}
-                              onChangeText={setDraftName}
-                              placeholder="Name"
-                              placeholderTextColor={theme.colors.text.disabled}
-                              autoFocus={autoFocus}
-                            />
-                          ) : null}
-
-                          <TextInput
-                            style={[
-                              styles.input,
-                              theme.typography.input,
-                              styles.entryAmount,
-                              { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                            ]}
-                            value={draftAmount}
-                            onChangeText={setDraftAmount}
-                            placeholder="Amount"
-                            placeholderTextColor={theme.colors.text.disabled}
-                            keyboardType="numeric"
-                          />
-
-                          <Pressable
-                            disabled={canCollapseGroups ? !groupExpanded : false}
-                            onPress={saveEditor}
-                            style={({ pressed }) => [
-                              styles.tickIconButton,
-                              {
-                                backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
-                                borderColor: theme.colors.semantic.successBorder,
-                                borderRadius: theme.radius.medium,
-                                opacity: canCollapseGroups && !groupExpanded ? 0.5 : 1,
-                              },
-                            ]}
-                          >
-                            <Text style={[styles.tickText, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={cancelEditor}
-                            style={({ pressed }) => [
-                              styles.cancelIconButton,
-                              {
-                                backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
-                                borderColor: theme.colors.border.default,
-                                borderRadius: theme.radius.medium,
-                              },
-                            ]}
-                            accessibilityRole="button"
-                            accessibilityLabel="Cancel"
-                          >
-                            <Icon name="x" size="base" color={theme.colors.text.tertiary} />
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          );
-            })
-          ) : (
-            // Flat mode: one implicit "General" group (not shown)
-            <View style={styles.groupWrapper}>
-              <View style={styles.groupCard}>
-                <View style={styles.groupBody}>
-                  {items.length === 0 ? (
-                    emptyStateText === null ? null : (
-                      <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.text.secondary }]}>{emptyStateText ?? 'No items yet.'}</Text>
-                    )
-                  ) : null}
-
-                  {items.map(it => {
-                    const id = getItemId(it);
-                    const name = typeof getItemDisplayName === 'function' ? getItemDisplayName(it) : getItemName(it);
-                    const amount = getItemAmount(it);
-                    const amountText =
-                      typeof formatItemAmountText === 'function' ? formatItemAmountText(it, amount) : formatAmountText(amount);
-                    const metaText = typeof formatItemMetaText === 'function' ? formatItemMetaText(it) : null;
-                    const locked = isLocked(it);
-                    const deleteDisabled = locked || !canDeleteItems;
-                    const editDisabled = locked;
-                    const inlineEditable = isInlineEditable(it);
-                    const canExternalEdit = typeof onExternalEditItem === 'function';
-                    const isCurrentlyEditing: boolean = Boolean(editingItemId && editingItemId === id);
-                    const dimRow: boolean = Boolean(editingItemId && !isCurrentlyEditing);
-                    const hasSwipeActions = (!editDisabled || (!locked && !deleteDisabled && canDeleteItems));
-                    
-                    // Get isActive state (defaults to true if not provided)
-                    const itemIsActive = typeof getItemIsActive === 'function' ? getItemIsActive(it) : true;
-                    const isInactive = itemIsActive === false;
-                    
-                    // Toggle isActive handler
-                    const handleToggleActive = () => {
-                      if (typeof setItemIsActive === 'function') {
-                        const updated = setItemIsActive(it, !itemIsActive);
-                        const updatedItems = items.map(i => getItemId(i) === id ? updated : i);
-                        setItems(updatedItems);
-                      }
-                    };
-
-                    return (
-                      <View key={id} style={styles.itemRowWrapper}>
-                        <Swipeable
-                          ref={(ref) => {
-                            if (ref) {
-                              swipeableRefs.current.set(id, ref);
-                            } else {
-                              swipeableRefs.current.delete(id);
-                            }
-                          }}
-                          renderRightActions={() => renderSwipeActions(it, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit)}
-                          overshootRight={false}
-                          friction={2}
-                          rightThreshold={30}
-                          overshootFriction={8}
-                          enabled={!isCurrentlyEditing && hasSwipeActions}
-                          activeOffsetX={[-10, 10]}
-                          failOffsetY={[-5, 5]}
-                          containerStyle={styles.swipeableContainer}
-                            onSwipeableWillOpen={() => {
-                              closeAllSwipeables(id);
-                              setOpenSwipeableId(id);
-                              if (Platform.OS === 'ios') {
-                                try {
-                                  // Optional haptic feedback
-                                  const Haptics = require('expo-haptics');
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                } catch (e) {
-                                  // Haptics not available, ignore
-                                }
-                              }
-                            }}
-                            onSwipeableOpen={() => {
-                              setOpenSwipeableId(id);
-                            }}
-                            onSwipeableClose={() => {
-                              if (openSwipeableId === id) {
-                                setOpenSwipeableId(null);
-                              }
-                            }}
-                          >
-                          <Pressable
-                            onPress={() => {
-                              if (onItemPress && !isCurrentlyEditing) {
-                                onItemPress(it);
-                              }
-                            }}
-                            disabled={isCurrentlyEditing || !onItemPress}
-                            style={({ pressed }) => [
-                              styles.itemRow,
-                              {
-                                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
-                                borderColor: theme.colors.border.subtle,
-                                borderRadius: theme.radius.large,
-                              },
-                              dimRow ? styles.itemRowDim : null,
-                              locked ? styles.itemRowLocked : null,
-                              isInactive ? styles.itemRowInactive : null,
-                            ]}
-                          >
-                            {/* Active/Inactive checkbox */}
-                            {typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? (
-                              <Pressable
-                                onPress={handleToggleActive}
-                                style={({ pressed }) => [
-                                  styles.activeCheckbox,
-                                  { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
-                                ]}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                accessibilityRole="checkbox"
-                                accessibilityState={{ checked: itemIsActive }}
-                                accessibilityLabel={itemIsActive ? 'Active' : 'Inactive'}
-                              >
-                                <View style={[styles.checkboxCircle, { borderColor: theme.colors.border.default, borderRadius: theme.radius.medium }, itemIsActive ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary } : null]}>
-                                  {itemIsActive ? <Text style={[styles.checkboxCheckmark, theme.typography.caption, { fontWeight: '700', color: theme.colors.text.primary }]}>✓</Text> : null}
-                                </View>
-                              </Pressable>
-                            ) : null}
-                              <View style={[styles.itemMain, isCurrentlyEditing ? styles.itemMainActive : null, locked ? styles.itemMainLocked : null]}>
-                                <View style={styles.itemLeft}>
-                                  <Text
-                                    style={[
-                                      styles.itemName,
-                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
-                                    ]}
-                                  >
-                                    {name}
-                                  </Text>
-                                  {metaText ? (
-                                    <Text
-                                      style={[
-                                        styles.itemMeta,
-                                        { color: locked ? theme.colors.text.disabled : theme.colors.text.muted },
-                                      ]}
-                                    >
-                                      {metaText}
-                                    </Text>
-                                  ) : null}
-                                </View>
-                                <View style={styles.itemRight}>
-                                  <Text
-                                    style={[
-                                      styles.itemAmount,
-                                      { color: locked ? theme.colors.text.muted : theme.colors.text.primary },
-                                    ]}
-                                  >
-                                    {amountText}
-                                  </Text>
-                                </View>
-                              </View>
-                          </Pressable>
-                        </Swipeable>
-                      </View>
-                    );
-                  })}
-
-                  {editorVisible && effectiveEditorPlacement === 'inline' ? (
-                    <View style={styles.editorInline}>
-                      {editingItemId && activeEditingMeta ? (
-                        <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>Editing: {activeEditingMeta.name}</Text>
-                      ) : null}
-                      {errorMessage.length > 0 ? (
-                        <View style={[styles.errorCard, { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium }]}>
-                          <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
-                          <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
-                        </View>
-                      ) : null}
-
-                      <View style={styles.entryRow}>
-                        {canEditItemName ? (
-                          <TextInput
-                            style={[styles.input, theme.typography.input, styles.entryName, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary }]}
-                            value={draftName}
-                            onChangeText={setDraftName}
-                            placeholder="Name"
-                            placeholderTextColor={theme.colors.text.disabled}
-                            autoFocus={autoFocus}
-                          />
-                        ) : null}
-
-                        <TextInput
-                          style={[styles.input, theme.typography.input, styles.entryAmount, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary }]}
-                          value={draftAmount}
-                          onChangeText={setDraftAmount}
-                          placeholder="Amount"
-                          placeholderTextColor={theme.colors.text.disabled}
-                          keyboardType="numeric"
-                        />
-
-                        <Pressable
-                          onPress={saveEditor}
-                          style={({ pressed }) => [
-                            styles.tickIconButton,
-                            {
-                              backgroundColor: pressed ? theme.colors.semantic.successBorder : theme.colors.semantic.successBg,
-                              borderColor: theme.colors.semantic.successBorder,
-                              borderRadius: theme.radius.medium,
-                            },
-                          ]}
-                        >
-                          <Text style={[styles.tickText, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.semantic.successText }]}>✓</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={cancelEditor}
-                          style={({ pressed }) => [
-                            styles.cancelIconButton,
-                            {
-                              backgroundColor: pressed ? theme.colors.border.default : theme.colors.bg.subtle,
-                              borderColor: theme.colors.border.default,
-                              borderRadius: theme.radius.medium,
-                            },
-                          ]}
-                          accessibilityRole="button"
-                          accessibilityLabel="Cancel"
-                        >
-                          <Icon name="x" size="base" color={theme.colors.text.tertiary} />
-                        </Pressable>
-                      </View>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-          )}
+            <GroupedList
+              groups={groupedListGroups}
+              items={groupsEnabled ? undefined : items}
+              getItemId={getItemId}
+              isGroupExpanded={isExpanded}
+              canCollapseGroups={canCollapseGroups}
+              renderGroupHeader={renderGroupHeader}
+              renderRow={renderRow}
+              renderSwipeActions={(item) => {
+                const id = getItemId(item);
+                const locked = isLocked(item);
+                const groupId = groupsEnabled ? getItemGroupId(item) : undefined;
+                const deleteDisabled = locked || !canDeleteItems || (canCollapseGroups && groupId && !isExpanded(groupId));
+                const editDisabled = locked || (canCollapseGroups && groupId && !isExpanded(groupId));
+                const inlineEditable = isInlineEditable(item);
+                const canExternalEdit = typeof onExternalEditItem === 'function';
+                return renderSwipeActions(item, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit);
+              }}
+              emptyStateText={emptyStateText}
+              renderInlineEditor={renderInlineEditor}
+              swipeableRefs={swipeableRefs}
+              onSwipeableWillOpen={handleSwipeableWillOpen}
+              onSwipeableOpen={handleSwipeableOpen}
+              onSwipeableClose={handleSwipeableClose}
+              swipeableEnabled={(itemId) => {
+                const item = items.find(it => getItemId(it) === itemId);
+                if (!item) return false;
+                const groupId = groupsEnabled ? getItemGroupId(item) : undefined;
+                return getSwipeableEnabled(itemId, groupId);
+              }}
+            />
 
             {groupsEnabled && canEditGroups && canAddGroups ? (
               <Pressable
@@ -1636,11 +1449,20 @@ export default function GroupedListDetailScreen<TItem>({
                   },
                 ]}
               >
-                <Text style={[styles.addGroupButtonText, theme.typography.button, { color: theme.colors.text.secondary }]}>+ Add group</Text>
+                <Text style={[styles.addGroupButtonText, theme.typography.button, { color: theme.colors.text.secondary }]}>
+                  + Add group
+                </Text>
               </Pressable>
             ) : null}
           </SectionCard>
         </ScrollView>
+        {/* Overlay for outside-tap swipe dismissal */}
+        {openSwipeableId !== null && editingItemId === null ? (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={handleTouchOutside}
+          />
+        ) : null}
       </KeyboardAvoidingView>
 
       {renderFooter ? <View style={styles.footerContainer}>{renderFooter}</View> : null}
@@ -1913,14 +1735,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemRowWrapper: {
-    marginBottom: spacing.sm,
+    // Wrapper kept for structure, but no margin (dividers provide separation)
   },
   itemRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.tiny,
-    paddingHorizontal: spacing.sm,
-    borderWidth: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: layout.rowPaddingHorizontal,
     position: 'relative',
   },
   itemRowDim: {
@@ -1933,15 +1754,17 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   activeCheckbox: {
-    marginLeft: spacing.sm,
-    marginRight: spacing.xs,
-    marginTop: 2,
+    marginLeft: 0,
+    marginRight: spacing.tiny,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxCircle: {
-    width: 16,
-    height: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1.5,
     backgroundColor: 'transparent',
     alignItems: 'center',
@@ -1954,7 +1777,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingRight: 100, // Reserve space for right-aligned value column
   },
   itemMainActive: {
     opacity: 0.95,
@@ -1966,6 +1788,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
   },
+  primaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   itemName: {
     marginBottom: 1,
   },
@@ -1974,18 +1800,18 @@ const styles = StyleSheet.create({
   },
   itemAmount: {
     // Typography via theme.typography.valueSmall
+    marginLeft: 'auto',
+    textAlign: 'right',
   },
   itemAmountLocked: {
     // Legacy style - typography removed, using theme tokens
   },
   itemRight: {
-    position: 'absolute',
-    right: spacing.sm,
-    top: spacing.tiny,
-    alignItems: 'flex-end',
+    // No longer used - amount is now in primaryRow
   },
   itemMeta: {
     marginTop: spacing.tiny,
+    // Single-line truncation enforced via numberOfLines prop
   },
   itemMetaLocked: {
     // Legacy style - typography removed, using theme tokens
@@ -2208,10 +2034,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     minHeight: 44,
-    paddingLeft: 6,
-    paddingRight: 6,
+    paddingLeft: 2,
+    paddingRight: 2,
     paddingVertical: 4,
     backgroundColor: 'transparent',
+    gap: 4,
   },
   swipeActionEdit: {
     width: 35,
@@ -2226,5 +2053,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
-

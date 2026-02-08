@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter } from 'victory-native';
 import * as Clipboard from 'expo-clipboard';
+import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown } from 'phosphor-react-native';
 
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
@@ -13,9 +14,15 @@ import Row from '../components/Row';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
+import ControlBar, { type ControlBarPillItem, type ControlBarIconItem } from '../components/ControlBar';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
+import CashflowCardStack from '../components/cashflow/CashflowCardStack';
+import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
+import CashflowSubCard from '../components/cashflow/CashflowSubCard';
+import CashflowCardWrapper from '../components/cashflow/CashflowCardWrapper';
+import { getMutedBorderColor } from '../ui/utils/getMutedBorderColor';
 
 // Snapshot visual language constants (reused for Projected Snapshot)
 const snapshotTypography = {
@@ -598,13 +605,13 @@ function BalanceSheetCard({
     const hasAgeDelta = Math.abs(ageDelta) >= UI_TOLERANCE;
     
     return (
-      <View style={styles.projectedBalanceSheetCard}>
-        <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
-        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered]}>
+      <View style={[styles.projectedBalanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+        <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>{title}</Text>
+        <Text style={[styles.projectedPrimaryValue, isOutcome && styles.projectedPrimaryValueOutcome, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.text.primary }]}>
           {formatCurrencyCompact(baselineValue)}
         </Text>
         {hasAgeDelta && (
-          <Text style={[styles.projectedDelta, styles.projectedDeltaAge, styles.cashflowTextCentered]}>
+          <Text style={[styles.projectedDelta, styles.projectedDeltaAge, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>
             {formatCurrencyCompactSigned(ageDelta)}
           </Text>
         )}
@@ -621,20 +628,20 @@ function BalanceSheetCard({
   const hasBaselineAgeDelta = Math.abs(baselineAgeDelta) >= UI_TOLERANCE;
 
   return (
-    <View style={styles.projectedBalanceSheetCard}>
-      <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered]}>{title}</Text>
+    <View style={[styles.projectedBalanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+      <Text style={[styles.projectedCardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>{title}</Text>
       
       <View style={styles.balanceSheetDualColumn}>
         {/* LEFT COLUMN: Baseline */}
         <View style={styles.balanceSheetColumn}>
           {/* Row 1: Values */}
-          <Text style={[styles.projectedPrimaryValue, styles.cashflowTextCentered]}>
+          <Text style={[styles.projectedPrimaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.text.primary }]}>
             {formatCurrencyCompact(baselineValue)}
           </Text>
           {/* Row 2: Age delta or placeholder - always reserve space */}
           <View style={styles.balanceSheetDeltaRow}>
             {hasBaselineAgeDelta ? (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaAge, styles.cashflowTextCentered]}>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaAge, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>
                 {formatCurrencyCompactSigned(baselineAgeDelta)}
               </Text>
             ) : null}
@@ -648,17 +655,17 @@ function BalanceSheetCard({
         <View style={styles.balanceSheetColumn}>
           {/* Row 1: Values */}
           {valuesEqual ? (
-            <Text style={[styles.projectedPrimaryValue, styles.projectedDelta, styles.cashflowTextCentered]}>
+            <Text style={[styles.projectedPrimaryValue, styles.projectedDelta, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.text.muted }]}>
               -
             </Text>
           ) : (
             <>
-          <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered]}>
+          <Text style={[styles.projectedPrimaryValue, styles.projectedPrimaryValueScenario, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.brand.primary }]}>
             {formatCurrencyCompact(scenarioValue)}
           </Text>
               {/* Row 2: Scenario delta (baseline → scenario) */}
               {hasScenarioDelta && (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText }, styles.cashflowTextCentered]}>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText }, styles.cashflowTextCentered, theme.typography.body]}>
                 {formatCurrencyCompactSigned(delta)}
               </Text>
               )}
@@ -3482,89 +3489,48 @@ export default function ProjectionResultsScreen() {
             </View>
           )}
 
-          <View style={styles.projectionToolbarContainer}>
-            <View style={styles.projectionToolbarSurface}>
-              <View style={styles.toolbarRow}>
-                <View style={styles.toolbarLeftGroup}>
-                  <Pressable 
-                    onPress={() => {
-                      if (!isSurplusNegative) {
-                        openLater(() => setScenarioSelectorOpen(true));
-                      }
-                    }}
-                    disabled={isSurplusNegative}
-                    style={[
-                      styles.toolbarPillButton,
-                      activeScenarioSource === 'persisted' && [styles.toolbarPillButtonActive, { backgroundColor: theme.colors.brand.tint }],
-                      isSurplusNegative && styles.toolbarPillButtonDisabled,
-                    ]}
-                  >
-                    <Text style={[
-                      styles.toolbarPillButtonText,
-                      activeScenarioSource === 'persisted' && styles.toolbarPillButtonTextActive,
-                      activeScenarioSource === 'persisted' && { color: theme.colors.brand.primary },
-                    ]}>
-                      {activeScenario ? activeScenario.name : 'Baseline'}
-                    </Text>
-                    <Text style={[
-                      styles.toolbarPillChevron,
-                      activeScenarioSource === 'persisted' && styles.toolbarPillButtonTextActive,
-                      activeScenarioSource === 'persisted' && { color: theme.colors.brand.primary },
-                    ]}>▼</Text>
-                  </Pressable>
-
-                  <Pressable 
-                    onPress={() => {
-                      if (!isSurplusNegative) {
-                        handleQuickWhatIfToggle();
-                        // Scrolling is handled by onLayout in the expanded section
-                      }
-                    }}
-                    disabled={isSurplusNegative}
-                    style={[
-                      styles.toolbarPillButton,
-                      activeScenarioSource === 'quick' && [styles.toolbarPillButtonActive, { backgroundColor: theme.colors.brand.tint }],
-                      isSurplusNegative && styles.toolbarPillButtonDisabled,
-                    ]}
-                  >
-                    <Icon 
-                      name="zap" 
-                      size="base"
-                      color={activeScenarioSource === 'quick' ? theme.colors.brand.primary : theme.colors.text.secondary} 
-                    />
-                    <Text
-                      style={[
-                        styles.toolbarPillButtonText,
-                        activeScenarioSource === 'quick' && styles.toolbarPillButtonTextActive,
-                        activeScenarioSource === 'quick' && { color: theme.colors.brand.primary },
-                      ]}
-                    >
-                      Quick what-if
-                    </Text>
-                  </Pressable>
-                </View>
-
-                <View style={{ flex: 1 }} />
-
-                <View style={styles.toolbarRightGroup}>
-                  <Pressable 
-                    onPress={() => openLater(() => setAgeSelectorOpen(true))}
-                    style={styles.toolbarPillButton}
-                  >
-                    <Text style={styles.toolbarPillButtonText}>Age {selectedAge}</Text>
-                    <Text style={styles.toolbarPillChevron}>▼</Text>
-                  </Pressable>
-
-                  <IconButton
-                    icon="settings"
-                    variant="default"
-                    onPress={() => navigation.navigate('ProjectionSettings')}
-                    accessibilityLabel="Projection settings"
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
+          <ControlBar
+            leftItems={[
+              {
+                type: 'pill',
+                title: activeScenario ? activeScenario.name : 'Baseline',
+                onPress: () => {
+                  if (!isSurplusNegative) {
+                    openLater(() => setScenarioSelectorOpen(true));
+                  }
+                },
+                active: activeScenarioSource === 'persisted',
+                disabled: isSurplusNegative,
+              },
+              {
+                type: 'pill',
+                title: 'Quick what-if',
+                icon: 'zap',
+                onPress: () => {
+                  if (!isSurplusNegative) {
+                    handleQuickWhatIfToggle();
+                    // Scrolling is handled by onLayout in the expanded section
+                  }
+                },
+                active: activeScenarioSource === 'quick',
+                disabled: isSurplusNegative,
+              },
+            ]}
+            rightItems={[
+              {
+                type: 'pill',
+                title: `Age ${selectedAge}`,
+                onPress: () => openLater(() => setAgeSelectorOpen(true)),
+              },
+              {
+                type: 'icon',
+                icon: 'settings',
+                onPress: () => navigation.navigate('ProjectionSettings'),
+                accessibilityLabel: 'Projection settings',
+                variant: 'default',
+              },
+            ]}
+          />
         </View>
         {/* Quick What If Expanded Content */}
         {quickWhatIfExpanded ? (
@@ -4079,110 +4045,184 @@ export default function ProjectionResultsScreen() {
           ) : null}
 
           {/* Projected Cash Flow Section */}
+          {/* Phase 9.4 — Currency Formatting Strategy
+               Projection cashflow intentionally uses compact currency formatting
+               (formatCurrencyCompact / formatCurrencyCompactSigned) to improve
+               readability for future-oriented, large-scale values.
+               Snapshot cashflow uses full currency for precise present-state values. */}
           <SectionCard>
             <SectionHeader title="Projected Cash Flow" subtitle={`Age ${selectedAge}`} />
 
-            <View style={[styles.column, styles.cashflowColumn, { marginTop: layout.md }]}>
-              <View style={styles.cashflowCardStack}>
-                <View style={[styles.cashflowSpine, { backgroundColor: theme.colors.border.subtle }]} />
-              <View style={styles.cashflowCentered}>
-                {/* Gross Income */}
-                <SnapshotComparisonCard
-                  title="Gross Income"
-                  description="Income before deductions"
-                  baselineValue={valuesAtAge.grossIncome}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.grossIncome : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                />
+            {/* Helper: Compute scenario text and delta with equal-value handling */}
+            {(() => {
+              const getScenarioProps = (baselineValue: number, scenarioValue: number | undefined) => {
+                if (!effectiveScenarioActive || scenarioValue === undefined) {
+                  return { scenarioValueText: undefined, deltaValueText: undefined };
+                }
+                const valuesEqual = Math.abs(baselineValue - scenarioValue) < UI_TOLERANCE;
+                if (valuesEqual) {
+                  return { scenarioValueText: '–', deltaValueText: undefined };
+                }
+                return {
+                  scenarioValueText: formatCurrencyCompact(scenarioValue),
+                  deltaValueText: formatCurrencyCompactSigned(scenarioValue - baselineValue),
+                };
+              };
 
-                {/* Pension + Other Deductions */}
-                <View style={styles.cashflowSubGroup}>
-                  <SnapshotComparisonCard
-                    title="Pension"
-                    description="Pre-tax savings"
-                    baselineValue={valuesAtAge.pensionContributions}
-                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.pensionContributions : undefined}
-                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                    isSubCard={true}
-                  />
-                  <SnapshotComparisonCard
-                    title="Other Deductions"
-                    description="Tax and payroll deductions"
-                    baselineValue={valuesAtAge.taxes}
-                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.taxes : undefined}
-                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                    isSubCard={true}
-                  />
-                </View>
+              // Compute scenario props for all cashflow items
+              const grossIncomeProps = getScenarioProps(valuesAtAge.grossIncome, scenarioValuesAtAge?.grossIncome);
+              const pensionProps = getScenarioProps(valuesAtAge.pensionContributions, scenarioValuesAtAge?.pensionContributions);
+              const taxesProps = getScenarioProps(valuesAtAge.taxes, scenarioValuesAtAge?.taxes);
+              const netIncomeBaseline = valuesAtAge.grossIncome - valuesAtAge.pensionContributions - valuesAtAge.taxes;
+              const netIncomeScenario = scenarioValuesAtAge ? scenarioValuesAtAge.grossIncome - scenarioValuesAtAge.pensionContributions - scenarioValuesAtAge.taxes : undefined;
+              const netIncomeProps = getScenarioProps(netIncomeBaseline, netIncomeScenario);
+              const expensesProps = getScenarioProps(valuesAtAge.livingExpenses, scenarioValuesAtAge?.livingExpenses);
+              const availableCashProps = getScenarioProps(valuesAtAge.netSurplus, scenarioValuesAtAge?.netSurplus);
+              const assetContributionProps = getScenarioProps(valuesAtAge.postTaxContributions, scenarioValuesAtAge?.postTaxContributions);
+              const liabilityReductionProps = getScenarioProps(valuesAtAge.debtRepayment, scenarioValuesAtAge?.debtRepayment);
+              const monthlySurplusBaseline = valuesAtAge.netSurplus - valuesAtAge.postTaxContributions - valuesAtAge.debtRepayment;
+              const monthlySurplusScenario = scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus - scenarioValuesAtAge.postTaxContributions - scenarioValuesAtAge.debtRepayment : undefined;
+              const monthlySurplusProps = getScenarioProps(monthlySurplusBaseline, monthlySurplusScenario);
 
-                {/* Net Income */}
-                <SnapshotComparisonCard
-                  title="Net Income"
-                  description="Take-home pay"
-                  baselineValue={valuesAtAge.grossIncome - valuesAtAge.pensionContributions - valuesAtAge.taxes}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge 
-                    ? scenarioValuesAtAge.grossIncome - scenarioValuesAtAge.pensionContributions - scenarioValuesAtAge.taxes
-                    : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                />
+              return (
+                <CashflowCardStack>
+                  {/* Gross Income */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowPrimaryCard
+                      title="Gross Income"
+                      description="Income before deductions"
+                      valueText={formatCurrencyCompact(valuesAtAge.grossIncome)}
+                      icon={Coins}
+                      iconColor={theme.colors.text.secondary}
+                      valueColor={theme.colors.text.primary}
+                      scenarioValueText={grossIncomeProps.scenarioValueText}
+                      deltaValueText={grossIncomeProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
 
-                {/* Expenses */}
-                <View style={styles.cashflowSubGroup}>
-                  <SnapshotComparisonCard
-                    title="Expenses"
-                    description="Monthly spending"
-                    baselineValue={valuesAtAge.livingExpenses}
-                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.livingExpenses : undefined}
-                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                    isSubCard={true}
-                  />
-                </View>
+                  {/* Pension */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowSubCard
+                      title="Pension"
+                      description="Pre-tax savings"
+                      valueText={formatCurrencyCompact(valuesAtAge.pensionContributions)}
+                      icon={PiggyBank}
+                      iconColor={theme.colors.domain.asset}
+                      borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
+                      valueColor={Math.abs(valuesAtAge.pensionContributions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                      scenarioValueText={pensionProps.scenarioValueText}
+                      deltaValueText={pensionProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
 
-                {/* Available Cash */}
-                <SnapshotComparisonCard
-                  title="Available Cash"
-                  description="After expenses"
-                  baselineValue={valuesAtAge.netSurplus}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                  isOutcome={true}
-                />
+                  {/* Other Deductions */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowSubCard
+                      title="Other Deductions"
+                      description="Tax and payroll deductions"
+                      valueText={formatCurrencyCompact(valuesAtAge.taxes)}
+                      icon={Receipt}
+                      iconColor={theme.colors.semantic.error}
+                      borderColor={getMutedBorderColor(theme.colors.semantic.errorBorder, theme)}
+                      valueColor={Math.abs(valuesAtAge.taxes) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                      scenarioValueText={taxesProps.scenarioValueText}
+                      deltaValueText={taxesProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
 
-                {/* Asset Contribution + Liability Reduction */}
-                <View style={styles.cashflowSubGroup}>
-                  <SnapshotComparisonCard
-                    title="Asset Contribution"
-                    description="Saved or invested"
-                    baselineValue={valuesAtAge.postTaxContributions}
-                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.postTaxContributions : undefined}
-                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                    isSubCard={true}
-                  />
-                  <SnapshotComparisonCard
-                    title="Liability Reduction"
-                    description="Debt repayments"
-                    baselineValue={valuesAtAge.debtRepayment}
-                    scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.debtRepayment : undefined}
-                    showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                    isSubCard={true}
-                  />
-                </View>
+                  {/* Net Income */}
+                  <CashflowCardWrapper marginTop={spacing.base} reserveActionSpace={false}>
+                    <CashflowPrimaryCard
+                      title="Net Income"
+                      description="Take-home pay"
+                      valueText={formatCurrencyCompact(netIncomeBaseline)}
+                      icon={Coin}
+                      iconColor={theme.colors.text.secondary}
+                      valueColor={theme.colors.text.primary}
+                      scenarioValueText={netIncomeProps.scenarioValueText}
+                      deltaValueText={netIncomeProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
 
-                {/* Unallocated Cash */}
-                <SnapshotComparisonCard
-                  title="Monthly Surplus"
-                  description="Unallocated cash"
-                  baselineValue={valuesAtAge.netSurplus - valuesAtAge.postTaxContributions - valuesAtAge.debtRepayment}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netSurplus - scenarioValuesAtAge.postTaxContributions - scenarioValuesAtAge.debtRepayment : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                  isOutcome={true}
-                />
+                  {/* Expenses */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowSubCard
+                      title="Expenses"
+                      description="Monthly spending"
+                      valueText={formatCurrencyCompact(valuesAtAge.livingExpenses)}
+                      icon={ShoppingCart}
+                      iconColor={theme.colors.semantic.error}
+                      borderColor={getMutedBorderColor(theme.colors.semantic.errorBorder, theme)}
+                      valueColor={Math.abs(valuesAtAge.livingExpenses) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                      scenarioValueText={expensesProps.scenarioValueText}
+                      deltaValueText={expensesProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
 
-                {/* End padding */}
-                <View style={styles.cashflowEndSpacer} />
-              </View>
-            </View>
-            </View>
+                  {/* Available Cash */}
+                  <CashflowCardWrapper marginTop={spacing.base} reserveActionSpace={false}>
+                    <CashflowPrimaryCard
+                      title="Available Cash"
+                      description="After expenses"
+                      valueText={formatCurrencyCompact(valuesAtAge.netSurplus)}
+                      icon={HandCoins}
+                      iconColor={theme.colors.text.secondary}
+                      valueColor={theme.colors.brand.primary}
+                      isOutcome={true}
+                      scenarioValueText={availableCashProps.scenarioValueText}
+                      deltaValueText={availableCashProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
+
+                  {/* Asset Contribution */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowSubCard
+                      title="Asset Contribution"
+                      description="Saved or invested"
+                      valueText={formatCurrencyCompact(valuesAtAge.postTaxContributions)}
+                      icon={TrendUp}
+                      iconColor={theme.colors.semantic.success}
+                      borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
+                      valueColor={Math.abs(valuesAtAge.postTaxContributions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                      scenarioValueText={assetContributionProps.scenarioValueText}
+                      deltaValueText={assetContributionProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
+
+                  {/* Liability Reduction */}
+                  <CashflowCardWrapper reserveActionSpace={false}>
+                    <CashflowSubCard
+                      title="Liability Reduction"
+                      description="Debt repayments"
+                      valueText={formatCurrencyCompact(valuesAtAge.debtRepayment)}
+                      icon={TrendDown}
+                      iconColor={theme.colors.semantic.success}
+                      borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
+                      valueColor={Math.abs(valuesAtAge.debtRepayment) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                      scenarioValueText={liabilityReductionProps.scenarioValueText}
+                      deltaValueText={liabilityReductionProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
+
+                  {/* Monthly Surplus */}
+                  <CashflowCardWrapper marginTop={spacing.base} isLast={true} reserveActionSpace={false}>
+                    <CashflowPrimaryCard
+                      title="Monthly Surplus"
+                      description="Unallocated cash"
+                      valueText={formatCurrencyCompact(monthlySurplusBaseline)}
+                      icon={Target}
+                      iconColor={theme.colors.brand.primary}
+                      valueColor={theme.colors.brand.primary}
+                      isOutcome={true}
+                      hasTint={true}
+                      tintColor={theme.colors.semantic.info}
+                      scenarioValueText={monthlySurplusProps.scenarioValueText}
+                      deltaValueText={monthlySurplusProps.deltaValueText}
+                    />
+                  </CashflowCardWrapper>
+                </CashflowCardStack>
+              );
+            })()}
           </SectionCard>
 
           {/* Projected Balance Sheet Section */}
@@ -4550,26 +4590,6 @@ const styles = StyleSheet.create({
   projectionStickyHeader: {
     zIndex: 10,
   },
-  projectionToolbarContainer: {
-    paddingBottom: spacing.sm,
-  },
-  projectionToolbarSurface: {
-    borderRadius: 8,
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.sm,
-    shadowColor: '#000', // TODO: shadow color - keep as-is
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  toolbarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   toolbarPill: {
     height: 28,
     paddingHorizontal: layout.inputPadding,
@@ -4592,29 +4612,6 @@ const styles = StyleSheet.create({
     marginTop: layout.micro,
     fontSize: 11,
     fontWeight: '500',
-  },
-  toolbarPillButton: {
-    height: 28,
-    paddingHorizontal: spacing.base,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  toolbarPillButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  toolbarPillButtonActive: {
-    // backgroundColor moved to inline style
-  },
-  toolbarPillButtonTextActive: {
-    fontWeight: '600',
-  },
-  toolbarPillChevron: {
-    fontSize: 10,
-    marginLeft: spacing.tiny,
   },
   scenarioSelector: {
     height: 28,
@@ -4666,19 +4663,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     zIndex: 20,
-  },
-  toolbarLeftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  toolbarRightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 0,
-    gap: spacing.xs,
   },
   toolbarSpacer: {
     flex: 1,
@@ -5573,15 +5557,15 @@ const styles = StyleSheet.create({
   },
   balanceSheetDualColumn: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    gap: spacing.xs,
+    gap: spacing.tiny,
   },
   balanceSheetColumn: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   balanceSheetDeltaRow: {
     minHeight: 16,
@@ -5590,7 +5574,6 @@ const styles = StyleSheet.create({
   },
   balanceSheetDivider: {
     width: 1,
-    minHeight: 40,
     // backgroundColor moved to inline style
     alignSelf: 'stretch',
   },
@@ -5611,11 +5594,10 @@ const styles = StyleSheet.create({
   },
   projectedBalanceSheetCard: {
     flex: 1,
-    minWidth: 90,
-    padding: 4,
+    minHeight: 80,
+    padding: spacing.sm,
     borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#d8d8d8',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -5857,9 +5839,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     // color moved to inline style
     lineHeight: 20,
-  },
-  toolbarPillButtonDisabled: {
-    opacity: 0.5,
   },
   modalWarningBanner: {
     marginBottom: 12,

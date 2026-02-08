@@ -307,7 +307,6 @@ export default function EntryScreen() {
                   padding={chartPadding}
                   domain={{ y: [chartData.domainMin, chartData.domainMax] }}
                   domainPadding={{ x: 12, y: 6 }}
-                  nice={false}
                 >
                   <VictoryAxis
                     tickFormat={t => `${Number(t)}`}

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSnapshot } from '../SnapshotContext';
-import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, LiabilityReductionItem } from '../types';
 import { selectLoanDerivedRows, selectSnapshotLiabilityReduction } from '../selectors';
 import { formatCurrencyFullSigned } from '../formatters';
@@ -74,7 +74,7 @@ export default function LiabilityReductionsDetailScreen() {
   const showEmptyState: boolean = filteredLiabilityReductions.length === 0;
 
   return (
-    <GroupedListDetailScreen<LiabilityReductionItem>
+    <EditableCollectionScreen<LiabilityReductionItem>
       title="Liability Reduction"
       totalText={totalText}
       subtextMain="Monthly payments that reduce debt balances"

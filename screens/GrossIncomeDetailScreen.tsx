@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSnapshot } from '../SnapshotContext';
-import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, IncomeItem } from '../types';
 import { selectGrossIncome } from '../selectors';
 import { formatCurrencyFull } from '../formatters';
@@ -72,7 +72,7 @@ export default function GrossIncomeDetailScreen() {
   const noopSetGroups = (_groups: Group[]) => {};
 
   return (
-    <GroupedListDetailScreen<IncomeItem>
+    <EditableCollectionScreen<IncomeItem>
       title="Gross Income"
       totalText={totalText}
       subtextMain="Monthly income before deductions"

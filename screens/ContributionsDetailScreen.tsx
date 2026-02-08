@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
-import GroupedListDetailScreen from './GroupedListDetailScreen';
+import EditableCollectionScreen from './EditableCollectionScreen';
 import { ContributionItem } from '../types';
 import { formatCurrencyFullSigned } from '../formatters';
 import { parseMoney } from '../domainValidation';
@@ -197,14 +197,8 @@ export default function ContributionsDetailScreen() {
     );
   };
 
-  // Sync draftAssetId when editing starts (GroupedListDetailScreen will call startEditItem)
-  // We need to track when editing starts to set draftAssetId
-  const handleStartEdit = (item: ContributionItem) => {
-    setDraftAssetId(item.assetId);
-  };
-
   return (
-    <GroupedListDetailScreen<ContributionItem>
+    <EditableCollectionScreen<ContributionItem>
       title="Asset Contributions"
       totalText={totalText}
       subtextMain="Monthly contributions linked to a specific asset"

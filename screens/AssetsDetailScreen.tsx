@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
-import GroupedListDetailScreen, { HelpContent } from './GroupedListDetailScreen';
+import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { AssetItem, Group } from '../types';
 import { selectAssets } from '../selectors';
 import { formatCurrencyFull } from '../formatters';
@@ -111,7 +111,7 @@ export default function AssetsDetailScreen() {
   };
 
   return (
-    <GroupedListDetailScreen<AssetItem>
+    <EditableCollectionScreen<AssetItem>
       title="Assets"
       totalText={totalText}
       subtextMain="Grouped assets"

@@ -68,16 +68,85 @@ Only unchecked items may be worked on.
 ---
 
 ## Phase 8 — UI Fixes
-
 - [x] Sign (+ / −) all numbers in Snapshot → Cash Flow  
 - [x] Add semantic colors to Snapshot → Cash Flow borders  
 - [x] Add icons for Snapshot rows  
 - [x] Remove redundant sub-text from Snapshot cards  
 - [x] Change Detailed Entry Interaction - add + Icon
 - [x] Change Balance Sheet card structure  
+- [x] Make Projected Cashflow same as Snapshot
+- [x] Add Section Gradiets and Glows
+- [ ] Fix rows
+- [ ] Fix inputs
+- [ ] Fix Toobar
+- [ ] Mortgage Dashboard
+- [ ] Projection Char, asset beakdown
   
-  
-### Education Surface (Conceptual)
+
+
+---
+
+## Phase 9 — List & Row Architecture Unification
+
+Goal:
+Unify all row and list UI patterns behind a small set of canonical components to ensure visual and behavioural consistency across the app.
+
+Scope:
+- UI architecture only
+- No business logic changes
+- No Snapshot / Projection / Scenario semantics changes
+- No visual redesign
+
+- [ ] 9.1: Architecture Lock
+  - Confirm final UI primitives: Row, List, AddEntry
+  - Confirm ownership boundaries:
+    - Row = layout only
+    - List = grouping, separators, swipe
+    - AddEntry = add-item affordance
+  - Deprecate GroupedListDetailScreen conceptually
+
+- [ ] 9.2: Component Definitions
+  - Implement Row component with:
+    - Leading slot
+    - Primary text
+    - Optional secondary text
+    - Trailing slot (amount / control)
+    - Trailing aligned to primary text baseline
+  - Implement List component with:
+    - Row rendering
+    - Separators
+    - Optional grouping
+    - Swipe behaviour owned by List
+    - Header / footer support
+  - Implement AddEntry component for consistent add-item affordance
+
+- [ ] 9.3: Pilot Migration
+  - Migrate one screen (Expenses) to List + Row
+  - Preserve visuals and behaviour exactly
+
+- [ ] 9.4: Progressive Migration
+  - Migrate remaining list-based screens incrementally:
+    - Assets
+    - Contributions
+    - Profiles
+    - Scenarios
+    - Dropdowns
+
+- [ ] 9.5: Legacy Cleanup
+  - Remove duplicated row implementations
+  - Remove duplicated swipe logic
+  - Collapse or delete GroupedListDetailScreen
+
+- [ ] 9.6: Final Consistency Check
+  - All rows use Row
+  - All lists use List
+  - All add-entry affordances use AddEntry
+  - No regressions
+  - Phase 9 locked
+
+---
+
+## Phase A — Education Surface (Conceptual)
 
 - [ ] Introduce 🧠 icon as the sole conceptual explanation affordance  
   🧠 always represents "understand the mental model", never help, tips, or actions.
@@ -90,7 +159,7 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 9 — Release Readiness
+## Phase B — Release Readiness
 - [ ] Error and empty state audit
 - [ ] Performance pass
 - [ ] Pre-release checklist
@@ -108,7 +177,7 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 10— Guided What-If & Scenario Exploration
+## Phase C— Guided What-If & Scenario Exploration
 - [ ] Savings what-if (contribution and rate changes via sliders)
 - [ ] Mortgage what-if (overpayment, term, rate sensitivity)
 - [ ] Scenario preview vs baseline comparison

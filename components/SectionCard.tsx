@@ -1,16 +1,34 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { spacing } from '../spacing';
 import { useTheme } from '../ui/theme/useTheme';
 
 interface SectionCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  useGradient?: boolean;
 }
 
-export default function SectionCard({ children, style }: SectionCardProps) {
+export default function SectionCard({ children, style, useGradient = false }: SectionCardProps) {
   const { theme } = useTheme();
-  return <View style={[styles.container, { backgroundColor: theme.colors.bg.card }, style]}>{children}</View>;
+  
+  const containerStyle = [styles.container, style];
+  
+  if (useGradient) {
+    return (
+      <LinearGradient
+        colors={[theme.colors.bg.cardGradientTop, theme.colors.bg.cardGradientBottom]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={containerStyle}
+      >
+        {children}
+      </LinearGradient>
+    );
+  }
+  
+  return <View style={[containerStyle, { backgroundColor: theme.colors.bg.card }]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
