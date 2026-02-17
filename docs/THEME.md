@@ -52,6 +52,7 @@ Theme must NOT include:
 **Brand Colors:**
 - `brand.primary` - Primary brand color (#2F5BEA)
 - `brand.tint` - Brand tint background (#e8f0ff) - Light blue tint for active states and highlights
+- `brand.onPrimary` - Content color used on top of brand.primary surfaces (icons, checkmarks, labels)
 
 **Text Colors:**
 - `text.primary` - Primary text color (highest contrast)

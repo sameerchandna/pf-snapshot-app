@@ -14,6 +14,7 @@ export const lightTheme = {
     brand: {
       primary: '#2F5BEA',
       tint: '#e8f0ff', // Light blue tint for active states and highlights
+      onPrimary: '#ffffff', // Content color used on top of brand.primary surfaces (icons, checkmarks, labels)
     },
     text: {
       primary: '#000',
@@ -163,6 +164,7 @@ export const darkTheme = {
     brand: {
       primary: '#4C7DFF', // Brighter, more saturated blue for dark mode visibility
       tint: '#1a2f5a', // Darker blue tint for dark mode active states
+      onPrimary: '#ffffff', // Content color used on top of brand.primary surfaces (icons, checkmarks, labels)
     },
     text: {
       primary: '#ffffff',

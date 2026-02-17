@@ -153,6 +153,47 @@ type Props<TItem> = {
 
   // Swipe reveal mode: 'replace' (default) or 'overlay' (row stays fixed, actions slide underneath)
   swipeRevealMode?: 'replace' | 'overlay';
+
+  /**
+   * Optional custom row renderer (for v2 row architecture migration).
+   * 
+   * V2 vs Legacy Boundary:
+   * - ExpensesDetailScreen is the canonical v2 prototype using screen-local semantic rows
+   * - All other EditableCollectionScreen-based screens use FinancialItemRow (legacy)
+   * - This prop enables gradual migration by allowing screens to override row rendering
+   * - When provided, bypasses FinancialItemRow and swipe coordination logic
+   * - Uses simplified callback API (onEdit, onDelete, onToggleActive) instead of swipeable refs
+   * 
+   * See ExpensesDetailScreen for the v2 implementation pattern.
+   */
+  renderRow?: (
+    item: TItem,
+    index: number,
+    groupId: string | undefined,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => React.ReactNode;
+
+  // Optional callback when delete is canceled (for v2 row reset)
+  onDeleteCanceled?: () => void;
 };
 
 /**
@@ -211,6 +252,8 @@ export default function EditableCollectionScreen<TItem>({
   setItemIsActive,
   onItemPress,
   swipeRevealMode = 'replace',
+  renderRow: renderRowOverride,
+  onDeleteCanceled,
 }: Props<TItem>) {
   const { theme } = useTheme();
   // Education cleanup (phase 1): detail/editor screens should focus purely on entry & inspection.
@@ -591,6 +634,8 @@ export default function EditableCollectionScreen<TItem>({
 
   const cancelDeleteItem = () => {
     setPendingDeleteItemId(null);
+    closeAllSwipeables();
+    onDeleteCanceled?.();
   };
 
   const addGroup = () => {
@@ -696,7 +741,7 @@ export default function EditableCollectionScreen<TItem>({
     );
   };
 
-  // Render row using FinancialItemRow
+  // Render row using FinancialItemRow (or custom renderRow override if provided)
   const renderRow = (
     item: TItem,
     index: number,
@@ -738,6 +783,48 @@ export default function EditableCollectionScreen<TItem>({
 
     const showTopDivider = index > 0;
 
+    // Use custom renderRow override if provided (for v2 row architecture)
+    if (renderRowOverride) {
+      const handleEdit = () => {
+        if (canExternalEdit && !inlineEditable) {
+          onExternalEditItem?.(item);
+        } else {
+          startEditItem(item);
+        }
+      };
+
+      const handleDelete = () => {
+        deleteItem(id);
+      };
+
+      return renderRowOverride(
+        item,
+        index,
+        groupId,
+        {
+          onEdit: handleEdit,
+          onDelete: handleDelete,
+          onToggleActive: typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? handleToggleActive : undefined,
+          swipeableRef: swipeableCallbacks.swipeableRef,
+          onSwipeableWillOpen: swipeableCallbacks.onSwipeableWillOpen,
+          onSwipeableOpen: swipeableCallbacks.onSwipeableOpen,
+          onSwipeableClose: swipeableCallbacks.onSwipeableClose,
+        },
+        {
+          locked,
+          isActive: itemIsActive,
+          isInactive,
+          isCurrentlyEditing,
+          dimRow,
+          showTopDivider,
+          name,
+          amountText,
+          metaText,
+        },
+      );
+    }
+
+    // Default: use FinancialItemRow
     return (
       <FinancialItemRow
         key={id}
@@ -1456,13 +1543,6 @@ export default function EditableCollectionScreen<TItem>({
             ) : null}
           </SectionCard>
         </ScrollView>
-        {/* Overlay for outside-tap swipe dismissal */}
-        {openSwipeableId !== null && editingItemId === null ? (
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={handleTouchOutside}
-          />
-        ) : null}
       </KeyboardAvoidingView>
 
       {renderFooter ? <View style={styles.footerContainer}>{renderFooter}</View> : null}

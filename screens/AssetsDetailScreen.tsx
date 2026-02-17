@@ -167,7 +167,7 @@ export default function AssetsDetailScreen() {
                   }
                 ]}
               >
-                <Text style={[styles.quickButtonText, { color: '#fff' }]}>Create</Text>
+                <Text style={[styles.quickButtonText, { color: theme.colors.brand.onPrimary }]}>Create</Text>
               </Pressable>
             </View>
           </View>

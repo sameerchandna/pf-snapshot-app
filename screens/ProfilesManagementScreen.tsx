@@ -390,7 +390,7 @@ export default function ProfilesManagementScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Save"
                 >
-                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: '#fff' }]}>Save</Text>
+                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: theme.colors.brand.onPrimary }]}>Save</Text>
                 </Pressable>
               </View>
             </View>
@@ -525,7 +525,7 @@ export default function ProfilesManagementScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Create"
                 >
-                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: '#fff' }]}>Create</Text>
+                  <Text style={[styles.modalButtonConfirmText, theme.typography.button, { color: theme.colors.brand.onPrimary }]}>Create</Text>
                 </Pressable>
               </View>
             </View>

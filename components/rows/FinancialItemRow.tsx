@@ -200,7 +200,7 @@ export default function FinancialItemRow<TItem>({
                     style={[
                       styles.checkboxCheckmark,
                       theme.typography.caption,
-                      { fontWeight: '700', color: theme.colors.text.primary },
+                      { fontWeight: '700', color: theme.colors.brand.onPrimary },
                     ]}
                   >
                     ✓

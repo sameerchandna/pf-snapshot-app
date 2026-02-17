@@ -1,6 +1,6 @@
 import React, { ReactNode, useRef, useState } from 'react';
-import { Animated, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Swipeable } from 'react-native-gesture-handler';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
+import { ScrollView, Swipeable } from 'react-native-gesture-handler';
 import { useTheme } from '../../ui/theme/useTheme';
 import { spacing } from '../../spacing';
 import { layout } from '../../layout';

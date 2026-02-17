@@ -30,7 +30,7 @@ export default function Button({ variant, size, disabled = false, onPress, child
         return {
           bg: theme.colors.brand.primary,
           pressedBg: '#254EDB',
-          text: '#fff',
+          text: theme.colors.brand.onPrimary,
         };
       case 'secondary':
         return {

@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSnapshot } from '../SnapshotContext';
 import { ExpenseItem, Group } from '../types';
 import { selectSnapshotExpenses } from '../selectors';
@@ -6,6 +8,10 @@ import { formatCurrencyFullSigned } from '../formatters';
 import { parseItemName, parseMoney } from '../domainValidation';
 import EducationBox from '../components/EducationBox';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
+import SemanticRow from '../components/rows/SemanticRow';
+import RowVisual from '../components/rows/RowVisual';
+import ItemActiveCheckbox from '../components/ItemActiveCheckbox';
+import SwipeAction from '../components/SwipeAction';
 
 function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
@@ -119,6 +125,18 @@ const expensesHelpContent: HelpContent = {
   ],
 };
 
+/**
+ * ExpensesDetailScreen - v2 prototype screen using Semantic row architecture.
+ * 
+ * Uses a screen-local semantic row built from SemanticRow primitives.
+ * 
+ * Behavior differences from legacy (FinancialItemRow):
+ * - Replace-mode swipe (no overlay reveal)
+ * - No open-row coordination (multiple rows can have swipe actions open)
+ * - Swipe reveals Edit + Delete actions (no row press)
+ * 
+ * All other behavior (editing, validation, groups, Snapshot mutations) remains unchanged.
+ */
 export default function ExpensesDetailScreen() {
   const { state, setExpenses, setExpenseGroups } = useSnapshot();
 
@@ -131,7 +149,6 @@ export default function ExpensesDetailScreen() {
   }, [totalExpensesValue]);
 
   const maxValue: number = 1_000_000_000;
-  const implicitGroupId: string = 'general';
 
   const isItemLocked = (item: ExpenseItem): boolean => {
     return item.id.startsWith('loan-interest:') || item.id.startsWith('loan-principal:');
@@ -159,6 +176,175 @@ export default function ExpensesDetailScreen() {
     }
 
     return null;
+  };
+
+  // Local component: ExpenseRowWithActions
+  // Uses SemanticRow directly to control row interactions:
+  // - Swipe reveals Edit + Delete actions (onRevealRight is no-op)
+  // - Tapping Edit button opens editor (SwipeAction onPress)
+  // - Tapping Delete button opens confirmation modal (SwipeAction onPress)
+  // - Row press is disabled (pressEnabled=false)
+  // - Swipe coordination handled by EditableCollectionScreen
+  type ExpenseRowWithActionsProps = {
+    item: ExpenseItem;
+    itemId: string;
+    onEdit: () => void;
+    onRequestDelete: () => void;
+    onToggleActive?: () => void;
+    swipeableRef?: (ref: Swipeable | null) => void;
+    onSwipeableWillOpen?: () => void;
+    onSwipeableOpen?: () => void;
+    onSwipeableClose?: () => void;
+    locked: boolean;
+    isActive: boolean;
+    isInactive: boolean;
+    isCurrentlyEditing: boolean;
+    dimRow: boolean;
+    showTopDivider: boolean;
+    name: string;
+    amountText: string;
+    metaText: string | null;
+  };
+
+  const ExpenseRowWithActions = ({
+    item,
+    itemId,
+    onEdit,
+    onRequestDelete,
+    onToggleActive,
+    swipeableRef,
+    onSwipeableWillOpen,
+    onSwipeableOpen,
+    onSwipeableClose,
+    locked,
+    isActive,
+    isInactive,
+    isCurrentlyEditing,
+    dimRow,
+    showTopDivider,
+    name,
+    amountText,
+    metaText,
+  }: ExpenseRowWithActionsProps) => {
+    // Track swipe state for visual feedback
+    const [isSwiping, setIsSwiping] = useState(false);
+
+    // Handle swipe will open: set visual state and call coordination callback
+    const handleSwipeableWillOpen = () => {
+      setIsSwiping(true);
+      onSwipeableWillOpen?.();
+    };
+
+    // Handle swipe close: clear visual state and call coordination callback
+    const handleSwipeableClose = () => {
+      setIsSwiping(false);
+      onSwipeableClose?.();
+    };
+
+    // Two swipe actions: Edit and Delete
+    const rightActions = (
+      <View style={{ flexDirection: 'row' }}>
+        <SwipeAction
+          variant="edit"
+          onPress={onEdit}
+          accessibilityLabel="Edit"
+        />
+        <SwipeAction
+          variant="delete"
+          onPress={onRequestDelete}
+          accessibilityLabel="Delete"
+        />
+      </View>
+    );
+
+    return (
+      <SemanticRow
+        onRevealRight={() => {
+          // No-op: swipe only reveals actions, doesn't trigger any action
+          // Actions are triggered by tapping the SwipeAction buttons
+        }}
+        swipeableRef={swipeableRef}
+        onSwipeableWillOpen={handleSwipeableWillOpen}
+        onSwipeableOpen={onSwipeableOpen}
+        onSwipeableClose={handleSwipeableClose}
+        rightActions={rightActions}
+        swipeEnabled={!isCurrentlyEditing}
+        pressEnabled={false}
+      >
+        <RowVisual
+          title={name}
+          subtitle={metaText}
+          trailingText={amountText}
+          leading={
+            onToggleActive ? (
+              <ItemActiveCheckbox
+                isActive={isActive}
+                onToggle={onToggleActive}
+                disabled={locked}
+              />
+            ) : undefined
+          }
+          locked={locked}
+          inactive={isInactive}
+          dimmed={dimRow}
+          swipeActive={isSwiping}
+          showTopDivider={showTopDivider}
+        />
+      </SemanticRow>
+    );
+  };
+
+  // Custom row renderer for v2 row architecture
+  // This override bypasses FinancialItemRow and uses EditableCollectionScreen's swipe coordination.
+  // Uses ExpenseRowWithActions → SemanticRow → SwipeRowContainer → RowVisual stack.
+  const renderExpenseRow = (
+    item: ExpenseItem,
+    index: number,
+    groupId: string | undefined,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    return (
+      <ExpenseRowWithActions
+        key={getItemId(item)}
+        item={item}
+        itemId={getItemId(item)}
+        onEdit={callbacks.onEdit}
+        onRequestDelete={callbacks.onDelete}
+        onToggleActive={callbacks.onToggleActive}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+        locked={state.locked}
+        isActive={state.isActive}
+        isInactive={state.isInactive}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        showTopDivider={state.showTopDivider}
+        name={state.name}
+        amountText={state.amountText}
+        metaText={state.metaText}
+      />
+    );
   };
 
   return (
@@ -208,7 +394,7 @@ export default function ExpensesDetailScreen() {
       getItemIsActive={getItemIsActive}
       setItemIsActive={setItemIsActive}
       validateEditedItem={validateEditedItem}
-      swipeRevealMode="overlay"
+      renderRow={renderExpenseRow} // v2: Custom row renderer using ExpenseRowWithActions with EditableCollectionScreen swipe coordination
     />
   );
 }
