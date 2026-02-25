@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type ButtonVariant = 'primary' | 'secondary' | 'text';
 type ButtonSize = 'sm' | 'md';
@@ -54,15 +56,15 @@ export default function Button({ variant, size, disabled = false, onPress, child
     switch (size) {
       case 'md':
         return {
-          paddingVertical: 10,
-          paddingHorizontal: 16,
+          paddingVertical: layout.inputPadding,
+          paddingHorizontal: spacing.xl,
           fontSize: 14,
           borderRadius: 8,
         };
       case 'sm':
         return {
-          paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingVertical: spacing.xs,
+          paddingHorizontal: layout.inputPadding,
           fontSize: 12,
           borderRadius: 14,
         };

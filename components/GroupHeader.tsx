@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { spacing } from '../spacing';
+import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {
@@ -25,12 +26,12 @@ export default function GroupHeader({ title }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    // Container for potential future spacing needs
+    paddingHorizontal: layout.rowPaddingHorizontal,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    marginBottom: spacing.sm, // 8 - matches AccountsScreen pattern (most common for group headers)
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
 });

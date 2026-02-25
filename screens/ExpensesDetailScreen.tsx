@@ -6,7 +6,6 @@ import { ExpenseItem, Group } from '../types';
 import { selectSnapshotExpenses } from '../selectors';
 import { formatCurrencyFullSigned } from '../formatters';
 import { parseItemName, parseMoney } from '../domainValidation';
-import EducationBox from '../components/EducationBox';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import SemanticRow from '../components/rows/SemanticRow';
 import RowVisual from '../components/rows/RowVisual';
@@ -200,7 +199,7 @@ export default function ExpensesDetailScreen() {
     isInactive: boolean;
     isCurrentlyEditing: boolean;
     dimRow: boolean;
-    showTopDivider: boolean;
+    isLastInGroup: boolean;
     name: string;
     amountText: string;
     metaText: string | null;
@@ -221,7 +220,7 @@ export default function ExpensesDetailScreen() {
     isInactive,
     isCurrentlyEditing,
     dimRow,
-    showTopDivider,
+    isLastInGroup,
     name,
     amountText,
     metaText,
@@ -288,7 +287,7 @@ export default function ExpensesDetailScreen() {
           inactive={isInactive}
           dimmed={dimRow}
           swipeActive={isSwiping}
-          showTopDivider={showTopDivider}
+          isLastInGroup={isLastInGroup}
         />
       </SemanticRow>
     );
@@ -301,6 +300,7 @@ export default function ExpensesDetailScreen() {
     item: ExpenseItem,
     index: number,
     groupId: string | undefined,
+    isLastInGroup: boolean,
     callbacks: {
       onEdit: () => void;
       onDelete: () => void;
@@ -316,7 +316,6 @@ export default function ExpensesDetailScreen() {
       isInactive: boolean;
       isCurrentlyEditing: boolean;
       dimRow: boolean;
-      showTopDivider: boolean;
       name: string;
       amountText: string;
       metaText: string | null;
@@ -339,7 +338,7 @@ export default function ExpensesDetailScreen() {
         isInactive={state.isInactive}
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
-        showTopDivider={state.showTopDivider}
+        isLastInGroup={isLastInGroup}
         name={state.name}
         amountText={state.amountText}
         metaText={state.metaText}
@@ -353,10 +352,8 @@ export default function ExpensesDetailScreen() {
       totalText={totalExpensesText}
       subtextMain="Grouped monthly expenses"
       subtextFootnote="If a bill isn't monthly, estimate its monthly equivalent."
+      editorSubtext="Only active items are used in your Snapshot and projections. Inactive items are kept for reference."
       helpContent={expensesHelpContent}
-      renderIntro={
-        <EducationBox lines={['Only active items are used in your Snapshot and projections. Inactive items are kept for reference.']} />
-      }
       groups={state.expenseGroups}
       setGroups={setExpenseGroups}
       items={state.expenses}
@@ -383,7 +380,6 @@ export default function ExpensesDetailScreen() {
       autoExpandSingleGroup={true}
       emptyStateText="No expenses yet."
       allowGroups={false}
-      editorPlacement="top"
       allowAddItems={true}
       allowDeleteItems={true}
       allowEditItemName={true}

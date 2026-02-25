@@ -10,6 +10,8 @@ import { formatCurrencyFullSigned } from '../formatters';
 import { parseMoney } from '../domainValidation';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from '../components/Icon';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type RouteParams = {
   preselectAssetId?: string;
@@ -130,12 +132,13 @@ export default function ContributionsDetailScreen() {
           style={({ pressed }) => [
             styles.selector,
             {
-              backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
-              borderColor: theme.colors.border.default,
+              backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.input,
+              borderColor: 'transparent',
+              borderRadius: theme.radius.medium,
             }
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Select asset to contribute to"
+          accessibilityLabel="Select asset"
         >
           <View style={styles.selectorRow}>
             <Text
@@ -146,7 +149,7 @@ export default function ContributionsDetailScreen() {
               ]}
               numberOfLines={1}
             >
-              {props.value ? getAssetName(props.value) : 'Select asset to contribute to'}
+              {props.value ? getAssetName(props.value) : 'Select asset'}
             </Text>
             <Icon name="chevron-down" size="small" color={theme.colors.text.muted} />
           </View>
@@ -205,7 +208,6 @@ export default function ContributionsDetailScreen() {
       helpContent={assetContributionsHelpContent}
       emptyStateText="No contributions yet."
       allowGroups={false}
-      editorPlacement="top"
       groups={[]} // No groups for contributions
       setGroups={() => {}} // No-op
       items={postTaxContributions}
@@ -272,15 +274,14 @@ export default function ContributionsDetailScreen() {
 const styles = StyleSheet.create({
   selector: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.base,
   },
   selectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   selectorValue: {
     flex: 1,
@@ -308,16 +309,16 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   modalList: {
     flexGrow: 0,
   },
   modalListContent: {
-    paddingBottom: 12,
+    paddingBottom: spacing.base,
   },
   modalOption: {
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     borderBottomWidth: 1,
   },
   modalOptionText: {

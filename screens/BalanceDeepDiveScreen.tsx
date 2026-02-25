@@ -822,7 +822,7 @@ export default function BalanceDeepDiveScreen() {
         <View style={styles.innerContent}>
           {/* Chart */}
           {isSavingsAsset && (
-          <SectionCard style={{ marginBottom: spacing.xs }}>
+          <SectionCard style={{ marginTop: layout.sectionGap, marginBottom: spacing.xs }}>
             <SectionHeader title="Savings Balance Over Time" />
             {!reconciliationValid ? (
               <View style={styles.errorContainer}>
@@ -1330,8 +1330,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.base,
   },
   innerContent: {
-    padding: 12,
-    paddingTop: 12,
+    padding: spacing.base,
+    paddingTop: spacing.base,
   },
   placeholderContainer: {
     paddingVertical: spacing.xl,
@@ -1384,7 +1384,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalOption: {
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     borderBottomWidth: 1,
   },
   modalOptionText: {

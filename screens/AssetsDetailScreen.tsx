@@ -10,6 +10,8 @@ import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { parseItemName } from '../domainValidation';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 const assetsHelpContent: HelpContent = {
   title: 'Assets',
@@ -117,7 +119,6 @@ export default function AssetsDetailScreen() {
       subtextMain="Grouped assets"
       subtextFootnote={undefined}
       allowGroups={false}
-      editorPlacement="top"
       showEditor={!createForContribution}
       isItemLocked={createForContribution ? () => true : undefined}
       renderIntro={
@@ -283,26 +284,26 @@ const styles = StyleSheet.create({
   quickCreateCard: {
     borderWidth: 1,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    padding: spacing.base,
+    marginBottom: spacing.base,
   },
-  quickHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  quickHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
   quickTitle: { fontSize: 13, fontWeight: '700' },
   quickContextTag: { fontSize: 11, fontWeight: '700' },
-  quickHint: { fontSize: 12, marginBottom: 8, lineHeight: 16 },
-  quickError: { fontSize: 12, marginBottom: 8 },
-  quickRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  quickHint: { fontSize: 12, marginBottom: spacing.sm, lineHeight: 16 },
+  quickError: { fontSize: 12, marginBottom: spacing.sm },
+  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   quickInput: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.base,
     fontSize: 16,
   },
   quickButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.base,
     borderRadius: 8,
     borderWidth: 1,
   },

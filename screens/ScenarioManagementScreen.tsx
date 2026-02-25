@@ -10,6 +10,7 @@ import SwipeAction from '../components/SwipeAction';
 import { useSnapshot } from '../SnapshotContext';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
+import { spacing } from '../spacing';
 import { UI_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../selectors';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
     marginRight: layout.componentGap,
   },
   dotPressable: {
-    padding: 8,
+    padding: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -503,11 +504,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: ROW_HEIGHT,
-    paddingLeft: 2,
-    paddingRight: 2,
-    paddingVertical: 4,
+    paddingLeft: layout.micro,
+    paddingRight: layout.micro,
+    paddingVertical: spacing.tiny,
     backgroundColor: 'transparent',
-    gap: 4,
+    gap: spacing.tiny,
   },
   swipeActionEdit: {
     width: 35,
@@ -522,7 +523,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     // borderRadius set inline with theme.radius.medium
-    marginLeft: 6,
+    marginLeft: spacing.xs,
   },
   deleteModalBackdrop: {
     flex: 1,
@@ -539,20 +540,20 @@ const styles = StyleSheet.create({
   deleteModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   deleteModalMessage: {
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: layout.sectionGap,
     lineHeight: 20,
   },
   deleteModalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: spacing.base,
   },
   deleteModalButton: {
-    paddingVertical: 10,
+    paddingVertical: layout.inputPadding,
     paddingHorizontal: 20,
     // borderRadius set inline with theme.radius.medium
     minWidth: 80,

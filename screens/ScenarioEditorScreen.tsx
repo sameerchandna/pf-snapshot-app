@@ -10,6 +10,7 @@ import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { layout } from '../layout';
+import { spacing } from '../spacing';
 import { UI_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../selectors';
 import type { Scenario, ScenarioId, ScenarioKind, FlowToAssetScenario, FlowToDebtScenario } from '../domain/scenario/types';
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
     // backgroundColor, borderColor, borderRadius set inline
   },
   errorTitle: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
     // color, fontSize, fontWeight set inline
   },
   errorText: {
@@ -598,7 +599,7 @@ const styles = StyleSheet.create({
     paddingBottom: layout.modalListBottom,
   },
   modalOption: {
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     borderBottomWidth: 1,
     // borderBottomColor, backgroundColor set inline
   },
@@ -607,7 +608,7 @@ const styles = StyleSheet.create({
   },
   modalEmptyText: {
     fontStyle: 'italic',
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     // color, fontSize set inline
   },
   warningBanner: {

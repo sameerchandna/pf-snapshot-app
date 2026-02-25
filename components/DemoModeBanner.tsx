@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
 import { useMode } from '../context/ModeContext';
 
 /**
@@ -14,17 +15,17 @@ export default function DemoModeBanner() {
   const { theme } = useTheme();
   const { mode } = useMode();
 
+  if (mode !== 'demo') {
+    return null;
+  }
+
   return (
     <View style={styles.container}>
-      {mode === 'demo' ? (
-        <View style={[styles.banner, { backgroundColor: theme.colors.semantic.warningBg }]}>
-          <Text style={[styles.bannerText, { color: theme.colors.semantic.warningText }]}>
-            Demo mode — changes won't be saved
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.spacer} />
-      )}
+      <View style={[styles.banner, { backgroundColor: theme.colors.semantic.warningBg }]}>
+        <Text style={[styles.bannerText, { color: theme.colors.semantic.warningText }]}>
+          Demo mode — changes won't be saved
+        </Text>
+      </View>
     </View>
   );
 }
@@ -34,15 +35,12 @@ const styles = StyleSheet.create({
     minHeight: 26,
   },
   banner: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xl,
   },
   bannerText: {
     fontSize: 11,
     fontWeight: '400',
     textAlign: 'center',
-  },
-  spacer: {
-    minHeight: 26,
   },
 });

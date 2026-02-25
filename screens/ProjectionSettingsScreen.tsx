@@ -6,6 +6,7 @@ import EditableCollectionScreen from './EditableCollectionScreen';
 import { useSnapshot } from '../SnapshotContext';
 import { formatPercent } from '../formatters';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
 
 type ProjectionFieldItem = {
   id: string;
@@ -127,7 +128,7 @@ export default function ProjectionSettingsScreen() {
       totalText=""
       subtextMain="Adjust the assumptions behind the projection."
       educationLines={[
-        'Projections extend today’s position forward using a few simple assumptions.',
+        'Projections extend today\'s position forward using a few simple assumptions.',
         'They are directional, not precise.',
       ]}
       insightText="If nothing else changes, this can help you explore where your finances could land by a future age."
@@ -177,8 +178,8 @@ export default function ProjectionSettingsScreen() {
 
 const styles = StyleSheet.create({
   doneButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   doneButtonText: {
     fontSize: 14,

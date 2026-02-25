@@ -42,6 +42,7 @@ export const layout = {
   inputPaddingHorizontal: spacing.base,   // 12 - horizontal input padding
   inputPaddingVertical: spacing.sm,       // 8 - vertical input padding
   inputMarginBottom: spacing.base,        // 12 - margin below inputs
+  amountInputWidth: 130,                  // 130 - standard width for amount input fields
   
   // Modal/Sheet spacing
   modalPadding: spacing.xl,               // 16 - modal content padding

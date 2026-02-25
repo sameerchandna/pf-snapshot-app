@@ -79,7 +79,6 @@ export default function LiabilityReductionsDetailScreen() {
       totalText={totalText}
       subtextMain="Monthly payments that reduce debt balances"
       subtextFootnote={undefined}
-      editorPlacement="top"
       isItemLocked={item => item.id.startsWith('loan-overpayment:')}
       helpContent={liabilityReductionHelpContent}
       emptyStateText={showEmptyState ? "No liability reductions yet." : null}

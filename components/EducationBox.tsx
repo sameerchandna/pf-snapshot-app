@@ -52,14 +52,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   text: {
     fontSize: 13,
     lineHeight: 18,
   },
   insightSpacing: {
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
 });
 

@@ -10,6 +10,7 @@ import Icon from '../components/Icon';
 import SwipeAction from '../components/SwipeAction';
 import Row from '../components/Row';
 import { layout } from '../layout';
+import { spacing } from '../spacing';
 import { useSnapshot } from '../SnapshotContext';
 import { useTheme } from '../ui/theme/useTheme';
 import type { ProfileId, ProfileState, ProfilesState } from '../types';
@@ -571,7 +572,7 @@ const styles = StyleSheet.create({
     marginRight: layout.componentGap,
   },
   dotPressable: {
-    padding: 8,
+    padding: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -610,11 +611,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: ROW_HEIGHT,
-    paddingLeft: 2,
-    paddingRight: 2,
-    paddingVertical: 4,
+    paddingLeft: layout.micro,
+    paddingRight: layout.micro,
+    paddingVertical: spacing.tiny,
     backgroundColor: 'transparent',
-    gap: 4,
+    gap: spacing.tiny,
   },
   swipeActionRename: {
     width: 35,
@@ -629,7 +630,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginLeft: 6,
+    marginLeft: spacing.xs,
   },
   swipeActionDelete: {
     width: 35,
@@ -637,7 +638,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginLeft: 6,
+    marginLeft: spacing.xs,
   },
   modalBackdrop: {
     flex: 1,
@@ -653,27 +654,27 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     // Typography moved to inline style with theme token (18px/700 → 18px/600 via theme.typography.valueLarge)
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   modalMessage: {
     // Typography moved to inline style with theme token
-    marginBottom: 20,
+    marginBottom: layout.sectionGap,
     lineHeight: 20,
   },
   modalInput: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 12,
+    padding: spacing.base,
     // Typography moved to inline style with theme token
-    marginBottom: 20,
+    marginBottom: layout.sectionGap,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: spacing.base,
   },
   modalButton: {
-    paddingVertical: 10,
+    paddingVertical: layout.inputPadding,
     paddingHorizontal: 20,
     borderRadius: 8,
     minWidth: 80,

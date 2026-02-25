@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
 import DemoModeBanner from './DemoModeBanner';
 
 type Props = {
@@ -34,7 +35,7 @@ export default function ScreenHeader({ title, totalText, subtitle, subtitleFootn
 
 const styles = StyleSheet.create({
   header: {
-    padding: 16,
+    padding: spacing.xl,
     borderBottomWidth: 1,
   },
   safeHeader: {
@@ -43,13 +44,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   subtitle: {
     fontSize: 12,
   },
   subtitleAfterTotal: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   subtitleFootnote: {
     fontSize: 12,

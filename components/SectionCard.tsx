@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { spacing } from '../spacing';
+import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
 
 interface SectionCardProps {
@@ -13,7 +14,11 @@ interface SectionCardProps {
 export default function SectionCard({ children, style, useGradient = false }: SectionCardProps) {
   const { theme } = useTheme();
   
-  const containerStyle = [styles.container, style];
+  const containerStyle = [
+    styles.container,
+    { borderRadius: theme.radius.large },
+    style,
+  ];
   
   if (useGradient) {
     return (
@@ -33,8 +38,8 @@ export default function SectionCard({ children, style, useGradient = false }: Se
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: spacing.base,
+    paddingHorizontal: layout.rowPaddingHorizontal,
+    paddingVertical: spacing.xl,
     marginBottom: spacing.huge,
   },
 });

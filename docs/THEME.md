@@ -65,11 +65,13 @@ Theme must NOT include:
 - `bg.app` - App background color (root container)
 - `bg.card` - Card background color (elevated surfaces)
 - `bg.subtle` - Subtle background color (pressed states, highlights)
+- `bg.input` - Interactive input surface background color - Used for TextInput surfaces to distinguish interactive controls from container surfaces in both light and dark themes
 
 **Border Colors:**
 - `border.default` - Default border color (standard dividers)
 - `border.subtle` - Subtle border color (light dividers, grid lines)
 - `border.muted` - Very subtle border color (low-salience structural borders for dense UI surfaces, ~35–40% opacity) - Used to reduce visual noise without removing affordance, not semantic (not success/error/warning)
+- `border.separator` - Apple-standard separator color for grouped lists (rgba(60, 60, 67, 0.29) light mode, rgba(84, 84, 88, 0.65) dark mode) - Used for inset separators in grouped list rows
 
 **Semantic Colors:**
 - `semantic.error` - Error color
@@ -97,6 +99,12 @@ Theme must NOT include:
 **Overlay Colors:**
 - `overlay.scrim25` - 25% opacity overlay
 - `overlay.scrim50` - 50% opacity overlay
+
+**Action Colors (Swipe Actions):**
+- `actions.edit.bg` - Edit action background (subtle neutral tint)
+- `actions.edit.icon` - Edit action icon color (matches text.primary)
+- `actions.delete.bg` - Delete action background (muted Apple red tint)
+- `actions.delete.icon` - Delete action icon color (Apple system red)
 
 ## Hard Rules
 

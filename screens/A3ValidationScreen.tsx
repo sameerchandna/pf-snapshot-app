@@ -12,6 +12,8 @@ import { buildProjectionInputsFromState } from '../projection/buildProjectionInp
 import { ATTRIBUTION_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../selectors';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 // Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() instead
 // Monthly surplus is now single-sourced from selector (no manual computation, no clamping)
@@ -166,22 +168,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 12,
-    paddingBottom: 24,
+    padding: spacing.base,
+    paddingBottom: spacing.huge,
   },
   section: {
-    marginBottom: 18,
+    marginBottom: spacing.xl,
     borderWidth: 1,
     // borderColor moved to inline style
     borderRadius: 8,
-    padding: 12,
+    padding: spacing.base,
     // backgroundColor moved to inline style
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 8,
+    gap: spacing.base,
+    marginBottom: spacing.sm,
   },
   rowLabel: {
     flex: 1,
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     // color moved to inline style
   },
   deltaHint: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     // Typography moved to inline style with theme token
     // color moved to inline style
   },

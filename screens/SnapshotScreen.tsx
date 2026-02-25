@@ -175,7 +175,7 @@ export default function SnapshotScreen() {
              Snapshot cashflow uses full currency with explicit signs
              (formatCurrencyFullAlwaysSigned) to represent the current
              financial state precisely. */}
-        <SectionCard useGradient={true}>
+        <SectionCard useGradient={true} style={{ marginTop: layout.sectionGap }}>
           <SectionHeader title="Cash Flow" />
 
           {/* Cash Flow Hero Value */}
@@ -336,51 +336,53 @@ export default function SnapshotScreen() {
           <View style={styles.balanceSheetCardsRow}>
             <View style={styles.balanceSheetCardWrapper}>
               <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
-                <View style={styles.balanceSheetCardContent}>
-                  <View style={styles.balanceSheetIconContainer}>
+                <View style={styles.balanceSheetRow}>
+                  <View style={styles.balanceSheetIconColumn}>
                     <TrendUp size={20} color={theme.colors.domain.asset} weight="regular" />
                   </View>
-                  <View style={styles.balanceSheetTextContainer}>
-                <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Assets</Text>
-                <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.asset }]}>{totalAssetsText}</Text>
-                <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you own</Text>
+                  <View style={styles.balanceSheetContentColumn}>
+                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Assets</Text>
+                    <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.asset }]}>{totalAssetsText}</Text>
+                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you own</Text>
+                  </View>
+                  <View style={styles.balanceSheetActionColumn}>
+                    {isEditableCard('AssetsDetail') ? (
+                      <IconButton
+                        icon="plus"
+                        size="md"
+                        variant="default"
+                        onPress={() => navigation.navigate('AssetsDetail')}
+                        accessibilityLabel="Add asset"
+                      />
+                    ) : null}
                   </View>
                 </View>
-                {isEditableCard('AssetsDetail') ? (
-                  <IconButton
-                    icon="plus"
-                    size="md"
-                    variant="default"
-                    onPress={() => navigation.navigate('AssetsDetail')}
-                    accessibilityLabel="Add asset"
-                    style={styles.addIconAbsolute}
-                  />
-                ) : null}
               </View>
             </View>
 
             <View style={styles.balanceSheetCardWrapper}>
               <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
-                <View style={styles.balanceSheetCardContent}>
-                  <View style={styles.balanceSheetIconContainer}>
+                <View style={styles.balanceSheetRow}>
+                  <View style={styles.balanceSheetIconColumn}>
                     <TrendDown size={20} color={theme.colors.domain.liability} weight="regular" />
                   </View>
-                  <View style={styles.balanceSheetTextContainer}>
-                <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Liabilities</Text>
-                <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.liability }]}>{totalLiabilitiesText}</Text>
-                <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you owe</Text>
+                  <View style={styles.balanceSheetContentColumn}>
+                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Liabilities</Text>
+                    <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.liability }]}>{totalLiabilitiesText}</Text>
+                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you owe</Text>
+                  </View>
+                  <View style={styles.balanceSheetActionColumn}>
+                    {isEditableCard('LiabilitiesDetail') ? (
+                      <IconButton
+                        icon="plus"
+                        size="md"
+                        variant="default"
+                        onPress={() => navigation.navigate('LiabilitiesDetail')}
+                        accessibilityLabel="Add liability"
+                      />
+                    ) : null}
                   </View>
                 </View>
-                {isEditableCard('LiabilitiesDetail') ? (
-                  <IconButton
-                    icon="plus"
-                    size="md"
-                    variant="default"
-                    onPress={() => navigation.navigate('LiabilitiesDetail')}
-                    accessibilityLabel="Add liability"
-                    style={styles.addIconAbsolute}
-                  />
-                ) : null}
               </View>
             </View>
           </View>
@@ -546,30 +548,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 80,
-    position: 'relative',
   },
-  balanceSheetCardContent: {
+  balanceSheetRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    gap: spacing.zero,
   },
-  balanceSheetIconContainer: {
+  balanceSheetIconColumn: {
+    width: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.base,
   },
-  balanceSheetTextContainer: {
+  balanceSheetContentColumn: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  balanceSheetActionColumn: {
+    width: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.section,
-  },
-  addIconAbsolute: {
-    position: 'absolute',
-    top: spacing.base,
-    right: spacing.base,
-    zIndex: 1,
   },
   balanceSheetPrimaryCard: {
     flex: 1,

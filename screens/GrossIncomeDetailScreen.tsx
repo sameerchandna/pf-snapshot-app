@@ -77,7 +77,6 @@ export default function GrossIncomeDetailScreen() {
       totalText={totalText}
       subtextMain="Monthly income before deductions"
       subtextFootnote={undefined}
-      editorPlacement="top"
       helpContent={grossIncomeHelpContent}
       emptyStateText="No income items yet."
       allowGroups={false}

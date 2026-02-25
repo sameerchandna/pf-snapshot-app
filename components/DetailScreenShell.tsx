@@ -5,6 +5,8 @@ import ScreenHeader from './ScreenHeader';
 import { HelpContent } from '../screens/EditableCollectionScreen';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from './Icon';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type Props = {
   title: string;
@@ -112,11 +114,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingTop: 12,
+    padding: spacing.xl,
+    paddingTop: spacing.base,
   },
   hintButton: {
-    padding: 6,
+    padding: spacing.xs,
   },
   hintBackdrop: {
     flex: 1,
@@ -125,49 +127,49 @@ const styles = StyleSheet.create({
   hintSheet: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 16,
+    padding: spacing.xl,
     maxHeight: '80%',
   },
   hintTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   hintScroll: {
-    marginTop: 12,
+    marginTop: spacing.base,
   },
   hintScrollContent: {
     paddingBottom: 24,
   },
   helpSectionDivider: {
     borderTopWidth: 1,
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: spacing.xl,
+    paddingTop: spacing.xl,
   },
   helpSectionHeading: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   helpParagraph: {
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   helpBulletsContainer: {
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: spacing.tiny,
+    marginBottom: layout.inputPadding,
   },
   helpBullet: {
     fontSize: 13,
     lineHeight: 20,
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   helpExample: {
     fontSize: 13,
     lineHeight: 20,
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: spacing.tiny,
+    marginBottom: layout.inputPadding,
   },
   helpExampleBold: {
     fontWeight: '600',

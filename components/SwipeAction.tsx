@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../ui/theme/useTheme';
-import IconButton from './IconButton';
 
 type SwipeActionVariant = 'edit' | 'delete' | 'rename' | 'reset';
 
@@ -9,20 +9,17 @@ type Props = {
   variant: SwipeActionVariant;
   onPress: () => void;
   accessibilityLabel: string;
-  style?: StyleProp<ViewStyle>;
+  style?: any;
 };
 
 /**
  * SwipeAction component for swipe-to-reveal action buttons.
  * 
- * Wraps IconButton with swipe-action-specific styling.
- * Uses transparent backgrounds for lighter visual weight (icons feel secondary, not button-like).
- * Enforces 44x44 minimum touch targets (Apple HIG).
- * 
- * Uses IconButton internally for consistency while preserving swipe-action visual treatment.
- * 
- * Note: This component is maintained for backwards compatibility. For new code,
- * consider using IconButton directly with custom backgroundColor/pressedBackgroundColor props.
+ * Premium filled full-height buttons with theme-aware colors.
+ * - Full row height (44pt) for intentional feel
+ * - Filled backgrounds (no transparent)
+ * - Theme tokens only (no hardcoded colors)
+ * - Pressed state feedback via opacity adjustment
  */
 export default function SwipeAction({
   variant,
@@ -33,69 +30,85 @@ export default function SwipeAction({
   const { theme } = useTheme();
 
   // Get icon name based on variant
-  const getIconName = () => {
+  const getIconName = (): React.ComponentProps<typeof Feather>['name'] => {
     switch (variant) {
       case 'edit':
       case 'rename':
-        return 'edit-2' as const;
+        return 'edit-2';
       case 'delete':
-        return 'trash-2' as const;
+        return 'trash-2';
       case 'reset':
-        return 'refresh-cw' as const;
+        return 'refresh-cw';
     }
   };
 
-  // Get variant for IconButton
-  const getIconButtonVariant = (): 'neutral' | 'destructive' => {
-    switch (variant) {
-      case 'edit':
-      case 'rename':
-      case 'reset':
-        return 'neutral';
-      case 'delete':
-        return 'destructive';
-    }
-  };
+  // Determine if this is a delete action
+  const isDelete = variant === 'delete';
 
-  // Get background colors based on variant
-  // Swipe actions use transparent backgrounds for lighter visual weight
-  const getBackgroundColor = (): string => {
-    switch (variant) {
-      case 'edit':
-        return 'transparent'; // No background for lighter feel
-      case 'delete':
-        return 'transparent'; // No background, icon color provides destructive signal
-      case 'rename':
-        return 'transparent'; // Consistent with edit
-      case 'reset':
-        return 'transparent'; // Consistent with other actions
-    }
-  };
+  // Get background color from theme
+  const backgroundColor = isDelete
+    ? theme.colors.actions.delete.bg
+    : theme.colors.actions.edit.bg;
 
-  // Get pressed background color (subtle feedback on press)
-  const getPressedBackgroundColor = (): string => {
-    switch (variant) {
-      case 'edit':
-        return theme.colors.bg.subtle; // Subtle neutral feedback
-      case 'delete':
-        return theme.colors.semantic.errorBg; // Subtle error tint for destructive action
-      case 'rename':
-        return theme.colors.bg.subtle; // Consistent with edit
-      case 'reset':
-        return theme.colors.semantic.warningBg; // Subtle warning tint
+  // Get icon color from theme
+  const iconColor = isDelete
+    ? theme.colors.actions.delete.icon
+    : theme.colors.actions.edit.icon;
+
+  // Calculate pressed background (increase opacity slightly)
+  const getPressedBackground = (pressed: boolean): string => {
+    if (!pressed) return backgroundColor;
+    
+    // Increase opacity for pressed state by adjusting rgba alpha
+    if (isDelete) {
+      // Delete: increase alpha by ~0.1
+      // Light: 0.12 → 0.22, Dark: 0.18 → 0.28
+      const match = backgroundColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+      if (match) {
+        const [, r, g, b, alpha] = match;
+        const newAlpha = Math.min(parseFloat(alpha) + 0.1, 1.0);
+        return `rgba(${r},${g},${b},${newAlpha})`;
+      }
+    } else {
+      // Edit: double the alpha
+      // Light: 0.04 → 0.08, Dark: 0.06 → 0.12
+      const match = backgroundColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
+      if (match) {
+        const [, r, g, b, alpha] = match;
+        const newAlpha = Math.min(parseFloat(alpha) * 2, 1.0);
+        return `rgba(${r},${g},${b},${newAlpha})`;
+      }
     }
+    return backgroundColor;
   };
 
   return (
-    <IconButton
-      icon={getIconName()}
-      size="md"
-      variant={getIconButtonVariant()}
+    <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      backgroundColor={getBackgroundColor()}
-      pressedBackgroundColor={getPressedBackgroundColor()}
-      style={style}
-    />
+      style={({ pressed }) => [
+        styles.container,
+        {
+          backgroundColor: getPressedBackground(pressed),
+        },
+        style,
+      ]}
+    >
+      <Feather
+        name={getIconName()}
+        size={18}
+        color={iconColor}
+      />
+    </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    height: 44,
+    width: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

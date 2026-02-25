@@ -11,6 +11,8 @@ import { parseItemName } from '../domainValidation';
 import { formatCurrencyFull, formatPercent } from '../formatters';
 import { deriveLoanStateAsOfToday } from '../loanDerivation';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type RouteParams = {
   template: 'mortgage' | 'loan';
@@ -406,12 +408,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
-    paddingTop: 12,
+    padding: spacing.xl,
+    paddingTop: spacing.base,
   },
   doneButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: layout.inputPadding,
+    paddingVertical: spacing.xs,
     borderRadius: 6,
     backgroundColor: '#f2f3f5',
     borderWidth: 1,
@@ -427,14 +429,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffd6d6',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    padding: layout.inputPadding,
+    marginBottom: spacing.base,
   },
   errorTitle: {
     fontSize: 12,
     fontWeight: '700',
     color: '#8a1f1f',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   errorText: {
     fontSize: 12,
@@ -445,40 +447,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    padding: spacing.base,
+    marginBottom: spacing.base,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
     color: '#444',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   fieldSpacing: {
-    marginTop: 10,
+    marginTop: layout.inputPadding,
   },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.base,
     fontSize: 16,
     color: '#111',
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 12,
+    marginTop: spacing.base,
   },
   actionButton: {
     backgroundColor: '#eee',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: layout.lg,
   },
   actionButtonText: {
     fontSize: 14,
@@ -488,7 +490,7 @@ const styles = StyleSheet.create({
   readRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   readLabel: {
     fontSize: 13,
@@ -500,7 +502,7 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   footnote: {
-    marginTop: 10,
+    marginTop: layout.inputPadding,
     fontSize: 12,
     color: '#777',
     lineHeight: 16,
@@ -508,22 +510,22 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     lineHeight: 16,
   },
   infoBlock: {
-    marginTop: 12,
+    marginTop: spacing.base,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e6e6e6',
     borderRadius: 8,
-    padding: 10,
+    padding: layout.inputPadding,
   },
   infoTitle: {
     fontSize: 12,
     fontWeight: '700',
     color: '#444',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   infoText: {
     fontSize: 12,

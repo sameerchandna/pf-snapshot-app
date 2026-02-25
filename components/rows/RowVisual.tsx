@@ -22,8 +22,8 @@
  * - Theme-aware colors via useTheme() only
  */
 
-import React, { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { ReactNode, useState } from 'react';
+import { StyleSheet, Text, View, LayoutChangeEvent } from 'react-native';
 import { useTheme } from '../../ui/theme/useTheme';
 import { layout } from '../../layout';
 import { spacing } from '../../spacing';
@@ -38,7 +38,7 @@ type Props = {
   inactive?: boolean;
   dimmed?: boolean;
   swipeActive?: boolean;
-  showTopDivider?: boolean;
+  isLastInGroup?: boolean;
 };
 
 // Fixed row height - a layout invariant, not a theme token.
@@ -55,22 +55,24 @@ export default function RowVisual({
   inactive = false,
   dimmed = false,
   swipeActive = false,
-  showTopDivider = false,
+  isLastInGroup = false,
 }: Props) {
   const { theme } = useTheme();
+  const [leadingWidth, setLeadingWidth] = useState(0);
 
   // Determine text colors based on visual states
+  // Explicit color assignment - do not rely on inherited text color
   const titleColor = locked
     ? theme.colors.text.muted
     : theme.colors.text.primary;
 
   const subtitleColor = locked
     ? theme.colors.text.disabled
-    : theme.colors.text.muted;
+    : theme.colors.text.secondary;
 
   const trailingColor = locked
     ? theme.colors.text.muted
-    : theme.colors.text.primary;
+    : theme.colors.text.secondary;
 
   // Determine opacity based on visual states
   // Applied only to visual subcontainers, not the root row surface
@@ -79,6 +81,14 @@ export default function RowVisual({
   else if (locked) opacity = 0.7;
   else if (inactive) opacity = 0.5;
 
+  // Compute separator left inset: rowPaddingHorizontal + leadingWidth + leadingSpacing
+  // If no leading, contentStartX = rowPaddingHorizontal
+  const contentStartX = layout.rowPaddingHorizontal + (leading ? leadingWidth + spacing.sm : 0);
+
+  const handleLeadingLayout = (event: LayoutChangeEvent) => {
+    setLeadingWidth(event.nativeEvent.layout.width);
+  };
+
   return (
     <View
       style={[
@@ -86,15 +96,14 @@ export default function RowVisual({
         {
           backgroundColor: theme.colors.bg.card,
         },
-        showTopDivider && {
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: theme.colors.border.muted,
-        },
       ]}
     >
       <View style={styles.row}>
         {leading && (
-          <View style={[styles.leading, { opacity }]}>
+          <View
+            style={[styles.leading, { opacity }]}
+            onLayout={handleLeadingLayout}
+          >
             {leading}
           </View>
         )}
@@ -103,8 +112,12 @@ export default function RowVisual({
             <Text
               style={[
                 styles.title,
-                theme.typography.bodyLarge,
-                { color: titleColor },
+                {
+                  fontSize: 16,
+                  lineHeight: 20,
+                  fontWeight: '400',
+                  color: titleColor,
+                },
               ]}
               numberOfLines={2}
               ellipsizeMode="tail"
@@ -117,8 +130,12 @@ export default function RowVisual({
                   <Text
                     style={[
                       styles.trailingText,
-                      theme.typography.valueSmall,
-                      { color: trailingColor },
+                      {
+                        fontSize: 15,
+                        lineHeight: 19,
+                        fontWeight: '500',
+                        color: trailingColor,
+                      },
                     ]}
                   >
                     {trailingText}
@@ -133,8 +150,12 @@ export default function RowVisual({
             <Text
               style={[
                 styles.subtitle,
-                theme.typography.bodySmall,
-                { color: subtitleColor },
+                {
+                  fontSize: 14,
+                  lineHeight: 18,
+                  fontWeight: '400',
+                  color: subtitleColor,
+                },
               ]}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -144,13 +165,25 @@ export default function RowVisual({
           )}
         </View>
       </View>
+      {/* Bottom separator - Apple Settings style */}
+      {!isLastInGroup && (
+        <View
+          style={[
+            styles.separator,
+            {
+              backgroundColor: theme.colors.border.separator,
+              left: contentStartX,
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   rowWrapper: {
-    // Wrapper for divider support
+    position: 'relative',
   },
   row: {
     flexDirection: 'row',
@@ -182,6 +215,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   subtitle: {
-    marginTop: spacing.tiny,
+    marginTop: 2,
+  },
+  separator: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
   },
 });

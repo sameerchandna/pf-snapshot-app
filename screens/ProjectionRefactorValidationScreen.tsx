@@ -23,6 +23,8 @@ import { buildProjectionInputsFromState } from '../projection/buildProjectionInp
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type ValidationResult = {
   aggregateDeterminism: 'PASS' | 'FAIL' | 'PENDING';
@@ -381,22 +383,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 12,
-    paddingBottom: 24,
+    padding: spacing.base,
+    paddingBottom: spacing.huge,
   },
   section: {
-    marginBottom: 18,
+    marginBottom: spacing.xl,
     borderWidth: 1,
     // borderColor moved to inline style
     borderRadius: 8,
-    padding: 12,
+    padding: spacing.base,
     // backgroundColor moved to inline style
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 8,
+    gap: spacing.base,
+    marginBottom: spacing.sm,
   },
   rowLabel: {
     flex: 1,
@@ -418,15 +420,15 @@ const styles = StyleSheet.create({
     // color moved to inline style
   },
   errorItem: {
-    marginBottom: 12,
-    padding: 8,
+    marginBottom: spacing.base,
+    padding: spacing.sm,
     // backgroundColor moved to inline style
-    borderRadius: 4,
+    borderRadius: spacing.tiny,
   },
   errorTest: {
     // Typography moved to inline style with theme token
     // color moved to inline style
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   errorCause: {
     // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)

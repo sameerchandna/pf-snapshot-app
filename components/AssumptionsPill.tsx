@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { spacing } from '../spacing';
+import { layout } from '../layout';
 import type { AssetItem } from '../types';
 import { formatCurrencyFull } from '../formatters';
 import { useTheme } from '../ui/theme/useTheme';
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.xs,
   },
   activeDot: {
     width: 6,
@@ -383,14 +384,14 @@ const styles = StyleSheet.create({
   selector: {
     borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.base,
   },
   selectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   selectorValue: {
     flex: 1,
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
   amountInput: {
     borderWidth: 1,
     borderRadius: 8,
-    padding: 10,
+    padding: layout.inputPadding,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   clearButton: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 0,
     marginTop: spacing.xs,
   },
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   modalList: {
     flexGrow: 0,
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   modalOption: {
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     borderBottomWidth: 1,
   },
   modalOptionContent: {
@@ -485,6 +486,6 @@ const styles = StyleSheet.create({
   modalEmptyText: {
     fontSize: 14,
     fontStyle: 'italic',
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
   },
 });

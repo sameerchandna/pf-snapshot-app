@@ -561,7 +561,7 @@ function DualValueCard({
               {formatValue(scenarioValue)}
             </Text>
             {hasDelta && (
-              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText, textAlign: 'left', marginTop: 2 }]}>
+              <Text style={[styles.projectedDelta, styles.projectedDeltaScenario, { color: theme.colors.semantic.infoText, textAlign: 'left', marginTop: layout.micro }]}>
                 {formatCurrencyCompactSigned(delta)}
               </Text>
             )}
@@ -861,7 +861,7 @@ function ReconciliationOverlay({
         </Text>
       </View>
 
-      <View style={{ marginVertical: 8 }}>
+      <View style={{ marginVertical: spacing.sm }}>
         <Divider />
       </View>
 
@@ -882,7 +882,7 @@ function ReconciliationOverlay({
         <Text style={styles.reconciliationValue}>{formatCurrencyFull(-debtReduction)}</Text>
       </View>
       
-      <View style={{ marginVertical: 8 }}>
+      <View style={{ marginVertical: spacing.sm }}>
         <Divider />
       </View>
       
@@ -891,7 +891,7 @@ function ReconciliationOverlay({
         <Text style={styles.reconciliationValue}>{formatCurrencyFull(attributionSum)}</Text>
       </View>
 
-      <View style={{ marginVertical: 8 }}>
+      <View style={{ marginVertical: spacing.sm }}>
         <Divider />
       </View>
 
@@ -958,6 +958,7 @@ function FinancialHealthSummary({
   currentAge,
   endAge,
   assets,
+  style,
 }: {
   snapshotTotals: ReturnType<typeof selectSnapshotTotals>;
   baselineSummary: ReturnType<typeof computeProjectionSummary>;
@@ -965,6 +966,7 @@ function FinancialHealthSummary({
   currentAge: number;
   endAge: number;
   assets: AssetItem[];
+  style?: any;
 }) {
   const { theme } = useTheme();
   const insights: Insight[] = [];
@@ -1113,7 +1115,7 @@ function FinancialHealthSummary({
   }
 
   return (
-    <SectionCard>
+    <SectionCard style={style}>
       <SectionHeader title="Financial Health Summary" />
       <View style={styles.insightsList}>
         {selectedInsights.map(insight => (
@@ -1167,7 +1169,7 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
                   )}
                 </View>
                 {r.showDividerAfter ? (
-                  <View style={{ marginTop: 4, marginBottom: 4 }}>
+                  <View style={{ marginTop: spacing.tiny, marginBottom: spacing.tiny }}>
                     <Divider />
                   </View>
                 ) : null}
@@ -3558,7 +3560,7 @@ export default function ProjectionResultsScreen() {
 
             {/* Scenario Type Toggle */}
             <View style={styles.quickRow}>
-              <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+              <View style={{ flexDirection: 'row', gap: spacing.sm, flex: 1 }}>
                 <Button
                   variant={scenarioTypeToggle === 'FLOW_INVESTING' ? 'primary' : 'secondary'}
                   size="md"
@@ -3685,7 +3687,7 @@ export default function ProjectionResultsScreen() {
               variant="text"
               size="sm"
               onPress={handleClearScenario}
-              style={{ marginTop: 8, alignSelf: 'flex-start' }}
+              style={{ marginTop: spacing.sm, alignSelf: 'flex-start' }}
             >
               Clear scenario
             </Button>
@@ -3701,6 +3703,7 @@ export default function ProjectionResultsScreen() {
             currentAge={state.projection.currentAge}
             endAge={state.projection.endAge}
             assets={state.assets}
+            style={{ marginTop: layout.sectionGap }}
           />
 
           <SectionCard style={{ marginBottom: spacing.xs }}>
@@ -3984,14 +3987,14 @@ export default function ProjectionResultsScreen() {
                           
                           {/* SubBullet 1: From higher contributions */}
                           {Math.abs(extraContributions) >= UI_TOLERANCE && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                         • From higher contributions: {formatCurrencyCompact(Math.abs(extraContributions))}{contributionPct !== null ? ` (${contributionPct}%)` : ''} (from {formatCurrencyCompact(baselineTotalContributions)} to {formatCurrencyCompact(scenarioTotalContributions)})
                       </Text>
                           )}
                           
                           {/* SubBullet 2: From investment growth */}
                           {Math.abs(growthDelta) >= UI_TOLERANCE && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                               • From investment growth: {formatCurrencyCompact(Math.abs(growthDelta))}{growthPct !== null ? ` (${growthPct}%)` : ''} (from {formatCurrencyCompact(valuesAtAge.growth)} to {formatCurrencyCompact(scenarioValuesAtAge.growth)})
                         </Text>
                           )}
@@ -4005,34 +4008,34 @@ export default function ProjectionResultsScreen() {
                           
                           {/* SubBullet 1: Total liabilities reduced */}
                           {hasLiabilityDelta && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                               • Total liabilities reduced by {formatCurrencyCompact(principalPaydownDelta)} (from {formatCurrencyCompact(valuesAtAge.liabilities)} to {formatCurrencyCompact(scenarioValuesAtAge.liabilities)})
                             </Text>
                           )}
                           
                           {/* SubBullet 2: From principal paydown */}
                           {hasLiabilityDelta && principalPaydownDelta > 0 && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                               • From principal paydown: {formatCurrencyCompact(principalPaydownDelta)}{principalPaydownPct !== null ? ` (${principalPaydownPct}%)` : ''} (from {formatCurrencyCompact(valuesAtAge.remainingDebt)} to {formatCurrencyCompact(scenarioValuesAtAge.remainingDebt)})
                             </Text>
                           )}
                           
                           {/* SubBullet 3: Lower interest paid */}
                           {interestSaved > 0 && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                               • Lower interest paid: {formatCurrencyCompact(interestSaved)} (from {formatCurrencyCompact(valuesAtAge.interestPaid)} to {formatCurrencyCompact(scenarioValuesAtAge.interestPaid)})
                             </Text>
                           )}
                           
                           {/* SubBullet 4: Time saved to loan payoff */}
                           {hasEarlierPayoff && baselinePayoffAge !== undefined && scenarioPayoffAge !== undefined && (yearsSaved > 0 || monthsSaved > 0) && (
-                            <Text style={[styles.bodyText, { marginLeft: 16 }]}>
+                            <Text style={[styles.bodyText, { marginLeft: spacing.xl }]}>
                               • Time saved to loan payoff: {yearsSaved > 0 ? `${yearsSaved} year${yearsSaved !== 1 ? 's' : ''}` : ''}{yearsSaved > 0 && monthsSaved > 0 ? ' ' : ''}{monthsSaved > 0 ? `${monthsSaved} month${monthsSaved !== 1 ? 's' : ''}` : ''} (age {Math.floor(baselinePayoffAge)} → age {Math.floor(scenarioPayoffAge)})
                             </Text>
                           )}
                           
                           {/* Explanatory text for liability-driven scenarios */}
-                          <Text style={[styles.bodyText, styles.bodyTextMuted, { marginLeft: 16, marginTop: 4 }]}>
+                          <Text style={[styles.bodyText, styles.bodyTextMuted, { marginLeft: spacing.xl, marginTop: spacing.tiny }]}>
                             Extra payments reduce the total interest charged on the loan, but mortgage payments are fixed. The interest saving isn't shown as lower expenses — it appears because the loan is paid off earlier, so those future interest payments never happen.
                           </Text>
                         </>
@@ -4404,7 +4407,7 @@ export default function ProjectionResultsScreen() {
                     key={asset.id}
                     onPress={() => handleSelectAsset(asset.id)}
                     showBottomDivider={true}
-                    style={{ paddingVertical: 12 }}
+                    style={{ paddingVertical: spacing.base }}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{asset.name}</Text>
@@ -4451,7 +4454,7 @@ export default function ProjectionResultsScreen() {
                     key={loan.id}
                     onPress={() => handleSelectLiability(loan.id)}
                     showBottomDivider={true}
-                    style={{ paddingVertical: 12 }}
+                    style={{ paddingVertical: spacing.base }}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{loan.name}</Text>
@@ -4489,7 +4492,7 @@ export default function ProjectionResultsScreen() {
                     }}
                     showBottomDivider={true}
                     style={{ 
-                      paddingVertical: 12,
+                      paddingVertical: spacing.base,
                       backgroundColor: isSelected ? theme.colors.bg.subtle : undefined
                     }}
                   >
@@ -4524,7 +4527,7 @@ export default function ProjectionResultsScreen() {
                 disabled={isSurplusNegative}
                 showBottomDivider={true}
                 style={{ 
-                  paddingVertical: 12,
+                  paddingVertical: spacing.base,
                   opacity: isSurplusNegative ? 0.5 : 1,
                   backgroundColor: (!activeScenarioId || activeScenarioId === BASELINE_SCENARIO_ID) ? theme.colors.bg.subtle : undefined
                 }}
@@ -4544,7 +4547,7 @@ export default function ProjectionResultsScreen() {
                       disabled={isSurplusNegative}
                       showBottomDivider={true}
                       style={{ 
-                        paddingVertical: 12,
+                        paddingVertical: spacing.base,
                         opacity: isSurplusNegative ? 0.5 : 1,
                         backgroundColor: isSelected ? theme.colors.bg.subtle : undefined
                       }}
@@ -4564,7 +4567,7 @@ export default function ProjectionResultsScreen() {
                   navigation.navigate('ScenarioManagement');
                 }}
                 showBottomDivider={true}
-                style={{ paddingVertical: 12 }}
+                style={{ paddingVertical: spacing.base }}
               >
                 <Text style={styles.modalOptionTextSecondary}>Manage scenarios…</Text>
               </Row>
@@ -4618,7 +4621,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.tiny,
     borderRadius: 6,
   },
   scenarioSelectorText: {
@@ -4671,8 +4674,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.tiny,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     borderRadius: 6,
     minHeight: 32,
     flexShrink: 1,
@@ -4745,7 +4748,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   quickWhatIfSelectorValue: {
     flex: 1,
@@ -4792,17 +4795,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     // color moved to inline style
     lineHeight: 16,
-    marginTop: 4,
+    marginTop: spacing.tiny,
   },
   clearScenarioText: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     fontSize: 12,
     color: '#aaa',
     textDecorationLine: 'underline',
   },
   innerContent: {
-    padding: 12,
-    paddingTop: 12,
+    padding: spacing.base,
+    paddingTop: spacing.base,
   },
   educationBlock: {
     marginBottom: 14,
@@ -4868,7 +4871,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#111',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   toggleHelper: {
     fontSize: 12,
@@ -4884,14 +4887,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: spacing.xs,
-    gap: 16,
+    gap: spacing.xl,
   },
   legendRowSecondary: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: layout.micro,
-    gap: 16,
+    gap: spacing.xl,
   },
   legendItem: {
     flexDirection: 'row',
@@ -4969,14 +4972,14 @@ const styles = StyleSheet.create({
   chartValuesPrimaryLabel: {
     fontSize: 10,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: layout.micro,
   },
   chartValuesPrimaryValue: {
     fontSize: 16,
     fontWeight: '700',
   },
   chartValuesSecondary: {
-    gap: 2,
+    gap: layout.micro,
   },
   chartValuesSecondaryText: {
     fontSize: 11, // Phase 7.11: Slightly increased for readability (was 10)
@@ -4985,28 +4988,28 @@ const styles = StyleSheet.create({
   outcomeSubtitle: {
     fontSize: 13,
     color: '#999',
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   outcomeSummary: {
     fontSize: 14,
     color: '#333',
     lineHeight: 20,
-    marginTop: 12,
+    marginTop: spacing.base,
   },
   ageSelector: {
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: layout.inputPadding,
+    marginBottom: spacing.tiny,
   },
   ageSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   ageSelectorLabel: {
     fontSize: 13,
@@ -5049,14 +5052,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8e8e8',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 4,
+    padding: layout.inputPadding,
+    marginBottom: spacing.tiny,
   },
   keyDriversTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#111',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   keyDriversRows: {
     gap: spacing.sm,
@@ -5065,7 +5068,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   keyDriversLabel: {
     flex: 1,
@@ -5102,7 +5105,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 12,
-    padding: 12,
+    padding: spacing.base,
   },
   breakdownGroupContainer: {
     marginTop: spacing.base,
@@ -5111,7 +5114,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#111',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   attrSubtitle: {
     fontSize: 12,
@@ -5122,7 +5125,7 @@ const styles = StyleSheet.create({
   attrEducation: {
     fontSize: 12,
     color: '#999',
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
     lineHeight: 16,
   },
   attrRows: {
@@ -5132,7 +5135,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: layout.inputPadding,
   },
   attrLabel: {
     flex: 1,
@@ -5149,7 +5152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    gap: layout.inputPadding,
     marginBottom: spacing.sm,
     paddingBottom: 0,
     marginHorizontal: -spacing.base,
@@ -5222,9 +5225,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 10,
+    gap: layout.inputPadding,
     marginBottom: spacing.sm,
-    paddingBottom: 6,
+    paddingBottom: spacing.xs,
   },
   keyDriversHeaderSpacer: {
     flex: 1,
@@ -5251,20 +5254,20 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   endNetWorthSection: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: spacing.base,
+    paddingTop: spacing.base,
   },
   endNetWorthLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#111',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   endNetWorthRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   endNetWorthBaselineLabel: {
     fontSize: 13,
@@ -5309,7 +5312,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#111',
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   modalList: {
     flexGrow: 0,
@@ -5318,7 +5321,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.base,
   },
   modalOption: {
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
@@ -5335,11 +5338,11 @@ const styles = StyleSheet.create({
   modalDivider: {
     height: 1,
     // backgroundColor moved to inline style
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   modalOptionContent: {
     flexDirection: 'column',
-    gap: 2,
+    gap: layout.micro,
   },
   modalOptionMetadata: {
     fontSize: 12,
@@ -5350,7 +5353,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#777',
     fontStyle: 'italic',
-    paddingVertical: 12,
+    paddingVertical: spacing.base,
   },
   modalOptionSubtext: {
     fontSize: 12,
@@ -5362,7 +5365,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
     gap: spacing.base,
   },
   headerQualifier: {
@@ -5378,10 +5381,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#999',
-    marginBottom: 12,
+    marginBottom: spacing.base,
   },
   column: {
-    marginBottom: 16,
+    marginBottom: spacing.xl,
   },
   cashflowColumn: {
     marginBottom: spacing.sm,
@@ -5449,7 +5452,7 @@ const styles = StyleSheet.create({
     width: '49%',
   },
   cashflowSubCardHalfLeft: {
-    marginRight: 4,
+    marginRight: spacing.tiny,
   },
   cashflowTextCentered: {
     textAlign: 'center',
@@ -5482,19 +5485,19 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   projectedCard: {
-    padding: 8,
+    padding: spacing.sm,
     marginBottom: 0,
     borderRadius: 24,
     borderWidth: 0.5,
     borderColor: '#d8d8d8',
   },
   projectedCardMinimal: {
-    padding: 8,
+    padding: spacing.sm,
     marginBottom: 0,
     borderRadius: 24,
   },
   projectedCardBordered: {
-    padding: 8,
+    padding: spacing.sm,
     marginBottom: 0,
     borderRadius: 24,
     borderWidth: 0.5,
@@ -5533,7 +5536,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#999',
-    marginTop: 4,
+    marginTop: spacing.tiny,
   },
   projectedDeltaScenario: {
     // color moved to inline style
@@ -5677,7 +5680,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: snapshotTypography.bodyWeight,
     color: '#666',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
     lineHeight: 18,
   },
   bodyTextMuted: {
@@ -5764,7 +5767,7 @@ const styles = StyleSheet.create({
   reconciliationToggle: {
     // backgroundColor moved to inline style
     borderRadius: 6,
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
     paddingHorizontal: layout.inputPadding,
     borderWidth: 1,
     borderColor: '#ddd',
@@ -5779,8 +5782,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
     borderRadius: 6,
-    padding: 10,
-    marginTop: 8,
+    padding: layout.inputPadding,
+    marginTop: spacing.sm,
   },
   reconciliationTitle: {
     fontSize: 12,
@@ -5793,7 +5796,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   reconciliationLabel: {
     fontSize: 11,
@@ -5818,8 +5821,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     // borderColor moved to inline style
     borderRadius: 4,
-    padding: 8,
-    marginTop: 8,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
   },
   reconciliationWarningText: {
     fontSize: 11,
@@ -5841,7 +5844,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   modalWarningBanner: {
-    marginBottom: 12,
+    marginBottom: spacing.base,
     padding: layout.blockPadding,
     // backgroundColor moved to inline style
     borderRadius: 8,

@@ -5,6 +5,8 @@ import DetailScreenShell from '../components/DetailScreenShell';
 import { HelpContent } from './EditableCollectionScreen';
 import { selectAvailableCash, selectNetIncome, selectSnapshotExpenses } from '../selectors';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 const availableCashHelpContent: HelpContent = {
   title: 'Available Cash',
@@ -105,19 +107,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
+    padding: spacing.base,
+    marginBottom: layout.inputPadding,
   },
   blockTitle: {
     fontSize: 12,
     fontWeight: '600',
     color: '#444',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   text: {
     fontSize: 14,
     color: '#333',
-    marginBottom: 2,
+    marginBottom: layout.micro,
   },
   result: {
     fontSize: 22,

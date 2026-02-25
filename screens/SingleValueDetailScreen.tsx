@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 type Props = {
   title: string;
@@ -166,22 +168,22 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: spacing.xl,
     justifyContent: 'center',
   },
   card: {
-    padding: 12,
+    padding: spacing.base,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: spacing.base,
     borderWidth: 1,
   },
   label: {
     fontSize: 12,
     fontWeight: '500',
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   valueRow: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   value: {
     fontSize: 22,
@@ -189,24 +191,24 @@ const styles = StyleSheet.create({
   },
   editHint: {
     fontSize: 12,
-    marginTop: 4,
+    marginTop: spacing.tiny,
   },
   input: {
     borderWidth: 1,
     borderRadius: 6,
-    padding: 10,
+    padding: layout.inputPadding,
     fontSize: 18,
   },
   errorCard: {
     borderWidth: 1,
     borderRadius: 6,
-    padding: 10,
-    marginBottom: 8,
+    padding: layout.inputPadding,
+    marginBottom: spacing.sm,
   },
   errorTitle: {
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   errorText: {
     fontSize: 12,
@@ -214,12 +216,12 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 8,
-    gap: 8,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.base,
     borderRadius: 6,
     borderWidth: 1,
   },

@@ -8,10 +8,12 @@ import { parseItemName, parseMoney } from '../domainValidation';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
+import GroupedListSection from '../components/list/GroupedListSection';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import SwipeAction from '../components/SwipeAction';
+import EditorActionGroup from '../components/EditorActionGroup';
 import GroupedList, { Group as GroupedListGroup } from '../components/list/GroupedList';
 import FinancialItemRow from '../components/rows/FinancialItemRow';
 import { spacing } from '../spacing';
@@ -109,8 +111,12 @@ type Props<TItem> = {
   // Optional intro content rendered above EducationBox (used by guidance/info cards)
   renderIntro?: React.ReactNode;
 
-  // Editor UI placement (legacy: inline editor at bottom of list; new: top "active entry block")
-  editorPlacement?: 'inline' | 'top';
+  // Optional subtext to display below the "Add item" / "Edit item" header in the SectionCard
+  editorSubtext?: string;
+
+  // Optional custom action buttons renderer (for Expenses compact control)
+  renderActionButtons?: (props: { onSave: () => void; onCancel: () => void; editingItemId: string | null }) => React.ReactNode;
+
   // Optional: hide the editor entirely (useful for guided flows that provide their own entry UI).
   showEditor?: boolean;
 
@@ -170,6 +176,7 @@ type Props<TItem> = {
     item: TItem,
     index: number,
     groupId: string | undefined,
+    isLastInGroup: boolean,
     callbacks: {
       onEdit: () => void;
       onDelete: () => void;
@@ -241,7 +248,8 @@ export default function EditableCollectionScreen<TItem>({
   validateEditedItem,
   renderFooter,
   renderIntro,
-  editorPlacement,
+  editorSubtext,
+  renderActionButtons,
   secondaryNumberField,
   liquidityField,
   showEditor,
@@ -264,7 +272,6 @@ export default function EditableCollectionScreen<TItem>({
   const implicitGroupId: string = 'general';
   const implicitGroupName: string = 'General';
 
-  const effectiveEditorPlacement: 'inline' | 'top' = editorPlacement ?? 'inline';
   const editorVisible: boolean = showEditor !== false;
   const scrollRef = useRef<any>(null);
   const [openSwipeableId, setOpenSwipeableId] = useState<string | null>(null);
@@ -284,6 +291,7 @@ export default function EditableCollectionScreen<TItem>({
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [isHintOpen, setIsHintOpen] = useState<boolean>(false);
   const [pendingDeleteItemId, setPendingDeleteItemId] = useState<string | null>(null);
+  const [focusedInput, setFocusedInput] = useState<'name' | 'amount' | null>(null);
   const swipeableRefs = useRef<Map<string, Swipeable | null>>(new Map());
 
   const maxValue: number = 1_000_000_000;
@@ -308,6 +316,7 @@ export default function EditableCollectionScreen<TItem>({
     setDraftLiquidityType('immediate');
     setDraftUnlockAge('');
     setEditingItemId(null);
+    setFocusedInput(null);
   };
 
   const activeEditingMeta: { groupId: string; name: string } | null = useMemo(() => {
@@ -424,7 +433,7 @@ export default function EditableCollectionScreen<TItem>({
 
     const secondaryTrimmed = draftSecondaryNumber.trim();
     let secondaryNumber: number | null = null;
-    if (effectiveEditorPlacement === 'top' && secondaryNumberField && secondaryTrimmed.length > 0) {
+    if (secondaryNumberField && secondaryTrimmed.length > 0) {
       const n = Number(secondaryTrimmed);
       if (!Number.isFinite(n)) return { ok: false, message: `Please enter a valid number for ${secondaryNumberField.label}.` };
       if (typeof secondaryNumberField.min === 'number' && n < secondaryNumberField.min) {
@@ -438,7 +447,7 @@ export default function EditableCollectionScreen<TItem>({
 
     // Validate liquidity
     let liquidity: { type: 'immediate' | 'locked' | 'illiquid'; unlockAge?: number } | null = null;
-    if (effectiveEditorPlacement === 'top' && liquidityField) {
+    if (liquidityField) {
       if (draftLiquidityType === 'locked') {
         const ageTrimmed = draftUnlockAge.trim();
         if (ageTrimmed.length === 0) {
@@ -585,13 +594,13 @@ export default function EditableCollectionScreen<TItem>({
     setErrorMessage('');
     setDraftName(getItemName(item));
     setDraftAmount(getItemAmount(item).toString());
-    if (effectiveEditorPlacement === 'top' && secondaryNumberField?.getItemValue) {
+    if (secondaryNumberField?.getItemValue) {
       const v = secondaryNumberField.getItemValue(item);
       setDraftSecondaryNumber(typeof v === 'number' && Number.isFinite(v) ? v.toString() : '');
     } else {
       setDraftSecondaryNumber('');
     }
-    if (effectiveEditorPlacement === 'top' && liquidityField?.getItemLiquidity) {
+    if (liquidityField?.getItemLiquidity) {
       const liquidity = liquidityField.getItemLiquidity(item);
       if (liquidity) {
         setDraftLiquidityType(liquidity.type);
@@ -605,10 +614,8 @@ export default function EditableCollectionScreen<TItem>({
       setDraftUnlockAge('');
     }
     setEditingItemId(getItemId(item));
-    if (effectiveEditorPlacement === 'top') {
-      // Ensure the active entry block is visible when editing.
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    }
+    // Ensure the active entry block is visible when editing.
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   const deleteItem = (itemId: string) => {
@@ -746,6 +753,7 @@ export default function EditableCollectionScreen<TItem>({
     item: TItem,
     index: number,
     groupId: string | undefined,
+    isLastInGroup: boolean,
     swipeableCallbacks: {
       swipeableRef: (ref: Swipeable | null) => void;
       onSwipeableWillOpen: () => void;
@@ -773,6 +781,9 @@ export default function EditableCollectionScreen<TItem>({
     const itemIsActive = typeof getItemIsActive === 'function' ? getItemIsActive(item) : true;
     const isInactive = itemIsActive === false;
 
+    // Calculate showTopDivider: show divider if not the first item in the group
+    const showTopDivider: boolean = index > 0;
+
     const handleToggleActive = () => {
       if (typeof setItemIsActive === 'function') {
         const updated = setItemIsActive(item, !itemIsActive);
@@ -780,8 +791,6 @@ export default function EditableCollectionScreen<TItem>({
         setItems(updatedItems);
       }
     };
-
-    const showTopDivider = index > 0;
 
     // Use custom renderRow override if provided (for v2 row architecture)
     if (renderRowOverride) {
@@ -801,6 +810,7 @@ export default function EditableCollectionScreen<TItem>({
         item,
         index,
         groupId,
+        isLastInGroup,
         {
           onEdit: handleEdit,
           onDelete: handleDelete,
@@ -992,123 +1002,6 @@ export default function EditableCollectionScreen<TItem>({
     );
   };
 
-  // Render inline editor
-  const renderInlineEditor = (groupId?: string) => {
-    if (!editorVisible || effectiveEditorPlacement !== 'inline') {
-      return null;
-    }
-
-    const targetGroupId = groupId || implicitGroupId;
-    const groupExpanded = groupsEnabled ? isExpanded(targetGroupId) : true;
-    const shouldShow =
-      (canAddItems && (groupExpanded || !canCollapseGroups)) ||
-      (editingItemId && activeEditingMeta?.groupId === targetGroupId);
-
-    if (!shouldShow) {
-      return null;
-    }
-
-    return (
-      <View style={styles.editorInline}>
-        {editingItemId && activeEditingMeta?.groupId === targetGroupId ? (
-          <Text style={[styles.editorLabel, theme.typography.body, { color: theme.colors.text.secondary }]}>
-            Editing: {activeEditingMeta.name}
-          </Text>
-        ) : null}
-        {errorMessage.length > 0 ? (
-          <View
-            style={[
-              styles.errorCard,
-              {
-                backgroundColor: theme.colors.semantic.errorBg,
-                borderColor: theme.colors.semantic.errorBorder,
-                borderRadius: theme.radius.medium,
-              },
-            ]}
-          >
-            <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>
-              Can't save
-            </Text>
-            <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.entryRow}>
-          {canEditItemName ? (
-            <TextInput
-              style={[
-                styles.input,
-                theme.typography.input,
-                styles.entryName,
-                {
-                  backgroundColor: theme.colors.bg.card,
-                  borderColor: theme.colors.border.default,
-                  borderRadius: theme.radius.medium,
-                  color: theme.colors.text.primary,
-                },
-              ]}
-              value={draftName}
-              onChangeText={setDraftName}
-              placeholder="Name"
-              placeholderTextColor={theme.colors.text.disabled}
-              autoFocus={autoFocus}
-            />
-          ) : null}
-
-          <TextInput
-            style={[
-              styles.input,
-              theme.typography.input,
-              styles.entryAmount,
-              {
-                backgroundColor: theme.colors.bg.card,
-                borderColor: theme.colors.border.default,
-                borderRadius: theme.radius.medium,
-                color: theme.colors.text.primary,
-              },
-            ]}
-            value={draftAmount}
-            onChangeText={setDraftAmount}
-            placeholder="Amount"
-            placeholderTextColor={theme.colors.text.disabled}
-            keyboardType="numeric"
-          />
-
-          <IconButton
-            icon="check"
-            size="md"
-            variant="success"
-            onPress={saveEditor}
-            disabled={canCollapseGroups && groupsEnabled && groupId ? !isExpanded(groupId) : false}
-            accessibilityLabel="Save"
-            style={[
-              styles.tickIconButton,
-              {
-                borderColor: theme.colors.semantic.successBorder,
-                borderRadius: theme.radius.medium,
-                opacity: canCollapseGroups && groupsEnabled && groupId && !isExpanded(groupId) ? 0.5 : 1,
-              },
-            ]}
-          />
-          <IconButton
-            icon="x"
-            size="md"
-            variant="neutral"
-            onPress={cancelEditor}
-            accessibilityLabel="Cancel"
-            style={[
-              styles.cancelIconButton,
-              {
-                borderColor: theme.colors.border.default,
-                borderRadius: theme.radius.medium,
-              },
-            ]}
-          />
-        </View>
-      </View>
-    );
-  };
-
   // Prepare groups for GroupedList
   const groupedListGroups: GroupedListGroup<TItem>[] | undefined = groupsEnabled
     ? effectiveGroups.map((group) => ({
@@ -1151,7 +1044,7 @@ export default function EditableCollectionScreen<TItem>({
         <ScrollView
           ref={scrollRef}
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 16 + keyboardHeight }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xl + keyboardHeight }]}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={true}
           directionalLockEnabled={true}
@@ -1164,19 +1057,9 @@ export default function EditableCollectionScreen<TItem>({
         >
           {renderIntro ? <View style={styles.introBlock}>{renderIntro}</View> : null}
 
-          {effectiveEditorPlacement === 'top' && editorVisible ? (
-            <SectionCard>
-              <View style={styles.sectionHeaderRow}>
-                <GroupHeader title={editingItemId ? 'Edit item' : 'Add item'} />
-              </View>
-
+          {editorVisible ? (
+            <SectionCard style={{ marginTop: spacing.base, paddingVertical: spacing.xs }}>
               <View style={styles.activeEntryWrapper}>
-                <View
-                  style={[
-                    styles.activeEntryBlock,
-                    { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium },
-                  ]}
-                >
                   {errorMessage.length > 0 ? (
                     <View
                       style={[
@@ -1208,7 +1091,7 @@ export default function EditableCollectionScreen<TItem>({
                               style={[
                                 styles.input,
                                 styles.projectionFieldInputFull,
-                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                                { backgroundColor: theme.colors.bg.input, borderColor: focusedInput === 'name' ? theme.colors.border.default : 'transparent', borderRadius: theme.radius.medium, color: theme.colors.text.primary },
                               ]}
                               value={draftName}
                               onChangeText={setDraftName}
@@ -1216,18 +1099,95 @@ export default function EditableCollectionScreen<TItem>({
                               placeholderTextColor={theme.colors.text.disabled}
                               autoFocus={false}
                               returnKeyType="next"
+                              onFocus={() => setFocusedInput('name')}
+                              onBlur={() => setFocusedInput(null)}
                             />
                           )}
                         </View>
                       ) : null}
                       <View style={styles.projectionField}>
                         <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Amount</Text>
+                        <View style={[styles.activeEntryRow, { alignItems: 'center' }]}>
+                          <TextInput
+                            style={[
+                              styles.input,
+                              theme.typography.input,
+                              styles.amountInputFixed,
+                              { backgroundColor: theme.colors.bg.input, borderColor: focusedInput === 'amount' ? theme.colors.border.default : 'transparent', borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                            ]}
+                            value={draftAmount}
+                            onChangeText={setDraftAmount}
+                            placeholder="Amount"
+                            placeholderTextColor={theme.colors.text.disabled}
+                            keyboardType="numeric"
+                            returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
+                            onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
+                            onFocus={() => setFocusedInput('amount')}
+                            onBlur={() => setFocusedInput(null)}
+                          />
+                          <View style={{ width: spacing.tiny }} />
+                          {renderActionButtons ? (
+                            renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
+                          ) : (
+                            <EditorActionGroup
+                              onSave={saveEditor}
+                              onCancel={cancelEditor}
+                              editingItemId={editingItemId}
+                            />
+                          )}
+                        </View>
+                      </View>
+                    </>
+                  ) : (
+                    // Add mode: Horizontal row with buttons
+                    <>
+                      {/* Row 1: Name + Amount (primary inputs) */}
+                      <View style={[styles.activeEntryRow, styles.activeEntryRowSpacing]}>
+                        {canEditItemName ? (
+                          renderCustomNameField ? (
+                            <View style={styles.activeEntryNameSplit}>
+                              {renderCustomNameField({
+                                value: draftName,
+                                onChange: setDraftName,
+                                placeholder: 'Name',
+                                editingItemId: null,
+                              })}
+                            </View>
+                          ) : (
+                            <TextInput
+                              style={[
+                                styles.input,
+                                theme.typography.input,
+                                styles.activeEntryNameSplit,
+                                { 
+                                  backgroundColor: theme.colors.bg.input, 
+                                  borderColor: focusedInput === 'name' ? theme.colors.border.default : 'transparent', 
+                                  borderRadius: theme.radius.medium, 
+                                  color: theme.colors.text.primary 
+                                },
+                              ]}
+                              value={draftName}
+                              onChangeText={setDraftName}
+                              placeholder="New Expense Name"
+                              placeholderTextColor={theme.colors.text.disabled}
+                              autoFocus={false}
+                              returnKeyType="next"
+                              onFocus={() => setFocusedInput('name')}
+                              onBlur={() => setFocusedInput(null)}
+                            />
+                          )
+                        ) : null}
                         <TextInput
                           style={[
                             styles.input,
                             theme.typography.input,
-                            styles.projectionFieldInputFull,
-                            { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
+                            styles.activeEntryAmountSplit,
+                            { 
+                              backgroundColor: theme.colors.bg.input, 
+                              borderColor: focusedInput === 'amount' ? theme.colors.border.default : 'transparent', 
+                              borderRadius: theme.radius.medium, 
+                              color: theme.colors.text.primary 
+                            },
                           ]}
                           value={draftAmount}
                           onChangeText={setDraftAmount}
@@ -1236,55 +1196,27 @@ export default function EditableCollectionScreen<TItem>({
                           keyboardType="numeric"
                           returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
                           onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
+                          onFocus={() => setFocusedInput('amount')}
+                          onBlur={() => setFocusedInput(null)}
                         />
+                        {/* Only show action buttons in Row 1 if there are no secondary fields */}
+                        {!(secondaryNumberField || liquidityField) ? (
+                          <>
+                            <View style={{ width: spacing.tiny }} />
+                            {renderActionButtons ? (
+                              renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
+                            ) : (
+                              <EditorActionGroup
+                                onSave={saveEditor}
+                                onCancel={cancelEditor}
+                                editingItemId={editingItemId}
+                              />
+                            )}
+                          </>
+                        ) : null}
                       </View>
+                      
                     </>
-                  ) : (
-                    // Add mode: Horizontal row (75/25 split)
-                    <View style={[styles.activeEntryRow, styles.activeEntryRowSpacing]}>
-                      {canEditItemName ? (
-                        renderCustomNameField ? (
-                          <View style={styles.activeEntryNameSplit}>
-                            {renderCustomNameField({
-                              value: draftName,
-                              onChange: setDraftName,
-                              placeholder: 'Name',
-                              editingItemId: null,
-                            })}
-                          </View>
-                        ) : (
-                          <TextInput
-                            style={[
-                              styles.input,
-                              theme.typography.input,
-                              styles.activeEntryNameSplit,
-                              { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                            ]}
-                            value={draftName}
-                            onChangeText={setDraftName}
-                            placeholder="Name"
-                            placeholderTextColor={theme.colors.text.disabled}
-                            autoFocus={false}
-                            returnKeyType="next"
-                          />
-                        )
-                      ) : null}
-                      <TextInput
-                        style={[
-                          styles.input,
-                          theme.typography.input,
-                          styles.activeEntryAmountSplit,
-                          { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                        ]}
-                        value={draftAmount}
-                        onChangeText={setDraftAmount}
-                        placeholder="Amount"
-                        placeholderTextColor={theme.colors.text.disabled}
-                        keyboardType="numeric"
-                        returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
-                        onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
-                      />
-                    </View>
                   )}
 
                   {/* Projection assumptions section */}
@@ -1366,50 +1298,82 @@ export default function EditableCollectionScreen<TItem>({
                     ) : (
                       // Add mode: Compact, no header, same row
                       <View style={styles.projectionAssumptionsCompact}>
-                        <View style={styles.activeEntryRow}>
-                          {/* Growth rate */}
-                          {secondaryNumberField ? (
-                            <TextInput
-                              style={[
-                                styles.input,
-                                theme.typography.input,
-                                styles.projectionFieldInputCompact,
-                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                              ]}
-                              value={draftSecondaryNumber}
-                              onChangeText={setDraftSecondaryNumber}
-                              placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
-                              placeholderTextColor={theme.colors.text.disabled}
-                              keyboardType="numeric"
-                              returnKeyType={liquidityField ? 'next' : 'done'}
-                              onSubmitEditing={!liquidityField ? saveEditor : undefined}
-                            />
-                          ) : null}
-
-                          {/* Liquidity */}
-                          {liquidityField ? (
-                            <View style={styles.liquidityCompact}>
-                              <SegmentedControl
-                                values={['Liquid', 'Locked', 'Illiquid']}
-                                selectedIndex={draftLiquidityType === 'immediate' ? 0 : draftLiquidityType === 'locked' ? 1 : 2}
-                                onChange={(event) => {
-                                  const index = event.nativeEvent.selectedSegmentIndex;
-                                  if (index === 0) {
-                                    setDraftLiquidityType('immediate');
-                                    setDraftUnlockAge('');
-                                  } else if (index === 1) {
-                                    setDraftLiquidityType('locked');
-                                  } else {
-                                    setDraftLiquidityType('illiquid');
-                                    setDraftUnlockAge('');
-                                  }
-                                }}
-                                style={styles.segmentedControlCompact}
-                                fontStyle={{ color: theme.colors.text.disabled }}
-                                activeFontStyle={{ color: theme.colors.text.disabled }}
+                        <View style={[styles.activeEntryRow, { alignItems: 'center' }]}>
+                          {/* Left group: Growth % + Liquidity */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                            {/* Growth rate */}
+                            {secondaryNumberField ? (
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  theme.typography.input,
+                                  styles.projectionFieldInputCompact,
+                                  { 
+                                    width: 80,
+                                    backgroundColor: theme.colors.bg.input, 
+                                    borderColor: 'transparent', 
+                                    borderRadius: theme.radius.medium, 
+                                    color: theme.colors.text.primary 
+                                  },
+                                ]}
+                                value={draftSecondaryNumber}
+                                onChangeText={setDraftSecondaryNumber}
+                                placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
+                                placeholderTextColor={theme.colors.text.disabled}
+                                keyboardType="numeric"
+                                returnKeyType={liquidityField ? 'next' : 'done'}
+                                onSubmitEditing={!liquidityField ? saveEditor : undefined}
                               />
-                            </View>
-                          ) : null}
+                            ) : null}
+
+                            {/* Liquidity */}
+                            {liquidityField ? (
+                              <View style={styles.liquidityFieldWrapper}>
+                                <SegmentedControl
+                                  values={['Liquid', 'Locked', 'Illiquid']}
+                                  selectedIndex={draftLiquidityType === 'immediate' ? 0 : draftLiquidityType === 'locked' ? 1 : 2}
+                                  onChange={(event) => {
+                                    const index = event.nativeEvent.selectedSegmentIndex;
+                                    if (index === 0) {
+                                      setDraftLiquidityType('immediate');
+                                      setDraftUnlockAge('');
+                                    } else if (index === 1) {
+                                      setDraftLiquidityType('locked');
+                                    } else {
+                                      setDraftLiquidityType('illiquid');
+                                      setDraftUnlockAge('');
+                                    }
+                                  }}
+                                  tintColor={theme.colors.bg.input}
+                                  style={[
+                                    styles.segmentedControlField,
+                                    {
+                                      backgroundColor: theme.colors.bg.input,
+                                      borderRadius: theme.radius.medium,
+                                    }
+                                  ]}
+                                  fontStyle={{ color: theme.colors.text.disabled }}
+                                  activeFontStyle={{ color: theme.colors.text.disabled }}
+                                />
+                              </View>
+                            ) : null}
+                          </View>
+                          
+                          {/* Flex spacer */}
+                          <View style={{ flex: 1 }} />
+                          
+                          {/* Right group: Action buttons */}
+                          <View style={{ flexDirection: 'row' }}>
+                            {renderActionButtons ? (
+                              renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
+                            ) : (
+                              <EditorActionGroup
+                                onSave={saveEditor}
+                                onCancel={cancelEditor}
+                                editingItemId={editingItemId}
+                              />
+                            )}
+                          </View>
                         </View>
 
                         {/* Unlock age (if From age selected) - shown below in compact mode too */}
@@ -1439,57 +1403,27 @@ export default function EditableCollectionScreen<TItem>({
                       </View>
                     )
                   ) : null}
-                </View>
-
-                {/* Action buttons - positioned outside and bottom-right aligned */}
-                <View style={styles.activeEntryActions}>
-                  <View style={[styles.activeEntryButtonsContainer, { borderColor: theme.colors.border.default, borderRadius: theme.radius.large }]}>
-                    <IconButton
-                      icon="check"
-                      size="md"
-                      variant="success"
-                      onPress={saveEditor}
-                      accessibilityLabel={editingItemId ? 'Save' : 'Add'}
-                      style={[
-                        styles.activeTickIconButton,
-                        {
-                          borderTopLeftRadius: theme.radius.large,
-                          borderBottomLeftRadius: theme.radius.large,
-                          borderTopRightRadius: theme.radius.none,
-                          borderBottomRightRadius: theme.radius.none,
-                        },
-                      ]}
-                    />
-                    <View style={[styles.activeEntryButtonsDivider, { backgroundColor: theme.colors.border.default }]} />
-                    <IconButton
-                      icon="x"
-                      size="md"
-                      variant="neutral"
-                      onPress={cancelEditor}
-                      accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
-                      style={[
-                        styles.activeCancelIconButton,
-                        {
-                          borderTopLeftRadius: theme.radius.none,
-                          borderBottomLeftRadius: theme.radius.none,
-                          borderTopRightRadius: theme.radius.large,
-                          borderBottomRightRadius: theme.radius.large,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
               </View>
             </SectionCard>
           ) : null}
 
           {/* Items list section */}
-          <SectionCard>
+          <View style={styles.firstGroupedListSection}>
+            <GroupedListSection>
             {/* List/Table section header (kept simple; matches "two clean sections" rhythm). */}
             {!groupsEnabled ? (
-              <View style={styles.sectionHeaderRow}>
-                <GroupHeader title={title} />
-              </View>
+              <>
+                <View style={styles.sectionHeaderRow}>
+                  <GroupHeader title={title} />
+                </View>
+                {editorSubtext ? (
+                  <View style={styles.editorSubtextContainer}>
+                    <Text style={[styles.editorSubtext, theme.typography.bodySmall, { color: theme.colors.text.secondary }]}>
+                      {editorSubtext}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
             ) : null}
 
             <GroupedList
@@ -1511,7 +1445,6 @@ export default function EditableCollectionScreen<TItem>({
                 return renderSwipeActions(item, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit);
               }}
               emptyStateText={emptyStateText}
-              renderInlineEditor={renderInlineEditor}
               swipeableRefs={swipeableRefs}
               onSwipeableWillOpen={handleSwipeableWillOpen}
               onSwipeableOpen={handleSwipeableOpen}
@@ -1541,7 +1474,8 @@ export default function EditableCollectionScreen<TItem>({
                 </Text>
               </Pressable>
             ) : null}
-          </SectionCard>
+            </GroupedListSection>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -1562,7 +1496,7 @@ export default function EditableCollectionScreen<TItem>({
                   <Text style={[styles.hintTitle, theme.typography.sectionTitle, { color: theme.colors.text.primary }]}>{helpContent.title}</Text>
                   <ScrollView style={styles.hintScroll} contentContainerStyle={styles.hintScrollContent} showsVerticalScrollIndicator={false}>
                     {helpContent.sections.map((section, sectionIdx) => (
-                      <View key={sectionIdx} style={sectionIdx > 0 ? { marginTop: 16, paddingTop: 16 } : null}>
+                      <View key={sectionIdx} style={sectionIdx > 0 ? { marginTop: spacing.xl, paddingTop: spacing.xl } : null}>
                         {sectionIdx > 0 && <Divider variant="default" />}
                         {section.heading ? (
                           <Text style={[styles.helpSectionHeading, theme.typography.bodyLarge, { fontWeight: '600', color: theme.colors.text.primary }]}>{section.heading}</Text>
@@ -1661,60 +1595,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   hintButton: {
-    padding: 6,
+    padding: spacing.xs,
   },
   headerRightRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   hintBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   hintSheet: {
-    padding: 16,
+    padding: spacing.xl,
     maxHeight: '80%',
   },
   footerContainer: {
     // Footer is already within SafeAreaView; this just provides breathing room.
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
   },
   introBlock: {
-    marginBottom: 12,
+    marginBottom: spacing.base,
   },
   hintTitle: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   hintIntro: {
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   hintScroll: {
-    marginTop: 12,
+    marginTop: spacing.base,
   },
   hintScrollContent: {
     paddingBottom: 24,
   },
   hintBullet: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   helpSectionHeading: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   helpParagraph: {
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   helpBulletsContainer: {
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: spacing.tiny,
+    marginBottom: layout.inputPadding,
   },
   helpBullet: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   helpExample: {
-    marginTop: 4,
-    marginBottom: 10,
+    marginTop: spacing.tiny,
+    marginBottom: layout.inputPadding,
   },
   helpExampleBold: {
     // Typography via theme.typography.bodyLarge with fontWeight override
@@ -1727,49 +1661,50 @@ const styles = StyleSheet.create({
     paddingTop: layout.screenPaddingTop,
   },
   educationBlock: {
-    marginBottom: 12,
+    marginBottom: spacing.base,
   },
   addGroupButton: {
     alignSelf: 'flex-start',
     backgroundColor: 'transparent',
     borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: layout.inputPadding,
+    marginBottom: spacing.base,
   },
   addGroupButtonText: {
     // Typography via theme.typography.button
   },
   groupWrapper: {
-    marginBottom: 12,
+    marginBottom: spacing.base,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    marginTop: 6,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xl,
+  },
+  editorSubtextContainer: {
+    paddingHorizontal: layout.rowPaddingHorizontal,
+    marginTop: spacing.tiny,
+    marginBottom: spacing.xs,
+  },
+  editorSubtext: {
+    // Text styling applied inline with theme tokens
+  },
+  firstGroupedListSection: {
+    marginTop: spacing.base,
   },
   activeEntryActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  activeEntryButtonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  activeEntryButtonsDivider: {
-    width: 1,
-    height: 30,
-  },
   groupActionsAbove: {
     flexDirection: 'row',
     alignSelf: 'flex-end',
-    gap: 5,
-    marginBottom: 6,
+    gap: layout.xxs,
+    marginBottom: spacing.xs,
   },
   groupCard: {
     backgroundColor: 'transparent',
@@ -1779,22 +1714,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   groupHeaderLeft: {
     flex: 1,
-    marginRight: 10,
+    marginRight: layout.inputPadding,
   },
   groupHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   groupTotalPressable: {
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingVertical: spacing.tiny,
+    paddingHorizontal: layout.micro,
   },
   groupBody: {
-    marginTop: 4,
+    marginTop: spacing.tiny,
   },
   groupTitle: {
     // Typography via theme.typography.sectionTitle
@@ -1804,15 +1739,15 @@ const styles = StyleSheet.create({
   },
   groupNameInput: {
     borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: layout.inputPadding,
     // Typography via theme.typography.sectionTitle (for TextInput, use input token)
   },
   groupNameErrorText: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   emptyText: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   itemRowWrapper: {
     // Wrapper kept for structure, but no margin (dividers provide separation)
@@ -1896,48 +1831,42 @@ const styles = StyleSheet.create({
   itemMetaLocked: {
     // Legacy style - typography removed, using theme tokens
   },
-  editorInline: {
-    marginTop: 10,
-  },
-  editorLabel: {
-    marginBottom: 6,
-  },
   activeEntryWrapper: {
-    marginBottom: 12,
+    // No margin - spacing handled by SectionCard paddingVertical
   },
   activeEntryBlock: {
     borderWidth: 1,
-    padding: 12,
-    marginBottom: 4,
+    padding: spacing.base,
+    marginBottom: spacing.tiny,
   },
   activeEntryLabel: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
   },
   activeEntryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.xs,
     flexWrap: 'wrap',
   },
   activeEntryRowSpacing: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   activeEntryName: {
     flexGrow: 1,
   },
   activeEntryNameSplit: {
-    flex: 0.75,
-    marginRight: 8,
+    flex: 1,
+    marginRight: spacing.xs,
     justifyContent: 'center',
   },
   activeEntryAmount: {
-    width: 130,
+    width: layout.amountInputWidth,
   },
   activeEntryAmountSplit: {
     flex: 0.25,
   },
   activeEntrySecondary: {
-    width: 130,
+    width: layout.amountInputWidth,
   },
   activeTickIconButton: {
     width: 56,
@@ -1956,90 +1885,71 @@ const styles = StyleSheet.create({
   activeTickText: {
     // Typography via theme.typography.sectionTitle with fontWeight override
   },
-  entryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   input: {
     borderWidth: 1,
-    padding: 10,
+    padding: layout.inputPadding,
     // Typography via theme.typography.input (applied to TextInput components)
-  },
-  entryName: {
-    flex: 1,
-  },
-  entryAmount: {
-    width: 110,
-  },
-  tickIconButton: {
-    width: 44,
-    height: 44,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   tickText: {
     // Typography via theme.typography.valueLarge with fontWeight override
   },
-  cancelIconButton: {
-    width: 44,
-    height: 44,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   errorCard: {
     borderWidth: 1,
-    padding: 10,
-    marginBottom: 8,
+    padding: layout.inputPadding,
+    marginBottom: spacing.sm,
   },
   errorTitle: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   errorText: {
     // Typography via theme.typography.body
   },
   projectionAssumptionsSection: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   projectionAssumptionsCompact: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   projectionAssumptionsHeader: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   projectionAssumptionsHelper: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   projectionField: {
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
   projectionFieldLabel: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   projectionFieldLabelGrey: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   projectionFieldInput: {
-    width: 130,
+    width: layout.amountInputWidth,
   },
   projectionFieldInputFull: {
     width: '100%',
   },
   projectionFieldInputCompact: {
-    width: 130,
+    width: layout.amountInputWidth,
   },
-  liquidityCompact: {
-    flex: 1,
-    marginLeft: 8,
+  amountInputFixed: {
+    width: layout.amountInputWidth,
+  },
+  liquidityFieldWrapper: {
+    width: 185,
   },
   segmentedControl: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     height: 32,
   },
   segmentedControlCompact: {
     height: 32,
+  },
+  segmentedControlField: {
+    width: '100%',
+    height: 40,
   },
   segmentedControlText: {
     // Color via theme.colors.text.disabled (applied inline)
@@ -2048,16 +1958,16 @@ const styles = StyleSheet.create({
     // Color via theme.colors.text.disabled (applied inline)
   },
   unlockAgeContainer: {
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: spacing.tiny,
+    marginBottom: spacing.tiny,
   },
   unlockAgeLabel: {
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   unlockAgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   unlockAgeInput: {
     width: 100,
@@ -2077,15 +1987,15 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   deleteModalTitle: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   deleteModalMessage: {
-    marginBottom: 20,
+    marginBottom: layout.sectionGap,
   },
   deleteModalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 12,
+    gap: spacing.base,
   },
   deleteModalButton: {
     paddingVertical: 10,
@@ -2110,26 +2020,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   swipeActionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minHeight: 44,
-    paddingLeft: 2,
-    paddingRight: 2,
-    paddingVertical: 4,
-    backgroundColor: 'transparent',
-    gap: 4,
-  },
-  swipeActionEdit: {
-    width: 35,
-    minHeight: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  swipeActionDelete: {
-    width: 35,
-    minHeight: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    // Container for swipe actions - sizing handled by SwipeAction component
+    // Alignment and gap handled by SwipeRowContainer actionsContainer
   },
 });

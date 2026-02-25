@@ -8,6 +8,8 @@ import { useNavigation } from '@react-navigation/native';
 import { formatCurrencyFull } from '../formatters';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 const liabilitiesHelpContent: HelpContent = {
   title: 'Liabilities',
@@ -100,7 +102,6 @@ export default function LiabilitiesDetailScreen() {
       subtextMain="Grouped liabilities"
       subtextFootnote={undefined}
       allowGroups={false}
-      editorPlacement="top"
       secondaryNumberField={{
         label: 'Interest Rate (%)',
         placeholder: 'APR %',
@@ -183,8 +184,8 @@ export default function LiabilitiesDetailScreen() {
 const styles = StyleSheet.create({
   templateRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
+    gap: layout.inputPadding,
+    marginTop: spacing.base,
   },
   templateCard: {
     flex: 1,
@@ -192,14 +193,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.base,
   },
   templateTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#222',
-    marginBottom: 4,
+    marginBottom: spacing.tiny,
   },
   templateSub: {
     fontSize: 12,

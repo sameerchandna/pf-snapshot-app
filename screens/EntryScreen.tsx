@@ -273,9 +273,11 @@ export default function EntryScreen() {
         </View>
         
         {/* Phase 6.10.5: Demo mode indicator (wrapped for subtle presentation) */}
-        <View style={styles.demoBannerWrapper}>
-          <DemoModeBanner />
-        </View>
+        {mode === 'demo' ? (
+          <View style={styles.demoBannerWrapper}>
+            <DemoModeBanner />
+          </View>
+        ) : null}
         
         {/* Phase 6.10.1: Hero card with title, subtitle, and chart */}
         <SectionCard style={[styles.heroCard, theme.shadows.medium]}>

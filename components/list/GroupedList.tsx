@@ -27,6 +27,7 @@ type GroupedListProps<TItem> = {
     item: TItem,
     index: number,
     groupId: string | undefined,
+    isLastInGroup: boolean,
     swipeableCallbacks: {
       swipeableRef: (ref: Swipeable | null) => void;
       onSwipeableWillOpen: () => void;
@@ -44,9 +45,6 @@ type GroupedListProps<TItem> = {
   showAddItemTrigger?: boolean;
   onAddItemPress?: () => void;
   addItemTriggerLabel?: string;
-
-  // Inline editor (injected by parent, not managed here)
-  renderInlineEditor?: (groupId?: string) => ReactNode;
 
   // Swipeable coordination (all decisions made by parent, GroupedList just wires through)
   swipeableRefs: React.MutableRefObject<Map<string, Swipeable | null>>;
@@ -90,7 +88,6 @@ export default function GroupedList<TItem>({
   showAddItemTrigger = false,
   onAddItemPress,
   addItemTriggerLabel = '+ Add item',
-  renderInlineEditor,
   swipeableRefs,
   onSwipeableWillOpen,
   onSwipeableOpen,
@@ -151,11 +148,10 @@ export default function GroupedList<TItem>({
                   {group.items.map((item, index) => {
                     const itemId = getItemId(item);
                     const swipeableCallbacks = createSwipeableCallbacks(itemId);
-                    return <React.Fragment key={itemId}>{renderRow(item, index, group.id, swipeableCallbacks)}</React.Fragment>;
+                    // isLastInGroup: true if this is the last data item
+                    const isLastInGroup = index === group.items.length - 1;
+                    return <React.Fragment key={itemId}>{renderRow(item, index, group.id, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
                   })}
-
-                  {/* Inline editor (injected by parent) */}
-                  {renderInlineEditor ? renderInlineEditor(group.id) : null}
                 </View>
               ) : null}
             </View>
@@ -199,11 +195,10 @@ export default function GroupedList<TItem>({
             {items?.map((item, index) => {
               const itemId = getItemId(item);
               const swipeableCallbacks = createSwipeableCallbacks(itemId);
-              return <React.Fragment key={itemId}>{renderRow(item, index, undefined, swipeableCallbacks)}</React.Fragment>;
+              // isLastInGroup: true if this is the last data item
+              const isLastInGroup = index === (items.length - 1);
+              return <React.Fragment key={itemId}>{renderRow(item, index, undefined, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
             })}
-
-            {/* Inline editor (injected by parent) */}
-            {renderInlineEditor ? renderInlineEditor() : null}
           </View>
         </View>
       </View>
@@ -220,7 +215,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   groupBody: {
-    marginTop: 4,
+    marginTop: spacing.tiny,
   },
   emptyText: {
     marginBottom: spacing.sm,

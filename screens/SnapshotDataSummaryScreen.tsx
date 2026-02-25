@@ -13,6 +13,8 @@ import { computeProjectionSummary, computeProjectionSeries, type ProjectionEngin
 import { computeA3Attribution } from '../computeA3Attribution';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import { useTheme } from '../ui/theme/useTheme';
+import { spacing } from '../spacing';
+import { layout } from '../layout';
 
 function formatLiquidity(asset: AssetItem): string {
   if (!asset.availability) return 'immediate';
@@ -246,7 +248,7 @@ export default function SnapshotDataSummaryScreen() {
         title="Snapshot Data Summary"
         subtitle="View raw financial inputs (read-only)"
         rightAccessory={
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {__DEV__ && (
               <Pressable
                 onPress={handleExportDebugJSON}
@@ -389,22 +391,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 12,
-    paddingBottom: 24,
+    padding: spacing.base,
+    paddingBottom: spacing.huge,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: layout.sectionGap,
     borderWidth: 1,
     // borderColor moved to inline style with theme.colors.border.default
     // borderRadius applied inline with theme.radius.medium
-    padding: 12,
+    padding: spacing.base,
     // backgroundColor moved to inline style with theme.colors.bg.subtle
   },
   sectionHeader: {
     fontSize: 14,
     fontWeight: '700',
     // color moved to inline style with theme.colors.text.primary
-    marginBottom: 10,
+    marginBottom: layout.inputPadding,
   },
   monoText: {
     fontSize: 12,
@@ -414,20 +416,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   assetBlock: {
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: spacing.base,
+    paddingBottom: spacing.base,
     borderBottomWidth: 1,
     // borderBottomColor moved to inline style with theme.colors.border.default
   },
   loanBlock: {
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: spacing.base,
+    paddingBottom: spacing.base,
     borderBottomWidth: 1,
     // borderBottomColor moved to inline style with theme.colors.border.default
   },
   copyButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.xs,
     // borderRadius applied inline with theme.radius.base
     // backgroundColor moved to inline style with theme.colors.bg.subtle
     borderWidth: 1,
@@ -440,8 +442,8 @@ const styles = StyleSheet.create({
   },
   feedbackContainer: {
     // backgroundColor moved to inline style with theme.colors.semantic.successBg
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
   feedbackText: {

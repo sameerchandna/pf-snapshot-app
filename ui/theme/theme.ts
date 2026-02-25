@@ -27,6 +27,7 @@ export const lightTheme = {
       app: '#F5F6F8',
       card: '#fff',
       subtle: '#fafafa',
+      input: '#fbfbfb', // Interactive input surface - subtly darker than card, softer tone
       cardGradientTop: '#fff', // Derived from bg.card (same value for subtle gradient start)
       cardGradientBottom: '#f8f8f8', // Derived from bg.subtle, slightly darker than card for subtle gradient end
     },
@@ -34,6 +35,7 @@ export const lightTheme = {
       default: '#e0e0e0',
       subtle: '#f0f0f0',
       muted: 'rgba(240, 240, 240, 0.35)', // Very subtle border for reduced visual noise (~35% opacity)
+      separator: 'rgba(60, 60, 67, 0.29)', // Apple-standard separator color for grouped lists
     },
     semantic: {
       error: '#dc2626',
@@ -62,6 +64,16 @@ export const lightTheme = {
       scrim25: 'rgba(0,0,0,0.25)',
       scrim50: 'rgba(0,0,0,0.5)',
       heroNumberGlow: 'rgba(47, 91, 234, 0.12)', // Derived from brand.primary (#2F5BEA) at 12% opacity for subtle glow
+    },
+    actions: {
+      edit: {
+        bg: 'rgba(0,0,0,0.04)',
+        icon: '#000', // Matches text.primary
+      },
+      delete: {
+        bg: 'rgba(255,59,48,0.12)',
+        icon: '#FF3B30',
+      },
     },
   },
   typography: {
@@ -175,8 +187,9 @@ export const darkTheme = {
     },
     bg: {
       app: '#000000',
-      card: '#1a1a1a',
+      card: '#1C1C1E',
       subtle: '#2a2a2a',
+      input: '#000000', // Interactive input surface - matches bg.app in dark mode
       cardGradientTop: '#1f1f1f', // Derived from bg.card, slightly lighter for subtle gradient start
       cardGradientBottom: '#1a1a1a', // Derived from bg.card (same value for subtle gradient end)
     },
@@ -184,6 +197,7 @@ export const darkTheme = {
       default: '#404040',
       subtle: '#333333',
       muted: 'rgba(51, 51, 51, 0.4)', // Very subtle border for reduced visual noise (~40% opacity, slightly higher for dark mode contrast)
+      separator: 'rgba(84, 84, 88, 0.5)', // Apple-standard separator color for grouped lists (dark mode) - reduced alpha for subtlety
     },
     semantic: {
       error: '#ef4444',
@@ -212,6 +226,16 @@ export const darkTheme = {
       scrim25: 'rgba(0,0,0,0.5)',
       scrim50: 'rgba(0,0,0,0.75)',
       heroNumberGlow: 'rgba(76, 125, 255, 0.18)', // Derived from brand.primary (#4C7DFF) at 18% opacity for subtle glow
+    },
+    actions: {
+      edit: {
+        bg: 'rgba(255,255,255,0.06)',
+        icon: '#ffffff', // Matches text.primary
+      },
+      delete: {
+        bg: 'rgba(255,59,48,0.18)',
+        icon: '#FF453A',
+      },
     },
   },
   typography: {

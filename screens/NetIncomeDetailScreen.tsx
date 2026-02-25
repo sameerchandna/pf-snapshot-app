@@ -70,7 +70,6 @@ export default function NetIncomeDetailScreen() {
       totalText={totalText}
       subtextMain="Monthly take-home income after deductions"
       subtextFootnote={undefined}
-      editorPlacement="top"
       helpContent={netIncomeHelpContent}
       emptyStateText="No net income items yet."
       allowGroups={false}

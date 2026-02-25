@@ -22,6 +22,7 @@
 import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { spacing } from '../../spacing';
 
 // Swipe gesture configuration constants
 const SWIPE_ACTIVE_OFFSET_X = 10; // Minimum horizontal movement to activate swipe (px)
@@ -126,7 +127,9 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'stretch',
+    gap: spacing.tiny,
     zIndex: 1,
     // Background actions remain static, revealed as foreground translates
   },

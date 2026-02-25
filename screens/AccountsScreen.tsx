@@ -140,7 +140,7 @@ export default function AccountsScreen() {
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
       <ScreenHeader title="Accounts" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <SectionCard>
+        <SectionCard style={{ marginTop: layout.sectionGap }}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>ASSETS</Text>
             <Text style={[styles.sectionTotal, { color: theme.colors.text.muted }]}>{formatCurrencyFull(assetsTotal)}</Text>

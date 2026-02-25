@@ -6,6 +6,7 @@ import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import { layout } from '../layout';
+import { spacing } from '../spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
 
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   themeToggleContainer: {
-    gap: 8,
+    gap: spacing.sm,
   },
   themeToggleLabel: {
     fontSize: 12,
