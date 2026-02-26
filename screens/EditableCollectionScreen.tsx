@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Modal, Platform, View, Text, StyleSheet, TextInput, Pressable, ScrollView as RNScrollView } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Swipeable, ScrollView } from 'react-native-gesture-handler';
 import { Group } from '../types';
 import { parseItemName, parseMoney } from '../domainValidation';
@@ -10,12 +9,11 @@ import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
 import GroupedListSection from '../components/list/GroupedListSection';
 import Divider from '../components/Divider';
-import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import SwipeAction from '../components/SwipeAction';
 import EditorActionGroup from '../components/EditorActionGroup';
+import ItemEditor from '../components/ItemEditor';
 import GroupedList, { Group as GroupedListGroup } from '../components/list/GroupedList';
-import FinancialItemRow from '../components/rows/FinancialItemRow';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -157,22 +155,22 @@ type Props<TItem> = {
   // Optional item press handler (for navigation to detail screens)
   onItemPress?: (item: TItem) => void;
 
-  // Swipe reveal mode: 'replace' (default) or 'overlay' (row stays fixed, actions slide underneath)
+  /** @deprecated no longer used internally; kept for compatibility */
   swipeRevealMode?: 'replace' | 'overlay';
 
+  // renderRow is required.
+  // EditableCollectionScreen does NOT provide a default row renderer.
+  // All consumers must explicitly define row behavior using CollectionRowWithActions.
+
   /**
-   * Optional custom row renderer (for v2 row architecture migration).
+   * Required custom row renderer (v2 row architecture).
    * 
-   * V2 vs Legacy Boundary:
-   * - ExpensesDetailScreen is the canonical v2 prototype using screen-local semantic rows
-   * - All other EditableCollectionScreen-based screens use FinancialItemRow (legacy)
-   * - This prop enables gradual migration by allowing screens to override row rendering
-   * - When provided, bypasses FinancialItemRow and swipe coordination logic
-   * - Uses simplified callback API (onEdit, onDelete, onToggleActive) instead of swipeable refs
+   * All screens must provide a custom row renderer using the v2 architecture.
+   * Uses simplified callback API (onEdit, onDelete, onToggleActive) with swipe coordination.
    * 
    * See ExpensesDetailScreen for the v2 implementation pattern.
    */
-  renderRow?: (
+  renderRow: (
     item: TItem,
     index: number,
     groupId: string | undefined,
@@ -748,7 +746,11 @@ export default function EditableCollectionScreen<TItem>({
     );
   };
 
-  // Render row using FinancialItemRow (or custom renderRow override if provided)
+  // Row rendering is fully delegated to the consumer.
+  // There is no fallback FinancialItemRow.
+  // This enforces explicit configuration and architectural consistency.
+
+  // Render row using custom renderRow (v2 row architecture)
   const renderRow = (
     item: TItem,
     index: number,
@@ -792,79 +794,43 @@ export default function EditableCollectionScreen<TItem>({
       }
     };
 
-    // Use custom renderRow override if provided (for v2 row architecture)
-    if (renderRowOverride) {
-      const handleEdit = () => {
-        if (canExternalEdit && !inlineEditable) {
-          onExternalEditItem?.(item);
-        } else {
-          startEditItem(item);
-        }
-      };
+    const handleEdit = () => {
+      if (canExternalEdit && !inlineEditable) {
+        onExternalEditItem?.(item);
+      } else {
+        startEditItem(item);
+      }
+    };
 
-      const handleDelete = () => {
-        deleteItem(id);
-      };
+    const handleDelete = () => {
+      deleteItem(id);
+    };
 
-      return renderRowOverride(
-        item,
-        index,
-        groupId,
-        isLastInGroup,
-        {
-          onEdit: handleEdit,
-          onDelete: handleDelete,
-          onToggleActive: typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? handleToggleActive : undefined,
-          swipeableRef: swipeableCallbacks.swipeableRef,
-          onSwipeableWillOpen: swipeableCallbacks.onSwipeableWillOpen,
-          onSwipeableOpen: swipeableCallbacks.onSwipeableOpen,
-          onSwipeableClose: swipeableCallbacks.onSwipeableClose,
-        },
-        {
-          locked,
-          isActive: itemIsActive,
-          isInactive,
-          isCurrentlyEditing,
-          dimRow,
-          showTopDivider,
-          name,
-          amountText,
-          metaText,
-        },
-      );
-    }
-
-    // Default: use FinancialItemRow
-    return (
-      <FinancialItemRow
-        key={id}
-        item={item}
-        itemId={id}
-        name={name}
-        amountText={amountText}
-        metaText={metaText}
-        locked={locked}
-        isActive={itemIsActive}
-        isCurrentlyEditing={isCurrentlyEditing}
-        dimRow={dimRow}
-        isInactive={isInactive}
-        showTopDivider={showTopDivider}
-        onPress={
-          onItemPress && !isCurrentlyEditing
-            ? () => {
-                onItemPress(item);
-              }
-            : undefined
-        }
-        onToggleActive={typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? handleToggleActive : undefined}
-        renderSwipeActions={() => renderSwipeActions(item, id, locked, !deleteDisabled, !editDisabled, inlineEditable, canExternalEdit)}
-        swipeableEnabled={swipeableCallbacks.swipeableEnabled}
-        onSwipeableWillOpen={swipeableCallbacks.onSwipeableWillOpen}
-        onSwipeableOpen={swipeableCallbacks.onSwipeableOpen}
-        onSwipeableClose={swipeableCallbacks.onSwipeableClose}
-        swipeableRef={swipeableCallbacks.swipeableRef}
-        swipeRevealMode={swipeRevealMode}
-      />
+    return renderRowOverride(
+      item,
+      index,
+      groupId,
+      isLastInGroup,
+      {
+        onEdit: handleEdit,
+        onDelete: handleDelete,
+        onToggleActive: typeof getItemIsActive === 'function' && typeof setItemIsActive === 'function' ? handleToggleActive : undefined,
+        swipeableRef: swipeableCallbacks.swipeableRef,
+        onSwipeableWillOpen: swipeableCallbacks.onSwipeableWillOpen,
+        onSwipeableOpen: swipeableCallbacks.onSwipeableOpen,
+        onSwipeableClose: swipeableCallbacks.onSwipeableClose,
+      },
+      {
+        locked,
+        isActive: itemIsActive,
+        isInactive,
+        isCurrentlyEditing,
+        dimRow,
+        showTopDivider,
+        name,
+        amountText,
+        metaText,
+      },
     );
   };
 
@@ -1059,351 +1025,29 @@ export default function EditableCollectionScreen<TItem>({
 
           {editorVisible ? (
             <SectionCard style={{ marginTop: spacing.base, paddingVertical: spacing.xs }}>
-              <View style={styles.activeEntryWrapper}>
-                  {errorMessage.length > 0 ? (
-                    <View
-                      style={[
-                        styles.errorCard,
-                        { backgroundColor: theme.colors.semantic.errorBg, borderColor: theme.colors.semantic.errorBorder, borderRadius: theme.radius.medium },
-                      ]}
-                    >
-                      <Text style={[styles.errorTitle, theme.typography.body, { fontWeight: '700', color: theme.colors.semantic.errorText }]}>Can't save</Text>
-                      <Text style={[styles.errorText, theme.typography.body, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
-                    </View>
-                  ) : null}
-
-                  {/* Name and Amount fields */}
-                  {editingItemId ? (
-                    // Edit mode: Vertical stack with labels
-                    <>
-                      {canEditItemName ? (
-                        <View style={styles.projectionField}>
-                          <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Name</Text>
-                          {renderCustomNameField ? (
-                            renderCustomNameField({
-                              value: draftName,
-                              onChange: setDraftName,
-                              placeholder: 'Name',
-                              editingItemId,
-                            })
-                          ) : (
-                            <TextInput
-                              style={[
-                                styles.input,
-                                styles.projectionFieldInputFull,
-                                { backgroundColor: theme.colors.bg.input, borderColor: focusedInput === 'name' ? theme.colors.border.default : 'transparent', borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                              ]}
-                              value={draftName}
-                              onChangeText={setDraftName}
-                              placeholder="Name"
-                              placeholderTextColor={theme.colors.text.disabled}
-                              autoFocus={false}
-                              returnKeyType="next"
-                              onFocus={() => setFocusedInput('name')}
-                              onBlur={() => setFocusedInput(null)}
-                            />
-                          )}
-                        </View>
-                      ) : null}
-                      <View style={styles.projectionField}>
-                        <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Amount</Text>
-                        <View style={[styles.activeEntryRow, { alignItems: 'center' }]}>
-                          <TextInput
-                            style={[
-                              styles.input,
-                              theme.typography.input,
-                              styles.amountInputFixed,
-                              { backgroundColor: theme.colors.bg.input, borderColor: focusedInput === 'amount' ? theme.colors.border.default : 'transparent', borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                            ]}
-                            value={draftAmount}
-                            onChangeText={setDraftAmount}
-                            placeholder="Amount"
-                            placeholderTextColor={theme.colors.text.disabled}
-                            keyboardType="numeric"
-                            returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
-                            onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
-                            onFocus={() => setFocusedInput('amount')}
-                            onBlur={() => setFocusedInput(null)}
-                          />
-                          <View style={{ width: spacing.tiny }} />
-                          {renderActionButtons ? (
-                            renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
-                          ) : (
-                            <EditorActionGroup
-                              onSave={saveEditor}
-                              onCancel={cancelEditor}
-                              editingItemId={editingItemId}
-                            />
-                          )}
-                        </View>
-                      </View>
-                    </>
-                  ) : (
-                    // Add mode: Horizontal row with buttons
-                    <>
-                      {/* Row 1: Name + Amount (primary inputs) */}
-                      <View style={[styles.activeEntryRow, styles.activeEntryRowSpacing]}>
-                        {canEditItemName ? (
-                          renderCustomNameField ? (
-                            <View style={styles.activeEntryNameSplit}>
-                              {renderCustomNameField({
-                                value: draftName,
-                                onChange: setDraftName,
-                                placeholder: 'Name',
-                                editingItemId: null,
-                              })}
-                            </View>
-                          ) : (
-                            <TextInput
-                              style={[
-                                styles.input,
-                                theme.typography.input,
-                                styles.activeEntryNameSplit,
-                                { 
-                                  backgroundColor: theme.colors.bg.input, 
-                                  borderColor: focusedInput === 'name' ? theme.colors.border.default : 'transparent', 
-                                  borderRadius: theme.radius.medium, 
-                                  color: theme.colors.text.primary 
-                                },
-                              ]}
-                              value={draftName}
-                              onChangeText={setDraftName}
-                              placeholder="New Expense Name"
-                              placeholderTextColor={theme.colors.text.disabled}
-                              autoFocus={false}
-                              returnKeyType="next"
-                              onFocus={() => setFocusedInput('name')}
-                              onBlur={() => setFocusedInput(null)}
-                            />
-                          )
-                        ) : null}
-                        <TextInput
-                          style={[
-                            styles.input,
-                            theme.typography.input,
-                            styles.activeEntryAmountSplit,
-                            { 
-                              backgroundColor: theme.colors.bg.input, 
-                              borderColor: focusedInput === 'amount' ? theme.colors.border.default : 'transparent', 
-                              borderRadius: theme.radius.medium, 
-                              color: theme.colors.text.primary 
-                            },
-                          ]}
-                          value={draftAmount}
-                          onChangeText={setDraftAmount}
-                          placeholder="Amount"
-                          placeholderTextColor={theme.colors.text.disabled}
-                          keyboardType="numeric"
-                          returnKeyType={(secondaryNumberField || liquidityField) ? 'next' : 'done'}
-                          onSubmitEditing={(!secondaryNumberField && !liquidityField) ? saveEditor : undefined}
-                          onFocus={() => setFocusedInput('amount')}
-                          onBlur={() => setFocusedInput(null)}
-                        />
-                        {/* Only show action buttons in Row 1 if there are no secondary fields */}
-                        {!(secondaryNumberField || liquidityField) ? (
-                          <>
-                            <View style={{ width: spacing.tiny }} />
-                            {renderActionButtons ? (
-                              renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
-                            ) : (
-                              <EditorActionGroup
-                                onSave={saveEditor}
-                                onCancel={cancelEditor}
-                                editingItemId={editingItemId}
-                              />
-                            )}
-                          </>
-                        ) : null}
-                      </View>
-                      
-                    </>
-                  )}
-
-                  {/* Projection assumptions section */}
-                  {(secondaryNumberField || liquidityField) ? (
-                    editingItemId ? (
-                      // Edit mode: Vertical stack with label and value
-                      <View style={styles.projectionAssumptionsSection}>
-                        {/* Growth rate */}
-                        {secondaryNumberField ? (
-                          <View style={styles.projectionField}>
-                            <Text style={[styles.projectionFieldLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Growth rate (% per year)</Text>
-                            <TextInput
-                              style={[
-                                styles.input,
-                                styles.projectionFieldInputFull,
-                                { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                              ]}
-                              value={draftSecondaryNumber}
-                              onChangeText={setDraftSecondaryNumber}
-                              placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
-                              placeholderTextColor={theme.colors.text.disabled}
-                              keyboardType="numeric"
-                              returnKeyType={liquidityField ? 'next' : 'done'}
-                              onSubmitEditing={!liquidityField ? saveEditor : undefined}
-                            />
-                          </View>
-                        ) : null}
-
-                        {/* Liquidity */}
-                        {liquidityField ? (
-                          <View style={styles.projectionField}>
-                            <Text style={[styles.projectionFieldLabelGrey, theme.typography.label, { color: theme.colors.text.disabled }]}>Liquidity</Text>
-                            <SegmentedControl
-                              values={['Liquid', 'Locked', 'Illiquid']}
-                              selectedIndex={draftLiquidityType === 'immediate' ? 0 : draftLiquidityType === 'locked' ? 1 : 2}
-                              onChange={(event) => {
-                                const index = event.nativeEvent.selectedSegmentIndex;
-                                if (index === 0) {
-                                  setDraftLiquidityType('immediate');
-                                  setDraftUnlockAge('');
-                                } else if (index === 1) {
-                                  setDraftLiquidityType('locked');
-                                } else {
-                                  setDraftLiquidityType('illiquid');
-                                  setDraftUnlockAge('');
-                                }
-                              }}
-                              style={styles.segmentedControl}
-                              fontStyle={{ color: theme.colors.text.disabled }}
-                              activeFontStyle={{ color: theme.colors.text.disabled }}
-                            />
-                            
-                            {draftLiquidityType === 'locked' ? (
-                              <View style={styles.unlockAgeContainer}>
-                                <Text style={[styles.unlockAgeLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Unlock age</Text>
-                                <View style={styles.unlockAgeRow}>
-                                  <TextInput
-                                    style={[
-                                      styles.input,
-                                      theme.typography.input,
-                                      styles.unlockAgeInput,
-                                      { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                                    ]}
-                                    value={draftUnlockAge}
-                                    onChangeText={setDraftUnlockAge}
-                                    placeholder="e.g. 55"
-                                    placeholderTextColor={theme.colors.text.disabled}
-                                    keyboardType="numeric"
-                                    returnKeyType="done"
-                                    onSubmitEditing={saveEditor}
-                                  />
-                                  <Text style={[styles.unlockAgeSuffix, theme.typography.bodySmall, { color: theme.colors.text.disabled }]}>years</Text>
-                                </View>
-                              </View>
-                            ) : null}
-                          </View>
-                        ) : null}
-                      </View>
-                    ) : (
-                      // Add mode: Compact, no header, same row
-                      <View style={styles.projectionAssumptionsCompact}>
-                        <View style={[styles.activeEntryRow, { alignItems: 'center' }]}>
-                          {/* Left group: Growth % + Liquidity */}
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                            {/* Growth rate */}
-                            {secondaryNumberField ? (
-                              <TextInput
-                                style={[
-                                  styles.input,
-                                  theme.typography.input,
-                                  styles.projectionFieldInputCompact,
-                                  { 
-                                    width: 80,
-                                    backgroundColor: theme.colors.bg.input, 
-                                    borderColor: 'transparent', 
-                                    borderRadius: theme.radius.medium, 
-                                    color: theme.colors.text.primary 
-                                  },
-                                ]}
-                                value={draftSecondaryNumber}
-                                onChangeText={setDraftSecondaryNumber}
-                                placeholder={secondaryNumberField.placeholder ?? 'Growth %'}
-                                placeholderTextColor={theme.colors.text.disabled}
-                                keyboardType="numeric"
-                                returnKeyType={liquidityField ? 'next' : 'done'}
-                                onSubmitEditing={!liquidityField ? saveEditor : undefined}
-                              />
-                            ) : null}
-
-                            {/* Liquidity */}
-                            {liquidityField ? (
-                              <View style={styles.liquidityFieldWrapper}>
-                                <SegmentedControl
-                                  values={['Liquid', 'Locked', 'Illiquid']}
-                                  selectedIndex={draftLiquidityType === 'immediate' ? 0 : draftLiquidityType === 'locked' ? 1 : 2}
-                                  onChange={(event) => {
-                                    const index = event.nativeEvent.selectedSegmentIndex;
-                                    if (index === 0) {
-                                      setDraftLiquidityType('immediate');
-                                      setDraftUnlockAge('');
-                                    } else if (index === 1) {
-                                      setDraftLiquidityType('locked');
-                                    } else {
-                                      setDraftLiquidityType('illiquid');
-                                      setDraftUnlockAge('');
-                                    }
-                                  }}
-                                  tintColor={theme.colors.bg.input}
-                                  style={[
-                                    styles.segmentedControlField,
-                                    {
-                                      backgroundColor: theme.colors.bg.input,
-                                      borderRadius: theme.radius.medium,
-                                    }
-                                  ]}
-                                  fontStyle={{ color: theme.colors.text.disabled }}
-                                  activeFontStyle={{ color: theme.colors.text.disabled }}
-                                />
-                              </View>
-                            ) : null}
-                          </View>
-                          
-                          {/* Flex spacer */}
-                          <View style={{ flex: 1 }} />
-                          
-                          {/* Right group: Action buttons */}
-                          <View style={{ flexDirection: 'row' }}>
-                            {renderActionButtons ? (
-                              renderActionButtons({ onSave: saveEditor, onCancel: cancelEditor, editingItemId })
-                            ) : (
-                              <EditorActionGroup
-                                onSave={saveEditor}
-                                onCancel={cancelEditor}
-                                editingItemId={editingItemId}
-                              />
-                            )}
-                          </View>
-                        </View>
-
-                        {/* Unlock age (if From age selected) - shown below in compact mode too */}
-                        {liquidityField && draftLiquidityType === 'locked' ? (
-                          <View style={styles.unlockAgeContainer}>
-                            <Text style={[styles.unlockAgeLabel, theme.typography.label, { color: theme.colors.text.disabled }]}>Unlock age</Text>
-                            <View style={styles.unlockAgeRow}>
-                              <TextInput
-                                style={[
-                                  styles.input,
-                                  theme.typography.input,
-                                  styles.unlockAgeInput,
-                                  { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default, borderRadius: theme.radius.medium, color: theme.colors.text.primary },
-                                ]}
-                                value={draftUnlockAge}
-                                onChangeText={setDraftUnlockAge}
-                                placeholder="e.g. 55"
-                                placeholderTextColor={theme.colors.text.disabled}
-                                keyboardType="numeric"
-                                returnKeyType="done"
-                                onSubmitEditing={saveEditor}
-                              />
-                              <Text style={[styles.unlockAgeSuffix, theme.typography.bodySmall, { color: theme.colors.text.disabled }]}>years</Text>
-                            </View>
-                          </View>
-                        ) : null}
-                      </View>
-                    )
-                  ) : null}
-              </View>
+              <ItemEditor
+                draftName={draftName}
+                draftAmount={draftAmount}
+                draftSecondaryNumber={draftSecondaryNumber}
+                draftLiquidityType={draftLiquidityType}
+                draftUnlockAge={draftUnlockAge}
+                editingItemId={editingItemId}
+                errorMessage={errorMessage}
+                focusedInput={focusedInput}
+                onDraftNameChange={setDraftName}
+                onDraftAmountChange={setDraftAmount}
+                onDraftSecondaryNumberChange={setDraftSecondaryNumber}
+                onDraftLiquidityTypeChange={setDraftLiquidityType}
+                onDraftUnlockAgeChange={setDraftUnlockAge}
+                onFocusedInputChange={setFocusedInput}
+                onSave={saveEditor}
+                onCancel={cancelEditor}
+                canEditItemName={canEditItemName}
+                renderCustomNameField={renderCustomNameField}
+                renderActionButtons={renderActionButtons}
+                secondaryNumberField={secondaryNumberField}
+                liquidityField={liquidityField}
+              />
             </SectionCard>
           ) : null}
 
@@ -1660,9 +1304,6 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     paddingTop: layout.screenPaddingTop,
   },
-  educationBlock: {
-    marginBottom: spacing.base,
-  },
   addGroupButton: {
     alignSelf: 'flex-start',
     backgroundColor: 'transparent',
@@ -1695,11 +1336,6 @@ const styles = StyleSheet.create({
   firstGroupedListSection: {
     marginTop: spacing.base,
   },
-  activeEntryActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
   groupActionsAbove: {
     flexDirection: 'row',
     alignSelf: 'flex-end',
@@ -1728,9 +1364,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.tiny,
     paddingHorizontal: layout.micro,
   },
-  groupBody: {
-    marginTop: spacing.tiny,
-  },
   groupTitle: {
     // Typography via theme.typography.sectionTitle
   },
@@ -1745,235 +1378,6 @@ const styles = StyleSheet.create({
   },
   groupNameErrorText: {
     marginBottom: spacing.xs,
-  },
-  emptyText: {
-    marginBottom: spacing.sm,
-  },
-  itemRowWrapper: {
-    // Wrapper kept for structure, but no margin (dividers provide separation)
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: layout.rowPaddingHorizontal,
-    position: 'relative',
-  },
-  itemRowDim: {
-    opacity: 0.45,
-  },
-  itemRowLocked: {
-    opacity: 0.7,
-  },
-  itemRowInactive: {
-    opacity: 0.5,
-  },
-  activeCheckbox: {
-    marginLeft: 0,
-    marginRight: spacing.tiny,
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxCheckmark: {
-    // Typography via theme.typography.caption with fontWeight override
-  },
-  itemMain: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  itemMainActive: {
-    opacity: 0.95,
-  },
-  itemMainLocked: {
-    opacity: 0.7,
-  },
-  itemLeft: {
-    flex: 1,
-    flexShrink: 1,
-  },
-  primaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemName: {
-    marginBottom: 1,
-  },
-  itemNameLocked: {
-    // Legacy style - typography removed, using theme tokens
-  },
-  itemAmount: {
-    // Typography via theme.typography.valueSmall
-    marginLeft: 'auto',
-    textAlign: 'right',
-  },
-  itemAmountLocked: {
-    // Legacy style - typography removed, using theme tokens
-  },
-  itemRight: {
-    // No longer used - amount is now in primaryRow
-  },
-  itemMeta: {
-    marginTop: spacing.tiny,
-    // Single-line truncation enforced via numberOfLines prop
-  },
-  itemMetaLocked: {
-    // Legacy style - typography removed, using theme tokens
-  },
-  activeEntryWrapper: {
-    // No margin - spacing handled by SectionCard paddingVertical
-  },
-  activeEntryBlock: {
-    borderWidth: 1,
-    padding: spacing.base,
-    marginBottom: spacing.tiny,
-  },
-  activeEntryLabel: {
-    marginBottom: spacing.xs,
-  },
-  activeEntryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    flexWrap: 'wrap',
-  },
-  activeEntryRowSpacing: {
-    marginBottom: spacing.tiny,
-  },
-  activeEntryName: {
-    flexGrow: 1,
-  },
-  activeEntryNameSplit: {
-    flex: 1,
-    marginRight: spacing.xs,
-    justifyContent: 'center',
-  },
-  activeEntryAmount: {
-    width: layout.amountInputWidth,
-  },
-  activeEntryAmountSplit: {
-    flex: 0.25,
-  },
-  activeEntrySecondary: {
-    width: layout.amountInputWidth,
-  },
-  activeTickIconButton: {
-    width: 56,
-    height: 30,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeCancelIconButton: {
-    width: 56,
-    height: 30,
-    borderWidth: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeTickText: {
-    // Typography via theme.typography.sectionTitle with fontWeight override
-  },
-  input: {
-    borderWidth: 1,
-    padding: layout.inputPadding,
-    // Typography via theme.typography.input (applied to TextInput components)
-  },
-  tickText: {
-    // Typography via theme.typography.valueLarge with fontWeight override
-  },
-  errorCard: {
-    borderWidth: 1,
-    padding: layout.inputPadding,
-    marginBottom: spacing.sm,
-  },
-  errorTitle: {
-    marginBottom: spacing.tiny,
-  },
-  errorText: {
-    // Typography via theme.typography.body
-  },
-  projectionAssumptionsSection: {
-    marginTop: spacing.sm,
-  },
-  projectionAssumptionsCompact: {
-    marginTop: spacing.sm,
-  },
-  projectionAssumptionsHeader: {
-    marginBottom: spacing.tiny,
-  },
-  projectionAssumptionsHelper: {
-    marginBottom: spacing.sm,
-  },
-  projectionField: {
-    marginBottom: spacing.xs,
-  },
-  projectionFieldLabel: {
-    marginBottom: spacing.tiny,
-  },
-  projectionFieldLabelGrey: {
-    marginBottom: spacing.tiny,
-  },
-  projectionFieldInput: {
-    width: layout.amountInputWidth,
-  },
-  projectionFieldInputFull: {
-    width: '100%',
-  },
-  projectionFieldInputCompact: {
-    width: layout.amountInputWidth,
-  },
-  amountInputFixed: {
-    width: layout.amountInputWidth,
-  },
-  liquidityFieldWrapper: {
-    width: 185,
-  },
-  segmentedControl: {
-    marginBottom: spacing.sm,
-    height: 32,
-  },
-  segmentedControlCompact: {
-    height: 32,
-  },
-  segmentedControlField: {
-    width: '100%',
-    height: 40,
-  },
-  segmentedControlText: {
-    // Color via theme.colors.text.disabled (applied inline)
-  },
-  segmentedControlTextActive: {
-    // Color via theme.colors.text.disabled (applied inline)
-  },
-  unlockAgeContainer: {
-    marginTop: spacing.tiny,
-    marginBottom: spacing.tiny,
-  },
-  unlockAgeLabel: {
-    marginBottom: spacing.tiny,
-  },
-  unlockAgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  unlockAgeInput: {
-    width: 100,
-  },
-  unlockAgeSuffix: {
-    // Typography via theme.typography.bodySmall
   },
   deleteModalBackdrop: {
     flex: 1,
@@ -2014,10 +1418,6 @@ const styles = StyleSheet.create({
   },
   deleteModalButtonConfirmText: {
     // Typography via theme.typography.button
-  },
-  swipeableContainer: {
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
   },
   swipeActionsContainer: {
     // Container for swipe actions - sizing handled by SwipeAction component
