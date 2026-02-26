@@ -81,4 +81,12 @@ Violations indicate defects and must be rejected.
 
 ---
 
+## Row Architecture Invariant
+
+- All EditableCollectionScreen consumers must provide renderRow.
+- No default row renderer exists.
+- Any new screen must explicitly define its row configuration.
+
+---
+
 If a proposed change violates any invariant, it must be rejected or the invariant must be updated first.

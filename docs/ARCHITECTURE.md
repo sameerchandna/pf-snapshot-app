@@ -172,3 +172,14 @@ The architecture explicitly separates:
 - Explanation (Attribution)
 
 This separation allows future extension (e.g. stock-based scenarios, guided insights) without violating core ownership or mutation rules.
+
+---
+
+## Row Rendering Doctrine (v2)
+
+- FinancialItemRow has been removed.
+- EditableCollectionScreen has no default row implementation.
+- All collection screens must provide a renderRow override.
+- CollectionRowWithActions is the base row primitive.
+- Swipe behavior is centralized in SemanticRow + SwipeRowContainer.
+- No implicit UI behavior is allowed.

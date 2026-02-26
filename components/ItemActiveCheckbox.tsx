@@ -23,9 +23,22 @@ export default function ItemActiveCheckbox({
 }: Props) {
   const { theme } = useTheme();
 
+  // Propagation guard: ensure checkbox press never triggers parent row press
+  const handlePress = (e?: any) => {
+    // Stop propagation if available (for web compatibility)
+    if (e?.stopPropagation) {
+      e.stopPropagation();
+    }
+    // Prevent default if available
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
+    onToggle();
+  };
+
   return (
     <Pressable
-      onPress={onToggle}
+      onPress={handlePress}
       disabled={disabled}
       hitSlop={10}
       style={({ pressed }) => [

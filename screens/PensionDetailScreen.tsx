@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Swipeable } from 'react-native-gesture-handler';
 
 import { useSnapshot } from '../SnapshotContext';
 import { getUserEditableAssets } from '../systemAssets';
@@ -13,6 +14,7 @@ import { useTheme } from '../ui/theme/useTheme';
 import Icon from '../components/Icon';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
+import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 type RouteParams = {
   preselectAssetId?: string;
@@ -228,6 +230,63 @@ export default function PensionDetailScreen() {
     setAssetContributions([...nonPensionContributions, ...items]);
   };
 
+  // Custom row renderer for v2 row architecture
+  const renderPensionRow = (
+    item: ContributionItem,
+    index: number,
+    groupId: string | undefined,
+    isLastInGroup: boolean,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
+    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
+    // For Pension:
+    // - allowGroups={false}, so groupsEnabled = false
+    // - allowDeleteItems not set, so canDeleteItems = true (default)
+    // - Therefore: disableDelete = locked || false || false = locked
+    const disableDelete = state.locked;
+
+    return (
+      <CollectionRowWithActions
+        key={item.id}
+        name={state.name}
+        amountText={state.amountText}
+        subtitle={state.metaText}
+        locked={state.locked}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        isLastInGroup={isLastInGroup}
+        pressEnabled={false}
+        onEdit={callbacks.onEdit}
+        onDelete={callbacks.onDelete}
+        disableDelete={disableDelete}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+      />
+    );
+  };
+
   return (
     <EditableCollectionScreen<ContributionItem>
       title="Pension"
@@ -291,6 +350,7 @@ export default function PensionDetailScreen() {
         // Only look for preTax contributions with this assetId
         return pensionContributions.find(c => c.assetId === key) || null;
       }}
+      renderRow={renderPensionRow}
     />
   );
 }

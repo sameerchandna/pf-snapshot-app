@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSnapshot } from '../SnapshotContext';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, IncomeItem } from '../types';
 import { selectNetIncome } from '../selectors';
 import { formatCurrencyFull } from '../formatters';
+import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 const netIncomeHelpContent: HelpContent = {
   title: 'Net Income',
@@ -64,6 +66,63 @@ export default function NetIncomeDetailScreen() {
   const dummyGroups: Group[] = [];
   const noopSetGroups = (_groups: Group[]) => {};
 
+  // Custom row renderer for v2 row architecture
+  const renderNetIncomeRow = (
+    item: IncomeItem,
+    index: number,
+    groupId: string | undefined,
+    isLastInGroup: boolean,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
+    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
+    // For NetIncome:
+    // - allowGroups={false}, so groupsEnabled = false
+    // - allowDeleteItems not set, so canDeleteItems = true (default)
+    // - Therefore: disableDelete = locked || false || false = locked
+    const disableDelete = state.locked;
+
+    return (
+      <CollectionRowWithActions
+        key={item.id}
+        name={state.name}
+        amountText={state.amountText}
+        subtitle={state.metaText}
+        locked={state.locked}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        isLastInGroup={isLastInGroup}
+        pressEnabled={false}
+        onEdit={callbacks.onEdit}
+        onDelete={callbacks.onDelete}
+        disableDelete={disableDelete}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+      />
+    );
+  };
+
   return (
     <EditableCollectionScreen<IncomeItem>
       title="Net Income"
@@ -95,6 +154,7 @@ export default function NetIncomeDetailScreen() {
       formatGroupTotalText={total => formatCurrencyFull(total)}
       createNewGroup={() => ({ id: createId('group'), name: 'New Group' })}
       autoExpandSingleGroup={true}
+      renderRow={renderNetIncomeRow}
     />
   );
 }

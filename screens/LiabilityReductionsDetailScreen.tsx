@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSnapshot } from '../SnapshotContext';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, LiabilityReductionItem } from '../types';
 import { selectLoanDerivedRows, selectSnapshotLiabilityReduction } from '../selectors';
 import { formatCurrencyFullSigned } from '../formatters';
 import { StyleSheet } from 'react-native';
+import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 const liabilityReductionHelpContent: HelpContent = {
   title: 'Liability Reduction',
@@ -73,6 +75,64 @@ export default function LiabilityReductionsDetailScreen() {
 
   const showEmptyState: boolean = filteredLiabilityReductions.length === 0;
 
+  // Custom row renderer for v2 row architecture
+  const renderLiabilityReductionRow = (
+    item: LiabilityReductionItem,
+    index: number,
+    groupId: string | undefined,
+    isLastInGroup: boolean,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
+    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
+    // For LiabilityReductions:
+    // - allowGroups={false}, so groupsEnabled = false
+    // - allowDeleteItems not set, so canDeleteItems = true (default)
+    // - isItemLocked={item => item.id.startsWith('loan-overpayment:')}, so locked = true for loan-overpayment items
+    // - Therefore: disableDelete = locked || false || false = locked
+    const disableDelete = state.locked;
+
+    return (
+      <CollectionRowWithActions
+        key={item.id}
+        name={state.name}
+        amountText={state.amountText}
+        subtitle={state.metaText}
+        locked={state.locked}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        isLastInGroup={isLastInGroup}
+        pressEnabled={false}
+        onEdit={callbacks.onEdit}
+        onDelete={callbacks.onDelete}
+        disableDelete={disableDelete}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+      />
+    );
+  };
+
   return (
     <EditableCollectionScreen<LiabilityReductionItem>
       title="Liability Reduction"
@@ -109,6 +169,7 @@ export default function LiabilityReductionsDetailScreen() {
       formatGroupTotalText={total => formatCurrencyFullSigned(-total)}
       createNewGroup={() => ({ id: createId('group'), name: 'New Group' })}
       autoExpandSingleGroup={true}
+      renderRow={renderLiabilityReductionRow}
     />
   );
 }

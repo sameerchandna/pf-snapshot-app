@@ -7,6 +7,8 @@ import { useSnapshot } from '../SnapshotContext';
 import { formatPercent } from '../formatters';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../spacing';
+import { Swipeable } from 'react-native-gesture-handler';
+import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 type ProjectionFieldItem = {
   id: string;
@@ -122,6 +124,66 @@ export default function ProjectionSettingsScreen() {
     return null;
   };
 
+  // Custom row renderer for v2 row architecture
+  // This override bypasses FinancialItemRow and uses EditableCollectionScreen's swipe coordination.
+  // Uses CollectionRowWithActions → SemanticRow → SwipeRowContainer → RowVisual stack.
+  const renderProjectionSettingsRow = (
+    item: ProjectionFieldItem,
+    index: number,
+    groupId: string | undefined,
+    isLastInGroup: boolean,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
+    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
+    // For ProjectionSettingsScreen:
+    // - allowGroups={true}, so groupsEnabled = true
+    // - allowDeleteItems={false}, so canDeleteItems = false
+    // - groupsCollapsible={false}, so canCollapseGroups = false
+    // - Therefore: disableDelete = locked || true || false = true (always disabled)
+    const disableDelete = true;
+
+    return (
+      <CollectionRowWithActions
+        key={item.id}
+        name={state.name}
+        amountText={state.amountText}
+        subtitle={state.metaText}
+        locked={state.locked}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        isLastInGroup={isLastInGroup}
+        pressEnabled={false}
+        onEdit={callbacks.onEdit}
+        onDelete={callbacks.onDelete}
+        disableDelete={disableDelete}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+      />
+    );
+  };
+
   return (
     <EditableCollectionScreen<ProjectionFieldItem>
       title="Projection settings"
@@ -172,6 +234,7 @@ export default function ProjectionSettingsScreen() {
       groupsCollapsible={false}
       isItemLocked={isLocked}
       validateEditedItem={validateEditedItem}
+      renderRow={renderProjectionSettingsRow}
     />
   );
 }

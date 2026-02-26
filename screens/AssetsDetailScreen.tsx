@@ -12,6 +12,8 @@ import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
+import { Swipeable } from 'react-native-gesture-handler';
+import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 const assetsHelpContent: HelpContent = {
   title: 'Assets',
@@ -110,6 +112,70 @@ export default function AssetsDetailScreen() {
 
     setQuickName('');
     setQuickError('');
+  };
+
+  // Custom row renderer for v2 row architecture
+  // This override bypasses FinancialItemRow and uses EditableCollectionScreen's swipe coordination.
+  // Uses CollectionRowWithActions → SemanticRow → SwipeRowContainer → RowVisual stack.
+  const renderAssetRow = (
+    item: AssetItem,
+    index: number,
+    groupId: string | undefined,
+    isLastInGroup: boolean,
+    callbacks: {
+      onEdit: () => void;
+      onDelete: () => void;
+      onToggleActive?: () => void;
+      swipeableRef?: (ref: Swipeable | null) => void;
+      onSwipeableWillOpen?: () => void;
+      onSwipeableOpen?: () => void;
+      onSwipeableClose?: () => void;
+    },
+    state: {
+      locked: boolean;
+      isActive: boolean;
+      isInactive: boolean;
+      isCurrentlyEditing: boolean;
+      dimRow: boolean;
+      showTopDivider: boolean;
+      name: string;
+      amountText: string;
+      metaText: string | null;
+    },
+  ) => {
+    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
+    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
+    // For AssetsDetailScreen:
+    // - allowGroups={false}, so groupsEnabled = false
+    // - allowDeleteItems not set, so canDeleteItems = true (default)
+    // - Therefore: disableDelete = locked || false || false = locked
+    const disableDelete = state.locked;
+
+    return (
+      <CollectionRowWithActions
+        key={item.id}
+        name={state.name}
+        amountText={state.amountText}
+        subtitle={state.metaText}
+        locked={state.locked}
+        isActive={state.isActive}
+        onToggleActive={callbacks.onToggleActive}
+        isCurrentlyEditing={state.isCurrentlyEditing}
+        dimRow={state.dimRow}
+        isLastInGroup={isLastInGroup}
+        pressEnabled={true}
+        onPress={() => {
+          navigation.navigate('BalanceDeepDive', { itemId: item.id });
+        }}
+        onEdit={callbacks.onEdit}
+        onDelete={callbacks.onDelete}
+        disableDelete={disableDelete}
+        swipeableRef={callbacks.swipeableRef}
+        onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
+        onSwipeableOpen={callbacks.onSwipeableOpen}
+        onSwipeableClose={callbacks.onSwipeableClose}
+      />
+    );
   };
 
   return (
@@ -276,6 +342,7 @@ export default function AssetsDetailScreen() {
       onItemPress={(item) => {
         navigation.navigate('BalanceDeepDive', { itemId: item.id });
       }}
+      renderRow={renderAssetRow}
     />
   );
 }

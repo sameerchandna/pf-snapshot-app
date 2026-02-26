@@ -7,6 +7,7 @@ import { selectDeductions, selectGrossIncome, selectNetIncome, selectPension } f
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
 import { spacing } from '../spacing';
 import { layout } from '../layout';
+import { useTheme } from '../ui/theme/useTheme';
 
 const otherDeductionsHelpContent: HelpContent = {
   title: 'Other Deductions',
@@ -55,6 +56,7 @@ const otherDeductionsHelpContent: HelpContent = {
 };
 
 export default function DeductionsDetailScreen() {
+  const { theme } = useTheme();
   const { state } = useSnapshot();
   const grossIncomeValue: number = selectGrossIncome(state);
   const pensionValue: number = selectPension(state);
@@ -69,22 +71,22 @@ export default function DeductionsDetailScreen() {
       subtextMain="Calculated gap between gross pay and take-home pay"
       helpContent={otherDeductionsHelpContent}
     >
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>How it’s calculated</Text>
-        <Text style={styles.text}>Other Deductions = Gross Income − Pension − Net Income</Text>
+      <View style={[styles.block, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default }]}>
+        <Text style={[styles.blockTitle, { color: theme.colors.text.secondary }]}>How it's calculated</Text>
+        <Text style={[styles.text, { color: theme.colors.text.tertiary }]}>Other Deductions = Gross Income − Pension − Net Income</Text>
       </View>
 
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Inputs</Text>
-        <Text style={styles.text}>Gross Income: {formatCurrencyFull(grossIncomeValue)}</Text>
-        <Text style={styles.text}>Pension: {formatCurrencyFullSigned(-pensionValue)}</Text>
-        <Text style={styles.text}>Net Income: {formatCurrencyFull(netIncomeValue)}</Text>
+      <View style={[styles.block, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default }]}>
+        <Text style={[styles.blockTitle, { color: theme.colors.text.secondary }]}>Inputs</Text>
+        <Text style={[styles.text, { color: theme.colors.text.tertiary }]}>Gross Income: {formatCurrencyFull(grossIncomeValue)}</Text>
+        <Text style={[styles.text, { color: theme.colors.text.tertiary }]}>Pension: {formatCurrencyFullSigned(-pensionValue)}</Text>
+        <Text style={[styles.text, { color: theme.colors.text.tertiary }]}>Net Income: {formatCurrencyFull(netIncomeValue)}</Text>
       </View>
 
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Result</Text>
-        <Text style={styles.result}>{deductionsText}</Text>
-        <Text style={styles.caption}>Clamped at 0 (never shows as positive “deductions”).</Text>
+      <View style={[styles.block, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.default }]}>
+        <Text style={[styles.blockTitle, { color: theme.colors.text.secondary }]}>Result</Text>
+        <Text style={[styles.result, { color: theme.colors.text.primary }]}>{deductionsText}</Text>
+        <Text style={[styles.caption, { color: theme.colors.text.secondary }]}>Clamped at 0 (never shows as positive "deductions").</Text>
       </View>
     </DetailScreenShell>
   );
@@ -92,9 +94,7 @@ export default function DeductionsDetailScreen() {
 
 const styles = StyleSheet.create({
   block: {
-    backgroundColor: '#f8f8f8',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: spacing.base,
     marginBottom: layout.inputPadding,
@@ -102,22 +102,18 @@ const styles = StyleSheet.create({
   blockTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#444',
     marginBottom: spacing.xs,
   },
   text: {
     fontSize: 14,
-    color: '#333',
     marginBottom: layout.micro,
   },
   result: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#000',
   },
   caption: {
     fontSize: 12,
-    color: '#666',
     marginTop: spacing.tiny,
   },
 });
