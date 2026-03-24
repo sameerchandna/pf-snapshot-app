@@ -2,6 +2,7 @@
   "expo": {
     "name": "pf-snapshot-app",
     "slug": "pf-snapshot-app",
+    "scheme": "pfsnapshot",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sameerchandna.pfsnapshotapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +31,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "1b2a7bac-af95-4d5d-bb5a-c131d3a775af"
+      }
+    }
   }
 }
