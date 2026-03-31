@@ -177,9 +177,27 @@ This separation allows future extension (e.g. stock-based scenarios, guided insi
 
 ## Row Rendering Doctrine (v2)
 
-- FinancialItemRow has been removed.
-- EditableCollectionScreen has no default row implementation.
-- All collection screens must provide a renderRow override.
-- CollectionRowWithActions is the base row primitive.
-- Swipe behavior is centralized in SemanticRow + SwipeRowContainer.
-- No implicit UI behavior is allowed.
+`FinancialItemRow` has been removed. `EditableCollectionScreen` has no default row implementation — all collection screens must provide a `renderRow` override.
+
+**Base primitive:** `CollectionRowWithActions` (`components/rows/CollectionRowWithActions.tsx`)  
+**Swipe behavior:** Centralized in `SemanticRow` + `SwipeRowContainer`. No implicit UI behavior is allowed.
+
+### renderRow pattern
+
+Every editable collection screen provides its own row renderer via the `renderRow` prop on `EditableCollectionScreen`. This gives each screen full control over its row layout while keeping swipe/delete/edit behavior consistent.
+
+```typescript
+// Typical renderRow implementation
+renderRow={(item, { onEdit, onDelete }) => (
+  <CollectionRowWithActions
+    label={item.name}
+    value={formatCurrencyFull(item.amount)}
+    onEdit={() => onEdit(item)}
+    onDelete={() => onDelete(item.id)}
+  />
+)}
+```
+
+Screens that use this pattern: `AssetsDetailScreen`, `LiabilitiesDetailScreen`, `GrossIncomeDetailScreen`, `NetIncomeDetailScreen`, `ExpensesDetailScreen`, `ContributionsDetailScreen`, `LiabilityReductionsDetailScreen`, `PensionDetailScreen`.
+
+Read-only screens (no editing) use `DetailScreenShell` directly without `EditableCollectionScreen`.

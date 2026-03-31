@@ -61,6 +61,12 @@ export const layout = {
   chartPaddingLeft: 52,                   // 52 - chart left padding for labels (non-primary value)
   chartPaddingTop: 14,                    // 14 - chart top padding (non-primary value)
   chartPaddingBottom: 22,                  // 22 - chart bottom padding (non-primary value)
+  chartPaddingRight: spacing.xl,          // 16 - standard chart right padding
+
+  // Chart padding presets (use these objects directly as Victory chart padding props)
+  chartInsetPadding: { top: 8, bottom: 48, left: 44, right: 16 },   // Standard inset chart (EntryScreen, ProjectionResultsScreen)
+  chartDeepDivePadding: { left: 50, top: 20, right: 20, bottom: 40 }, // Deep dive / expanded chart (BalanceDeepDiveScreen)
+
 
   // List/Row spacing
   rowGap: spacing.sm,                     // 8 - gap between rows

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSnapshot } from '../context/SnapshotContext';
+import { useTheme } from '../ui/theme/useTheme';
 import DetailScreenShell from '../components/DetailScreenShell';
 import { HelpContent } from './EditableCollectionScreen';
 import {
@@ -47,6 +48,34 @@ const monthlySurplusHelpContent: HelpContent = {
 };
 
 export default function MonthlySurplusDetailScreen() {
+  const { theme } = useTheme();
+  const styles = StyleSheet.create({
+    block: {
+      backgroundColor: theme.colors.bg.cardGradientBottom,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.medium,
+      padding: spacing.base,
+      marginBottom: layout.inputPadding,
+    },
+    blockTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '600' as const,
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.xs,
+    },
+    text: {
+      fontSize: theme.typography.bodyLarge.fontSize,
+      color: theme.colors.text.tertiary,
+      marginBottom: layout.micro,
+    },
+    result: {
+      fontSize: 22,
+      fontWeight: '700' as const,
+      color: theme.colors.text.primary,
+    },
+  });
+
   const { state } = useSnapshot();
   const totalAssetContributionsValue: number = selectAssetContributions(state);
   const totalLiabilityReductionsValue: number = selectSnapshotLiabilityReduction(state);
@@ -87,30 +116,4 @@ export default function MonthlySurplusDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  block: {
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: spacing.base,
-    marginBottom: layout.inputPadding,
-  },
-  blockTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: spacing.xs,
-  },
-  text: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: layout.micro,
-  },
-  result: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#000',
-  },
-});
 

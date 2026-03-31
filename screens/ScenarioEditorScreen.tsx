@@ -18,6 +18,7 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { validateScenario } from '../domain/scenario/validation';
 import { getScenarios, saveScenario, setActiveScenarioId } from '../scenarioState';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius } from '../ui/theme/theme';
 
 type RouteParams = {
   scenarioId?: ScenarioId;
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   radioCircle: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.pill,
     borderWidth: 2,
     // borderColor set inline
     marginRight: layout.componentGap,

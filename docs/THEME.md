@@ -314,12 +314,12 @@ React Native has limitations that require some inline styles:
 ## Current Status
 
 - **Colors** - Complete light/dark palettes defined and in use
-- **Typography** - Tokens defined (Phase 7.3), migration in progress (Phase 7.13)
-- **Radius** - Tokens defined (Phase 7.3), migration in progress (Phase 7.13)
-- **Shadows** - Tokens defined (Phase 7.3), migration in progress (Phase 7.13)
+- **Typography** - Tokens defined and in use across shared components and most screens; any remaining hardcoded values should be migrated when a screen is touched
+- **Radius** - Tokens defined and in use across shared components and most screens
+- **Shadows** - Tokens defined and in use across shared components and most screens
 - **Spacing/layout** - Explicitly excluded from theme (see `spacing.ts` and `layout.ts`)
-- **Shared components** - Theme-aware (SectionCard, SectionHeader, GroupHeader, ScreenHeader, EducationBox, DetailScreenShell, Icon, IconButton, Row, Divider)
-- **Screens** - Partial migration complete, remaining screens in Phase 7.13
+- **Shared components** - Theme-aware (SectionCard, SectionHeader, GroupHeader, ScreenHeader, EducationBox, DetailScreenShell, Icon, IconButton, Row, Divider, Button, ControlBar, ItemEditor)
+- **Screens** - Most screens migrated; treat any remaining hardcoded values as tech debt to clean up opportunistically
 
 ## Implementation Notes
 

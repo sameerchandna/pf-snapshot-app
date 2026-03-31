@@ -31,13 +31,13 @@ export default function Button({ variant, size, disabled = false, onPress, child
       case 'primary':
         return {
           bg: theme.colors.brand.primary,
-          pressedBg: '#254EDB',
+          pressedBg: theme.colors.brand.primaryPressed,
           text: theme.colors.brand.onPrimary,
         };
       case 'secondary':
         return {
           bg: theme.colors.bg.subtle,
-          pressedBg: '#eaeaea',
+          pressedBg: theme.colors.bg.subtlePressed,
           text: theme.colors.text.secondary,
         };
       case 'text':
@@ -58,15 +58,15 @@ export default function Button({ variant, size, disabled = false, onPress, child
         return {
           paddingVertical: layout.inputPadding,
           paddingHorizontal: spacing.xl,
-          fontSize: 14,
-          borderRadius: 8,
+          fontSize: theme.typography.button.fontSize,
+          borderRadius: theme.radius.medium,
         };
       case 'sm':
         return {
           paddingVertical: spacing.xs,
           paddingHorizontal: layout.inputPadding,
-          fontSize: 12,
-          borderRadius: 14,
+          fontSize: theme.typography.body.fontSize,
+          borderRadius: theme.radius.modal,
         };
     }
   };
@@ -95,7 +95,7 @@ export default function Button({ variant, size, disabled = false, onPress, child
         style={{
           color: textColor,
           fontSize: sizeStyles.fontSize,
-          fontWeight: '600',
+          fontWeight: theme.typography.button.fontWeight,
           textAlign: 'center',
         }}
       >

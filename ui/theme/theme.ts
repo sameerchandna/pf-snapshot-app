@@ -13,6 +13,7 @@ export const lightTheme = {
   colors: {
     brand: {
       primary: '#2F5BEA',
+      primaryPressed: '#254EDB', // Darker shade of primary for pressed/active states
       tint: '#e8f0ff', // Light blue tint for active states and highlights
       onPrimary: '#ffffff', // Content color used on top of brand.primary surfaces (icons, checkmarks, labels)
     },
@@ -20,6 +21,7 @@ export const lightTheme = {
       primary: '#000',
       secondary: '#666',
       tertiary: '#333', // Used for #333 and #444 mappings
+      subtle: '#777',   // Mid-tone text between secondary and muted
       muted: '#888',
       disabled: '#aaa', // Used in ScreenHeader subtitleFootnote
     },
@@ -30,6 +32,7 @@ export const lightTheme = {
       input: '#fbfbfb', // Interactive input surface - subtly darker than card, softer tone
       cardGradientTop: '#fff', // Derived from bg.card (same value for subtle gradient start)
       cardGradientBottom: '#f8f8f8', // Derived from bg.subtle, slightly darker than card for subtle gradient end
+      subtlePressed: '#eaeaea', // Pressed state for subtle/secondary interactive surfaces
     },
     border: {
       default: '#e0e0e0',
@@ -149,7 +152,9 @@ export const lightTheme = {
     small: 4,
     base: 6,
     medium: 8,
+    card: 10,   // Apple-standard card/section corner radius
     large: 12,
+    modal: 14,  // Modal sheet top corner radius
     pill: 24,
   },
   shadows: {
@@ -175,6 +180,7 @@ export const darkTheme = {
   colors: {
     brand: {
       primary: '#4C7DFF', // Brighter, more saturated blue for dark mode visibility
+      primaryPressed: '#3A6BFF', // Lighter pressed state for dark mode (pressing lightens in dark mode)
       tint: '#1a2f5a', // Darker blue tint for dark mode active states
       onPrimary: '#ffffff', // Content color used on top of brand.primary surfaces (icons, checkmarks, labels)
     },
@@ -182,6 +188,7 @@ export const darkTheme = {
       primary: '#ffffff',
       secondary: '#b3b3b3',
       tertiary: '#cccccc',
+      subtle: '#8a8a8a',   // Mid-tone text between secondary and muted (dark mode)
       muted: '#707070',
       disabled: '#666666',
     },
@@ -192,6 +199,7 @@ export const darkTheme = {
       input: '#000000', // Interactive input surface - matches bg.app in dark mode
       cardGradientTop: '#1f1f1f', // Derived from bg.card, slightly lighter for subtle gradient start
       cardGradientBottom: '#1a1a1a', // Derived from bg.card (same value for subtle gradient end)
+      subtlePressed: '#353535', // Pressed state for subtle/secondary interactive surfaces (dark mode)
     },
     border: {
       default: '#404040',
@@ -311,7 +319,9 @@ export const darkTheme = {
     small: 4,
     base: 6,
     medium: 8,
+    card: 10,   // Apple-standard card/section corner radius
     large: 12,
+    modal: 14,  // Modal sheet top corner radius
     pill: 24,
   },
   shadows: {
@@ -335,3 +345,19 @@ export const darkTheme = {
 
 // Theme type that accepts both light and dark themes
 export type Theme = typeof lightTheme | typeof darkTheme;
+
+/**
+ * Standalone radius tokens — same values as theme.radius, exported separately
+ * so static StyleSheets (outside components) can use them without needing useTheme().
+ * Radius does not differ between light and dark themes.
+ */
+export const radius = {
+  none: 0,
+  small: 4,
+  base: 6,
+  medium: 8,
+  card: 10,   // Apple-standard card/section corner radius
+  large: 12,
+  modal: 14,  // Modal sheet top corner radius
+  pill: 24,
+} as const;

@@ -62,6 +62,139 @@ function parseDdMmmYyyy(input: string): Date | null {
 
 export default function LoanDetailScreen() {
   const { theme } = useTheme();
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.bg.card,
+    },
+    content: {
+      flex: 1,
+      padding: spacing.xl,
+      paddingTop: spacing.base,
+    },
+    doneButton: {
+      paddingHorizontal: layout.inputPadding,
+      paddingVertical: spacing.xs,
+      borderRadius: theme.radius.base,
+      backgroundColor: theme.colors.bg.app,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+    },
+    doneButtonText: {
+      fontSize: 13,
+      fontWeight: '600' as const,
+      color: theme.colors.text.tertiary,
+    },
+    errorCard: {
+      backgroundColor: theme.colors.semantic.errorBg,
+      borderWidth: 1,
+      borderColor: theme.colors.semantic.errorBorder,
+      borderRadius: theme.radius.medium,
+      padding: layout.inputPadding,
+      marginBottom: spacing.base,
+    },
+    errorTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '700' as const,
+      color: theme.colors.semantic.errorText,
+      marginBottom: spacing.tiny,
+    },
+    errorText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.semantic.errorText,
+    },
+    card: {
+      backgroundColor: theme.colors.bg.cardGradientBottom,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.card,
+      padding: spacing.base,
+      marginBottom: spacing.base,
+    },
+    label: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '600' as const,
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.xs,
+    },
+    fieldSpacing: {
+      marginTop: layout.inputPadding,
+    },
+    input: {
+      backgroundColor: theme.colors.bg.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.medium,
+      paddingVertical: layout.inputPadding,
+      paddingHorizontal: spacing.base,
+      fontSize: 16,
+      color: theme.colors.text.primary,
+    },
+    actionsRow: {
+      flexDirection: 'row' as const,
+      justifyContent: 'flex-end' as const,
+      marginTop: spacing.base,
+    },
+    actionButton: {
+      backgroundColor: theme.colors.border.subtle,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.medium,
+      paddingVertical: layout.inputPadding,
+      paddingHorizontal: layout.lg,
+    },
+    actionButtonText: {
+      fontSize: theme.typography.button.fontSize,
+      fontWeight: '600' as const,
+      color: theme.colors.text.tertiary,
+    },
+    readRow: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      marginBottom: spacing.xs,
+    },
+    readLabel: {
+      fontSize: 13,
+      color: theme.colors.text.secondary,
+    },
+    readValue: {
+      fontSize: 13,
+      fontWeight: '600' as const,
+      color: theme.colors.text.primary,
+    },
+    footnote: {
+      marginTop: layout.inputPadding,
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.text.subtle,
+      lineHeight: 16,
+    },
+    helperText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.text.secondary,
+      marginBottom: spacing.sm,
+      lineHeight: 16,
+    },
+    infoBlock: {
+      marginTop: spacing.base,
+      backgroundColor: theme.colors.bg.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.medium,
+      padding: layout.inputPadding,
+    },
+    infoTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '700' as const,
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.xs,
+    },
+    infoText: {
+      fontSize: theme.typography.body.fontSize,
+      color: theme.colors.text.secondary,
+      lineHeight: 16,
+    },
+  });
+
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { template, groupId, liabilityId } = (route.params ?? {}) as RouteParams;
@@ -401,137 +534,5 @@ export default function LoanDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
-    padding: spacing.xl,
-    paddingTop: spacing.base,
-  },
-  doneButton: {
-    paddingHorizontal: layout.inputPadding,
-    paddingVertical: spacing.xs,
-    borderRadius: 6,
-    backgroundColor: '#f2f3f5',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  doneButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-  },
-  errorCard: {
-    backgroundColor: '#fff5f5',
-    borderWidth: 1,
-    borderColor: '#ffd6d6',
-    borderRadius: 8,
-    padding: layout.inputPadding,
-    marginBottom: spacing.base,
-  },
-  errorTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#8a1f1f',
-    marginBottom: spacing.tiny,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#8a1f1f',
-  },
-  card: {
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 10,
-    padding: spacing.base,
-    marginBottom: spacing.base,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: spacing.xs,
-  },
-  fieldSpacing: {
-    marginTop: layout.inputPadding,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingVertical: layout.inputPadding,
-    paddingHorizontal: spacing.base,
-    fontSize: 16,
-    color: '#111',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.base,
-  },
-  actionButton: {
-    backgroundColor: '#eee',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: layout.inputPadding,
-    paddingHorizontal: layout.lg,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  readRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  readLabel: {
-    fontSize: 13,
-    color: '#555',
-  },
-  readValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#222',
-  },
-  footnote: {
-    marginTop: layout.inputPadding,
-    fontSize: 12,
-    color: '#777',
-    lineHeight: 16,
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: spacing.sm,
-    lineHeight: 16,
-  },
-  infoBlock: {
-    marginTop: spacing.base,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e6e6e6',
-    borderRadius: 8,
-    padding: layout.inputPadding,
-  },
-  infoTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#444',
-    marginBottom: spacing.xs,
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
-  },
-});
 
 

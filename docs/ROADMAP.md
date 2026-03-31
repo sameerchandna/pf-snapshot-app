@@ -1,44 +1,32 @@
 # PF App — Roadmap
-
 This file defines the allowed execution surface.
 Only unchecked items may be worked on.
-
 ---
 
 ## Phase 0 — Governance (Locked, Complete)
 - [x] Core documentation (SYSTEM, ARCHITECTURE, INVARIANTS)
-- [x] Roles and change protocol
+- [x] Change protocol
 - [x] Governance framework locked
-
----
 
 ## Phase 1 — System Stability
 - [x] Snapshot mutation validation
 - [x] Tolerance constants centralized
 - [x] Scenario fallback audit and cleanup
 
----
-
 ## Phase 2 — Scenario Correctness
 - [x] FLOW scenario affordability validation
 - [x] Delta reconciliation assertions
 - [x] Activation/rollback robustness
-
----
 
 ## Phase 3 — Projection & Attribution Integrity
 - [x] Projection determinism verification
 - [x] Attribution zero-reconciliation enforcement
 - [x] Edge case diagnostics (negative surplus, paid-off liabilities)
 
----
-
 ## Phase 4 — UI System Foundation & Dark Mode Readiness
 - [x] Theme system and color tokenization
 - [x] Interactive state normalization
 - [x] Dark mode verification
-
----
 
 ## Phase 5 — Insights, Explanation & Visual Intuition
 - [x] 5.1: Financial health summary
@@ -51,21 +39,10 @@ Only unchecked items may be worked on.
 - [x] 5.8: Educational overlays (savings and mortgage education, optional toggles)
 - [x] 5.9: Insight ↔ chart linking (visual feedback, read-only guarantees)
 
----
-
-## Phase 6 — Onboarding & Demo
-- [x] Demo profiles and non-persistent mode
-- [x] Chart-first entry screen with mode toggle
-- [x] Entry CTAs and UI polish
-
----
-
-## Phase 7 — UI Clean Up
+## Phase 6 — UI Clean Up
 - [x] Theme tokenization and component primitives
 - [x] Screen migrations and chart polish
 - [x] Dark mode safety and validation screens
-
----
 
 ## Phase 8 — UI Fixes
 - [x] Sign (+ / −) all numbers in Snapshot → Cash Flow  
@@ -75,74 +52,13 @@ Only unchecked items may be worked on.
 - [x] Change Detailed Entry Interaction - add + Icon
 - [x] Change Balance Sheet card structure  
 - [x] Make Projected Cashflow same as Snapshot
-- [x] Add Section Gradiets and Glows
-- [ ] Fix rows
-- [ ] Fix inputs
-- [ ] Fix Toobar
-- [ ] Mortgage Dashboard
-- [ ] Projection Char, asset beakdown
-  
-
-
----
 
 ## Phase 9 — List & Row Architecture Unification
-
-Goal:
-Unify all row and list UI patterns behind a small set of canonical components to ensure visual and behavioural consistency across the app.
-
-Scope:
-- UI architecture only
-- No business logic changes
-- No Snapshot / Projection / Scenario semantics changes
-- No visual redesign
-
-- [ ] 9.1: Architecture Lock
-  - Confirm final UI primitives: Row, List, AddEntry
-  - Confirm ownership boundaries:
-    - Row = layout only
-    - List = grouping, separators, swipe
-    - AddEntry = add-item affordance
-  - Deprecate GroupedListDetailScreen conceptually
-
-- [ ] 9.2: Component Definitions
-  - Implement Row component with:
-    - Leading slot
-    - Primary text
-    - Optional secondary text
-    - Trailing slot (amount / control)
-    - Trailing aligned to primary text baseline
-  - Implement List component with:
-    - Row rendering
-    - Separators
-    - Optional grouping
-    - Swipe behaviour owned by List
-    - Header / footer support
-  - Implement AddEntry component for consistent add-item affordance
-
-- [ ] 9.3: Pilot Migration
-  - Migrate one screen (Expenses) to List + Row
-  - Preserve visuals and behaviour exactly
-
-- [ ] 9.4: Progressive Migration
-  - Migrate remaining list-based screens incrementally:
-    - Assets
-    - Contributions
-    - Profiles
-    - Scenarios
-    - Dropdowns
-
-- [ ] 9.5: Legacy Cleanup
-  - Remove duplicated row implementations
-  - Remove duplicated swipe logic
-  - Collapse or delete GroupedListDetailScreen
-
-- [ ] 9.6: Final Consistency Check
-  - All rows use Row
-  - All lists use List
-  - All add-entry affordances use AddEntry
-  - No regressions
-  - Phase 9 locked
+- [x] Canonical component stack: EditableCollectionScreen → CollectionRowWithActions → SemanticRow → SwipeRowContainer → RowVisual
+- [x] Row, List, AddEntry primitives defined and implemented
+- [x] All editable collection screens migrated
+- [x] Swipe coordination, locked/inactive/dimmed states unified across all screens
+- [x] Legacy row implementations removed
 
 ---
 

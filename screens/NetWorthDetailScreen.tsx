@@ -7,6 +7,7 @@ import { selectAssets, selectLiabilities, selectNetWorth } from '../engines/sele
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import { useTheme } from '../ui/theme/useTheme';
 
 const netWorthHelpContent: HelpContent = {
   title: 'Net Worth',
@@ -47,6 +48,34 @@ const netWorthHelpContent: HelpContent = {
 };
 
 export default function NetWorthDetailScreen() {
+  const { theme } = useTheme();
+  const styles = StyleSheet.create({
+    block: {
+      backgroundColor: theme.colors.bg.cardGradientBottom,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: theme.radius.medium,
+      padding: spacing.base,
+      marginBottom: layout.inputPadding,
+    },
+    blockTitle: {
+      fontSize: theme.typography.body.fontSize,
+      fontWeight: '600' as const,
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.xs,
+    },
+    text: {
+      fontSize: theme.typography.bodyLarge.fontSize,
+      color: theme.colors.text.tertiary,
+      marginBottom: layout.micro,
+    },
+    result: {
+      fontSize: 22,
+      fontWeight: '700' as const,
+      color: theme.colors.text.primary,
+    },
+  });
+
   const { state } = useSnapshot();
   const totalAssetsValue: number = selectAssets(state);
   const totalLiabilitiesValue: number = selectLiabilities(state);
@@ -79,31 +108,5 @@ export default function NetWorthDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  block: {
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: spacing.base,
-    marginBottom: layout.inputPadding,
-  },
-  blockTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: spacing.xs,
-  },
-  text: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: layout.micro,
-  },
-  result: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#000',
-  },
-});
 
 

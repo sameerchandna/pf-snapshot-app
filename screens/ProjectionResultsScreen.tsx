@@ -401,6 +401,7 @@ function SnapshotComparisonCard({
   isSubCard?: boolean;
 }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   // Use unsigned formatting for all baseline and scenario values (no + or - signs)
   // Use compact formatting (k/m) for Projected Snapshot
   // Signs are only used for deltas
@@ -514,6 +515,7 @@ function DualValueCard({
   isOutcome?: boolean;
 }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   // Use unsigned formatting for all baseline and scenario values (no + or - signs)
   // Signs are only used for deltas
   const formatValue = formatCurrencyCompact;
@@ -599,6 +601,7 @@ function BalanceSheetCard({
   startingValueForScenario?: number; // today's value for scenario age delta (usually same as startingValue)
 }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   if (!showScenario || scenarioValue === undefined) {
     // Single column: baseline only
     const ageDelta = baselineAgeDelta;
@@ -688,6 +691,7 @@ type Row = {
 
 function KeyDriversCard({ rows, showScenario, showDelta, scenarioResult, endNetWorthBaseline, endNetWorthScenario, endNetWorthDelta }: { rows: Row[]; showScenario: boolean; showDelta: boolean; scenarioResult?: string | null; endNetWorthBaseline?: string; endNetWorthScenario?: string; endNetWorthDelta?: string }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   const endNetWorthValuesDiffer = endNetWorthDelta && endNetWorthDelta !== '—';
   
   return (
@@ -806,6 +810,7 @@ function ReconciliationOverlay({
   selectedAge: number;
 }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   // Core reconciliation
   const baselineNetWorth = valuesAtAge.netWorth;
   const scenarioNetWorth = scenarioValuesAtAge.netWorth;
@@ -969,6 +974,7 @@ function FinancialHealthSummary({
   style?: any;
 }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   const insights: Insight[] = [];
 
   // T1 — Cashflow Balance
@@ -1130,6 +1136,7 @@ function FinancialHealthSummary({
 
 function AttributionCard({ title, subtitle, education, rows, showScenario, showDelta }: { title: string; subtitle?: string; education: string; rows: Row[]; showScenario: boolean; showDelta: boolean }) {
   const { theme } = useTheme();
+  const styles = makeStyles(theme);
   return (
     <View style={[styles.attrCard, { backgroundColor: theme.colors.bg.subtle, borderColor: theme.colors.border.subtle }]}>
       <Text style={[styles.attrTitle, { color: theme.colors.text.primary }]}>{title}</Text>
@@ -1183,6 +1190,7 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
 
 export default function ProjectionResultsScreen() {
   const { theme, isDark } = useTheme();
+  const styles = makeStyles(theme);
   const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
@@ -4579,1283 +4587,1225 @@ export default function ProjectionResultsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 0,
-    paddingBottom: spacing.base,
-  },
-  projectionStickyHeader: {
-    zIndex: 10,
-  },
-  toolbarPill: {
-    height: 28,
-    paddingHorizontal: layout.inputPadding,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pillText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scenarioStatus: {
-    marginRight: spacing.base,
-  },
-  scenarioPrimary: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scenarioSecondary: {
-    marginTop: layout.micro,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  scenarioSelector: {
-    height: 28,
-    paddingHorizontal: spacing.base,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.tiny,
-    borderRadius: 6,
-  },
-  scenarioSelectorText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scenarioSelectorChevron: {
-    fontSize: 10,
-  },
-  agePill: {
-    height: 28,
-    paddingHorizontal: spacing.base,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  agePillText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  ageChevron: {
-    marginLeft: spacing.xs,
-    fontSize: 10,
-  },
-  iconText: {
-    fontSize: 14,
-  },
-  settingsIcon: {
-    opacity: 0.6,
-  },
-  activeZapIcon: {
-    opacity: 0.8,
-  },
-  stickyToolbar: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'nowrap',
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    zIndex: 20,
-  },
-  toolbarSpacer: {
-    flex: 1,
-  },
-  toolbarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.tiny,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 6,
-    minHeight: 32,
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  toolbarButtonLeft: {
-    flexShrink: 1,
-    minWidth: 80,
-  },
-  toolbarButtonRight: {
-    flexShrink: 0,
-    minWidth: 60,
-  },
-  toolbarButtonText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#111',
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  toolbarIconButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 6,
-    // backgroundColor moved to inline style
-    flexShrink: 0,
-  },
-  quickWhatIfContainer: {
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    // backgroundColor moved to inline style
-  },
-  quickWhatIfHint: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    color: '#999',
-    marginBottom: spacing.sm,
-  },
-  quickWhatIfHintAmount: {
-    // color moved to inline style (already using theme.colors.brand.primary)
-    fontWeight: '500',
-  },
-  quickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-    gap: spacing.base,
-  },
-  quickLabel: {
-    width: 96,
-    fontSize: 12,
-    color: '#777',
-  },
-  quickWhatIfSelector: {
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    minHeight: 40,
-  },
-  quickWhatIfSelectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: layout.inputPadding,
-  },
-  quickWhatIfSelectorValue: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-  },
-  quickWhatIfPlaceholder: {
-    fontWeight: '500',
-    color: '#777',
-  },
-  quickWhatIfHelper: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    color: '#999',
-    fontWeight: '400',
-  },
-  quickWhatIfAmountInput: {
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-    minHeight: 40,
-  },
-  quickWhatIfAmountInputError: {
-    // borderColor moved to inline style
-    borderWidth: 1.5,
-  },
-  quickWhatIfAvailableCash: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    color: '#999',
-    fontWeight: '400',
-  },
-  quickWhatIfAvailableCashAmount: {
-    // color moved to inline style
-    fontWeight: '500',
-  },
-  quickWhatIfError: {
-    fontSize: 12,
-    // color moved to inline style
-    lineHeight: 16,
-    marginTop: spacing.tiny,
-  },
-  clearScenarioText: {
-    marginTop: spacing.sm,
-    fontSize: 12,
-    color: '#aaa',
-    textDecorationLine: 'underline',
-  },
-  innerContent: {
-    padding: spacing.base,
-    paddingTop: spacing.base,
-  },
-  educationBlock: {
-    marginBottom: 14,
-    paddingHorizontal: 2,
-  },
-  educationText: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-  hairlineDivider: {
-    height: 0.5,
-    // backgroundColor moved to inline style
-    marginBottom: layout.lg,
-  },
-  block: {
-    marginBottom: layout.lg,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 0,
-  },
-  chartMiniToggle: {
-    minWidth: 96,
-    height: 22,
-    paddingHorizontal: layout.inputPadding,
-    borderRadius: 11,
-    // backgroundColor moved to inline style
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chartMiniToggleActive: {
-    // backgroundColor moved to inline style
-  },
-  chartMiniToggleText: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
-  },
-  chartMiniToggleTextActive: {
-    // color moved to inline style
-    fontWeight: '600',
-  },
-  toggleCard: {
-    // backgroundColor moved to inline style
-    borderRadius: 8,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.base,
-  },
-  switchContainer: {
-    transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }],
-    marginTop: layout.micro,
-  },
-  toggleTextContainer: {
-    flex: 1,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111',
-    marginBottom: spacing.tiny,
-  },
-  toggleHelper: {
-    fontSize: 12,
-    color: '#999',
-    lineHeight: 16,
-  },
-  chartCard: {
-    // Avoid clipping chart labels/legend.
-    overflow: 'visible',
-  },
-  legendRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-    gap: spacing.xl,
-  },
-  legendRowSecondary: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: layout.micro,
-    gap: spacing.xl,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  legendSwatch: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  legendTextMuted: {
-    fontSize: 11,
-    fontWeight: '400',
-  },
-  // Phase 5.3: Unified value bar companion card
-  valueBar: {
-    flexDirection: 'column',
-    alignSelf: 'center',
-    gap: spacing.sm,
-  },
-  valueBarRow: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.base,
-  },
-  valueBarRowLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginRight: spacing.xs,
-  },
-  valueBarItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  valueBarDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  valueBarLabel: {
-    fontSize: 12,
-    fontWeight: '400',
-  },
-  valueBarValue: {
-    fontSize: 12,
-  },
-  insightText: {
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: spacing.xs,
-    marginBottom: 0,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  // Fixed values card inside chart (top-left)
-  chartValuesCard: {
-    position: 'absolute',
-    padding: spacing.sm,
-    borderRadius: 6,
-    borderWidth: 1,
-    minWidth: 140,
-    zIndex: 10,
-  },
-  chartValuesPrimary: {
-    marginBottom: spacing.xs,
-  },
-  chartValuesPrimaryLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    marginBottom: layout.micro,
-  },
-  chartValuesPrimaryValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  chartValuesSecondary: {
-    gap: layout.micro,
-  },
-  chartValuesSecondaryText: {
-    fontSize: 11, // Phase 7.11: Slightly increased for readability (was 10)
-    fontWeight: '400',
-  },
-  outcomeSubtitle: {
-    fontSize: 13,
-    color: '#999',
-    marginBottom: layout.inputPadding,
-  },
-  outcomeSummary: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-    marginTop: spacing.base,
-  },
-  ageSelector: {
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: layout.inputPadding,
-    paddingHorizontal: spacing.base,
-    marginTop: layout.inputPadding,
-    marginBottom: spacing.tiny,
-  },
-  ageSelectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: layout.inputPadding,
-  },
-  ageSelectorLabel: {
-    fontSize: 13,
-    color: '#999',
-  },
-  ageSelectorValue: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-    textAlign: 'right',
-  },
-  ageSelectorControlRow: {
-    // backgroundColor moved to inline style
-    borderRadius: 8,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    marginTop: layout.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  ageSelectorControlLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111',
-  },
-  ageSelectorControlButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  ageSelectorControlValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-  },
-  keyDriversCard: {
-    // backgroundColor moved to inline style
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-    borderRadius: 8,
-    padding: layout.inputPadding,
-    marginBottom: spacing.tiny,
-  },
-  keyDriversTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-    marginBottom: spacing.xs,
-  },
-  keyDriversRows: {
-    gap: spacing.sm,
-  },
-  keyDriversRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: layout.inputPadding,
-  },
-  keyDriversLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: '#333',
-  },
-  keyDriversValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
-    textAlign: 'right',
-  },
-  keyDriversValuesRow: {
-    flexDirection: 'row',
-    gap: spacing.base,
-    alignItems: 'flex-start',
-  },
-  keyDriversValueScenario: {
-    fontSize: 13,
-    fontWeight: '600',
-    // color moved to inline style
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  keyDriversValueDelta: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 60,
-  },
-  attrCard: {
-    // backgroundColor moved to inline style
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 12,
-    padding: spacing.base,
-  },
-  breakdownGroupContainer: {
-    marginTop: spacing.base,
-  },
-  attrTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111',
-    marginBottom: spacing.xs,
-  },
-  attrSubtitle: {
-    fontSize: 12,
-    color: '#555',
-    marginBottom: spacing.sm,
-    lineHeight: 16,
-  },
-  attrEducation: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: layout.inputPadding,
-    lineHeight: 16,
-  },
-  attrRows: {
-    gap: spacing.sm,
-  },
-  attrRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: layout.inputPadding,
-  },
-  attrLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: '#333',
-  },
-  attrValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
-    textAlign: 'right',
-  },
-  attrHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: layout.inputPadding,
-    marginBottom: spacing.sm,
-    paddingBottom: 0,
-    marginHorizontal: -spacing.base,
-    paddingHorizontal: spacing.base,
-  },
-  attrHeaderSpacer: {
-    flex: 1,
-  },
-  attrHeaderLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  attrHeaderLabelScenario: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#2F5BEA',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  attrHeaderLabelDelta: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 60,
-  },
-  attrValuesRow: {
-    flexDirection: 'row',
-    gap: spacing.base,
-    alignItems: 'flex-start',
-  },
-  attrValueScenario: {
-    fontSize: 13,
-    fontWeight: '600',
-    // color moved to inline style
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  attrValueDelta: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 60,
-  },
-  attrValueScenarioUnchanged: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  keyDriversValueScenarioUnchanged: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  scenarioResultSummary: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2F5BEA',
-    marginBottom: spacing.sm,
-  },
-  keyDriversHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: layout.inputPadding,
-    marginBottom: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  keyDriversHeaderSpacer: {
-    flex: 1,
-  },
-  keyDriversHeaderLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  keyDriversHeaderLabelScenario: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#2F5BEA',
-    textAlign: 'right',
-    minWidth: 70,
-  },
-  keyDriversHeaderLabelDelta: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    textAlign: 'right',
-    minWidth: 60,
-  },
-  endNetWorthSection: {
-    marginTop: spacing.base,
-    paddingTop: spacing.base,
-  },
-  endNetWorthLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
-    marginBottom: spacing.xs,
-  },
-  endNetWorthRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.tiny,
-  },
-  endNetWorthBaselineLabel: {
-    fontSize: 13,
-    color: '#999',
-  },
-  endNetWorthBaselineValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111',
-  },
-  endNetWorthScenarioLabel: {
-    fontSize: 13,
-    color: '#999',
-  },
-  endNetWorthScenarioValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2F5BEA',
-  },
-  attrRowUnchanged: {
-    opacity: 0.7,
-  },
-  attrLabelUnchanged: {
-    color: '#999',
-  },
-  modalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBackdropFlex: {
-    flex: 1,
-  },
-  modalSheet: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: 14,
-    paddingBottom: 18,
-    maxHeight: '70%',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: layout.inputPadding,
-  },
-  modalList: {
-    flexGrow: 0,
-  },
-  modalListContent: {
-    paddingBottom: spacing.base,
-  },
-  modalOption: {
-    paddingVertical: spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalOptionText: {
-    fontSize: 14,
-    color: '#111',
-    fontWeight: '600',
-  },
-  modalOptionTextSecondary: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  modalDivider: {
-    height: 1,
-    // backgroundColor moved to inline style
-    marginVertical: spacing.sm,
-  },
-  modalOptionContent: {
-    flexDirection: 'column',
-    gap: layout.micro,
-  },
-  modalOptionMetadata: {
-    fontSize: 12,
-    color: '#777',
-    fontWeight: '400',
-  },
-  modalEmptyText: {
-    fontSize: 14,
-    color: '#777',
-    fontStyle: 'italic',
-    paddingVertical: spacing.base,
-  },
-  modalOptionSubtext: {
-    fontSize: 12,
-    color: '#777',
-    marginTop: layout.micro,
-  },
-  // Projected Snapshot styles (compact, calm, lightweight)
-  projectedHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.tiny,
-    gap: spacing.base,
-  },
-  headerQualifier: {
-    color: '#999',
-  },
-  projectedMainSubtitle: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#999',
-    lineHeight: 17,
-  },
-  projectedSubHeading: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#999',
-    marginBottom: spacing.base,
-  },
-  column: {
-    marginBottom: spacing.xl,
-  },
-  cashflowColumn: {
-    marginBottom: spacing.sm,
-  },
-  cashflowCentered: {
-    width: '100%',
-  },
-  cashflowPrimaryCard: {
-    width: '100%',
-  },
-  cashflowCardStack: {
-    position: 'relative',
-    width: '100%',
-    paddingHorizontal: layout.inputPadding,
-  },
-  cashflowSpine: {
-    position: 'absolute',
-    left: spacing.xl + spacing.sm,
-    top: spacing.xs,
-    bottom: spacing.xs,
-    width: 1,
-    // backgroundColor moved to inline style
-    zIndex: 0,
-  },
-  cashflowSubGroup: {
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  cashflowCard: {
-    // Spacing handled by cashflowMb* styles
-  },
-  cashflowMb: {
-    marginBottom: spacing.sm,
-  },
-  cashflowGapMd: {
-    height: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cashflowGapLg: {
-    height: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cashflowChevron: {
-    fontSize: 12,
-    color: '#ddd',
-    fontWeight: '400',
-  },
-  cashflowEndSpacer: {
-    height: 12,
-  },
-  cashflowSubCard: {
-    width: '90%',
-    alignSelf: 'flex-end',
-  },
-  cashflowSubRow: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    width: '84%',
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
-  },
-  cashflowSubCardHalf: {
-    width: '49%',
-  },
-  cashflowSubCardHalfLeft: {
-    marginRight: spacing.tiny,
-  },
-  cashflowTextCentered: {
-    textAlign: 'center',
-  },
-  // Snapshot card structure styles (reused from SnapshotScreen)
-  cashflowCardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    width: '100%',
-    gap: spacing.base,
-  },
-  cashflowCardLeft: {
-    flex: 1,
-    flexShrink: 1,
-    paddingRight: 100, // Reserve space for right-aligned value column
-  },
-  cashflowCardLeftIndented: {
-    flex: 1,
-    flexShrink: 1,
-    paddingRight: 100, // Reserve space for right-aligned value column
-  },
-  cashflowCardRight: {
-    position: 'absolute',
-    right: spacing.sm, // Align with card's right padding
-    top: spacing.tiny, // Visual centering offset
-    alignItems: 'flex-end',
-  },
-  cashflowValueRight: {
-    textAlign: 'right',
-  },
-  projectedCard: {
-    padding: spacing.sm,
-    marginBottom: 0,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#d8d8d8',
-  },
-  projectedCardMinimal: {
-    padding: spacing.sm,
-    marginBottom: 0,
-    borderRadius: 24,
-  },
-  projectedCardBordered: {
-    padding: spacing.sm,
-    marginBottom: 0,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#d8d8d8',
-  },
-  projectedCardTitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 1,
-    color: '#333',
-  },
-  projectedSubCardTitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 1,
-    color: '#999',
-  },
-  projectedPrimaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 0,
-    color: '#111',
-  },
-  projectedPrimaryValueOutcome: {
-  },
-  projectedSubCardValue: {
-    color: '#999',
-  },
-  projectedSubtext: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: '#999',
-    marginTop: layout.micro,
-  },
-  projectedDelta: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: spacing.tiny,
-  },
-  projectedDeltaScenario: {
-    // color moved to inline style
-  },
-  projectedDeltaAge: {
-    color: '#999', // Muted neutral grey
-  },
-  projectedPrimaryValueScenario: {
-    // color moved to inline style (already using theme.colors.brand.primary where used)
-  },
-  dualValueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  dualValueDivider: {
-    width: 1,
-    height: 20,
-    // backgroundColor moved to inline style
-  },
-  balanceSheetDualColumn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    gap: spacing.tiny,
-  },
-  balanceSheetColumn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  balanceSheetDeltaRow: {
-    minHeight: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  balanceSheetDivider: {
-    width: 1,
-    // backgroundColor moved to inline style
-    alignSelf: 'stretch',
-  },
-  dotSeparatorTight: {
-    alignItems: 'center',
-    marginVertical: 4,
-  },
-  dot: {
-    fontSize: 10,
-    color: '#ddd',
-  },
-  projectedBalanceSheetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-    flexWrap: 'wrap',
-  },
-  projectedBalanceSheetCard: {
-    flex: 1,
-    minHeight: 80,
-    padding: spacing.sm,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  projectedBalanceSheetOperator: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#bbb',
-    marginHorizontal: 2,
-  },
-  // Phase Four: Scenario Impact styles
-  scenarioImpactBlocks: {
-    gap: layout.md,
-    marginTop: spacing.sm,
-  },
-  scenarioImpactBlock: {
-    // backgroundColor moved to inline style
-    borderRadius: 8,
-    padding: layout.md,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  scenarioImpactBlockTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: spacing.xs,
-  },
-  scenarioImpactBlockValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  scenarioImpactPositive: {
-    // color moved to inline style
-  },
-  scenarioImpactNegative: {
-    color: '#999',
-  },
-  scenarioImpactBlockSubline: {
-    fontSize: 12,
-    color: '#999',
-    lineHeight: 16,
-  },
-  scenarioImpactBalanceSheetRows: {
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  scenarioImpactBalanceSheetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scenarioImpactBalanceSheetLabel: {
-    fontSize: 13,
-    color: '#999',
-  },
-  scenarioImpactBalanceSheetValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Phase Four: Projected Snapshot muted styles (when showing scenario)
-  projectedSnapshotMuted: {
-    opacity: 0.7,
-  },
-  projectedSnapshotMutedText: {
-    color: '#999',
-  },
-  projectedSnapshotMutedCard: {
-    // backgroundColor moved to inline style
-    borderColor: '#e5e5e5',
-  },
-  // Insights list (same format as SnapshotScreen)
-  insightsList: {
-    marginTop: layout.md,
-  },
-  bodyText: {
-    fontSize: 13,
-    fontWeight: snapshotTypography.bodyWeight,
-    color: '#666',
-    marginBottom: spacing.xs,
-    lineHeight: 18,
-  },
-  bodyTextMuted: {
-    color: '#999',
-    opacity: 0.7,
-  },
-  // Snapshot card styles (reused from SnapshotScreen)
-  snapshotCard: {
-    paddingVertical: spacing.tiny,
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: spacing.xl,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    zIndex: 1,
-  },
-  snapshotCardTitle: {
-    fontSize: snapshotTypography.cardTitleSize,
-    fontWeight: snapshotTypography.cardTitleWeight,
-    marginBottom: 1,
-    color: '#000',
-  },
-  snapshotSubCardTitle: {
-    color: '#666',
-  },
-  snapshotSubCardValue: {
-    color: '#666',
-  },
-  snapshotPrimaryValue: {
-    fontSize: snapshotTypography.primaryValueSize,
-    fontWeight: snapshotTypography.primaryValueWeight,
-    marginBottom: 1,
-    color: '#000',
-  },
-  snapshotPrimaryValueOutcome: {
-  },
-  snapshotPrimaryValueScenario: {
-  },
-  snapshotCardDescription: {
-    fontSize: snapshotTypography.bodySize,
-    fontWeight: snapshotTypography.bodyWeight,
-    color: '#999',
-    marginTop: 1,
-  },
-  snapshotDeltaValue: {
-    fontSize: snapshotTypography.bodySize,
-    fontWeight: snapshotTypography.bodyWeight,
-    color: '#999',
-    marginTop: 1,
-  },
-  snapshotDeltaValueMuted: {
-    // color moved to inline style
-  },
-  comparisonValuesContainer: {
-    alignItems: 'flex-end',
-  },
-  comparisonValuesRow: {
-    flexDirection: 'row',
-    gap: spacing.base,
-    alignItems: 'flex-start',
-  },
-  comparisonValueColumn: {
-    minWidth: 70,
-    alignItems: 'flex-end',
-  },
-  comparisonDeltaRow: {
-    flexDirection: 'row',
-    gap: spacing.base,
-    alignItems: 'flex-start',
-    marginTop: 2,
-  },
-  chartHelperText: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    fontStyle: 'italic',
-  },
-  // Dev-only: Reconciliation overlay styles
-  reconciliationOverlayContainer: {
-    marginTop: layout.md,
-    marginBottom: spacing.xs,
-  },
-  reconciliationToggle: {
-    // backgroundColor moved to inline style
-    borderRadius: 6,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: layout.inputPadding,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  reconciliationToggleText: {
-    fontSize: 11,
-    color: '#999',
-    fontFamily: 'monospace',
-  },
-  reconciliationPanel: {
-    // backgroundColor moved to inline style
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 6,
-    padding: layout.inputPadding,
-    marginTop: spacing.sm,
-  },
-  reconciliationTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: spacing.sm,
-    fontFamily: 'monospace',
-  },
-  reconciliationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.tiny,
-  },
-  reconciliationLabel: {
-    fontSize: 11,
-    color: '#999',
-    fontFamily: 'monospace',
-    flex: 1,
-  },
-  reconciliationValue: {
-    fontSize: 11,
-    color: '#111',
-    fontFamily: 'monospace',
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  reconciliationPass: {
-  },
-  reconciliationFail: {
-    // color moved to inline style
-  },
-  reconciliationWarning: {
-    // backgroundColor moved to inline style
-    borderWidth: 1,
-    // borderColor moved to inline style
-    borderRadius: 4,
-    padding: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  reconciliationWarningText: {
-    fontSize: 11,
-    // color moved to inline style
-    fontFamily: 'monospace',
-  },
-  warningBanner: {
-    marginTop: layout.sectionGap,
-    marginHorizontal: layout.screenPadding,
-    padding: layout.blockPadding,
-    // backgroundColor moved to inline style
-    borderRadius: 8,
-    borderWidth: 1,
-    // borderColor moved to inline style
-  },
-  warningBannerText: {
-    fontSize: 14,
-    // color moved to inline style
-    lineHeight: 20,
-  },
-  modalWarningBanner: {
-    marginBottom: spacing.base,
-    padding: layout.blockPadding,
-    // backgroundColor moved to inline style
-    borderRadius: 8,
-    borderWidth: 1,
-    // borderColor moved to inline style
-  },
-  modalWarningBannerText: {
-    fontSize: 13,
-    // color moved to inline style
-    lineHeight: 18,
-  },
-});
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingTop: 0,
+      paddingBottom: spacing.base,
+    },
+    projectionStickyHeader: {
+      zIndex: 10,
+    },
+    toolbarPill: {
+      height: 28,
+      paddingHorizontal: layout.inputPadding,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    pillText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    scenarioStatus: {
+      marginRight: spacing.base,
+    },
+    scenarioPrimary: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    scenarioSecondary: {
+      marginTop: layout.micro,
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    scenarioSelector: {
+      height: 28,
+      paddingHorizontal: spacing.base,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.tiny,
+      borderRadius: 6,
+    },
+    scenarioSelectorText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    scenarioSelectorChevron: {
+      fontSize: 10,
+    },
+    agePill: {
+      height: 28,
+      paddingHorizontal: spacing.base,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    agePillText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    ageChevron: {
+      marginLeft: spacing.xs,
+      fontSize: 10,
+    },
+    iconText: {
+      fontSize: 14,
+    },
+    settingsIcon: {
+      opacity: 0.6,
+    },
+    activeZapIcon: {
+      opacity: 0.8,
+    },
+    stickyToolbar: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'nowrap',
+      paddingHorizontal: layout.screenPadding,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      zIndex: 20,
+    },
+    toolbarSpacer: {
+      flex: 1,
+    },
+    toolbarButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.tiny,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      borderRadius: 6,
+      minHeight: 32,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    toolbarButtonLeft: {
+      flexShrink: 1,
+      minWidth: 80,
+    },
+    toolbarButtonRight: {
+      flexShrink: 0,
+      minWidth: 60,
+    },
+    toolbarButtonText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    toolbarIconButton: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 6,
+      flexShrink: 0,
+    },
+    quickWhatIfContainer: {
+      paddingHorizontal: layout.screenPadding,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border.subtle,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.subtle,
+    },
+    quickWhatIfHint: {
+      fontSize: 11,
+      fontStyle: 'italic',
+      color: theme.colors.text.muted,
+      marginBottom: spacing.sm,
+    },
+    quickWhatIfHintAmount: {
+      fontWeight: '500',
+    },
+    quickRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+      gap: spacing.base,
+    },
+    quickLabel: {
+      width: 96,
+      fontSize: 12,
+      color: theme.colors.text.subtle,
+    },
+    quickWhatIfSelector: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      borderRadius: 8,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.base,
+      minHeight: 40,
+    },
+    quickWhatIfSelectorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: layout.inputPadding,
+    },
+    quickWhatIfSelectorValue: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+    },
+    quickWhatIfPlaceholder: {
+      fontWeight: '500',
+      color: theme.colors.text.subtle,
+    },
+    quickWhatIfHelper: {
+      fontSize: 11,
+      fontStyle: 'italic',
+      color: theme.colors.text.muted,
+      fontWeight: '400',
+    },
+    quickWhatIfAmountInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      borderRadius: 8,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.base,
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      minHeight: 40,
+    },
+    quickWhatIfAmountInputError: {
+      borderWidth: 1.5,
+    },
+    quickWhatIfAvailableCash: {
+      fontSize: 11,
+      fontStyle: 'italic',
+      color: theme.colors.text.muted,
+      fontWeight: '400',
+    },
+    quickWhatIfAvailableCashAmount: {
+      fontWeight: '500',
+    },
+    quickWhatIfError: {
+      fontSize: 12,
+      lineHeight: 16,
+      marginTop: spacing.tiny,
+    },
+    clearScenarioText: {
+      marginTop: spacing.sm,
+      fontSize: 12,
+      color: theme.colors.text.disabled,
+      textDecorationLine: 'underline',
+    },
+    innerContent: {
+      padding: spacing.base,
+      paddingTop: spacing.base,
+    },
+    educationBlock: {
+      marginBottom: 14,
+      paddingHorizontal: 2,
+    },
+    educationText: {
+      fontSize: 13,
+      color: theme.colors.text.secondary,
+      lineHeight: 18,
+    },
+    hairlineDivider: {
+      height: 0.5,
+      marginBottom: layout.lg,
+    },
+    block: {
+      marginBottom: layout.lg,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 0,
+    },
+    chartMiniToggle: {
+      minWidth: 96,
+      height: 22,
+      paddingHorizontal: layout.inputPadding,
+      borderRadius: 11,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chartMiniToggleActive: {},
+    chartMiniToggleText: {
+      fontSize: 12,
+      color: theme.colors.text.muted,
+      fontWeight: '500',
+    },
+    chartMiniToggleTextActive: {
+      fontWeight: '600',
+    },
+    toggleCard: {
+      borderRadius: 8,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.base,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.base,
+    },
+    switchContainer: {
+      transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }],
+      marginTop: layout.micro,
+    },
+    toggleTextContainer: {
+      flex: 1,
+    },
+    toggleLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.text.primary,
+      marginBottom: spacing.tiny,
+    },
+    toggleHelper: {
+      fontSize: 12,
+      color: theme.colors.text.muted,
+      lineHeight: 16,
+    },
+    chartCard: {
+      overflow: 'visible',
+    },
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+      gap: spacing.xl,
+    },
+    legendRowSecondary: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: layout.micro,
+      gap: spacing.xl,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    legendSwatch: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    legendText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    legendTextMuted: {
+      fontSize: 11,
+      fontWeight: '400',
+    },
+    valueBar: {
+      flexDirection: 'column',
+      alignSelf: 'center',
+      gap: spacing.sm,
+    },
+    valueBarRow: {
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.base,
+    },
+    valueBarRowLabel: {
+      fontSize: 11,
+      fontWeight: '500',
+      marginRight: spacing.xs,
+    },
+    valueBarItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    valueBarDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    valueBarLabel: {
+      fontSize: 12,
+      fontWeight: '400',
+    },
+    valueBarValue: {
+      fontSize: 12,
+    },
+    insightText: {
+      fontSize: 11.5,
+      lineHeight: 16,
+      marginTop: spacing.xs,
+      marginBottom: 0,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    chartValuesCard: {
+      position: 'absolute',
+      padding: spacing.sm,
+      borderRadius: 6,
+      borderWidth: 1,
+      minWidth: 140,
+      zIndex: 10,
+    },
+    chartValuesPrimary: {
+      marginBottom: spacing.xs,
+    },
+    chartValuesPrimaryLabel: {
+      fontSize: 10,
+      fontWeight: '500',
+      marginBottom: layout.micro,
+    },
+    chartValuesPrimaryValue: {
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    chartValuesSecondary: {
+      gap: layout.micro,
+    },
+    chartValuesSecondaryText: {
+      fontSize: 11,
+      fontWeight: '400',
+    },
+    outcomeSubtitle: {
+      fontSize: 13,
+      color: theme.colors.text.muted,
+      marginBottom: layout.inputPadding,
+    },
+    outcomeSummary: {
+      fontSize: 14,
+      color: theme.colors.text.tertiary,
+      lineHeight: 20,
+      marginTop: spacing.base,
+    },
+    ageSelector: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      borderRadius: 8,
+      paddingVertical: layout.inputPadding,
+      paddingHorizontal: spacing.base,
+      marginTop: layout.inputPadding,
+      marginBottom: spacing.tiny,
+    },
+    ageSelectorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: layout.inputPadding,
+    },
+    ageSelectorLabel: {
+      fontSize: 13,
+      color: theme.colors.text.muted,
+    },
+    ageSelectorValue: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      textAlign: 'right',
+    },
+    ageSelectorControlRow: {
+      borderRadius: 8,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.base,
+      marginTop: layout.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    ageSelectorControlLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.text.primary,
+    },
+    ageSelectorControlButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    ageSelectorControlValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+    },
+    keyDriversCard: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+      borderRadius: 8,
+      padding: layout.inputPadding,
+      marginBottom: spacing.tiny,
+    },
+    keyDriversTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    keyDriversRows: {
+      gap: spacing.sm,
+    },
+    keyDriversRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: layout.inputPadding,
+    },
+    keyDriversLabel: {
+      flex: 1,
+      fontSize: 13,
+      color: theme.colors.text.tertiary,
+    },
+    keyDriversValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      textAlign: 'right',
+    },
+    keyDriversValuesRow: {
+      flexDirection: 'row',
+      gap: spacing.base,
+      alignItems: 'flex-start',
+    },
+    keyDriversValueScenario: {
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    keyDriversValueDelta: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 60,
+    },
+    attrCard: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      borderRadius: 12,
+      padding: spacing.base,
+    },
+    breakdownGroupContainer: {
+      marginTop: spacing.base,
+    },
+    attrTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    attrSubtitle: {
+      fontSize: 12,
+      color: theme.colors.text.secondary,
+      marginBottom: spacing.sm,
+      lineHeight: 16,
+    },
+    attrEducation: {
+      fontSize: 12,
+      color: theme.colors.text.muted,
+      marginBottom: layout.inputPadding,
+      lineHeight: 16,
+    },
+    attrRows: {
+      gap: spacing.sm,
+    },
+    attrRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: layout.inputPadding,
+    },
+    attrLabel: {
+      flex: 1,
+      fontSize: 13,
+      color: theme.colors.text.tertiary,
+    },
+    attrValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      textAlign: 'right',
+    },
+    attrHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: layout.inputPadding,
+      marginBottom: spacing.sm,
+      paddingBottom: 0,
+      marginHorizontal: -spacing.base,
+      paddingHorizontal: spacing.base,
+    },
+    attrHeaderSpacer: {
+      flex: 1,
+    },
+    attrHeaderLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    attrHeaderLabelScenario: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.brand.primary,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    attrHeaderLabelDelta: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 60,
+    },
+    attrValuesRow: {
+      flexDirection: 'row',
+      gap: spacing.base,
+      alignItems: 'flex-start',
+    },
+    attrValueScenario: {
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    attrValueDelta: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 60,
+    },
+    attrValueScenarioUnchanged: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    keyDriversValueScenarioUnchanged: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    scenarioResultSummary: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.brand.primary,
+      marginBottom: spacing.sm,
+    },
+    keyDriversHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: layout.inputPadding,
+      marginBottom: spacing.sm,
+      paddingBottom: spacing.xs,
+    },
+    keyDriversHeaderSpacer: {
+      flex: 1,
+    },
+    keyDriversHeaderLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    keyDriversHeaderLabelScenario: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.brand.primary,
+      textAlign: 'right',
+      minWidth: 70,
+    },
+    keyDriversHeaderLabelDelta: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      textAlign: 'right',
+      minWidth: 60,
+    },
+    endNetWorthSection: {
+      marginTop: spacing.base,
+      paddingTop: spacing.base,
+    },
+    endNetWorthLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    endNetWorthRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.tiny,
+    },
+    endNetWorthBaselineLabel: {
+      fontSize: 13,
+      color: theme.colors.text.muted,
+    },
+    endNetWorthBaselineValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+    },
+    endNetWorthScenarioLabel: {
+      fontSize: 13,
+      color: theme.colors.text.muted,
+    },
+    endNetWorthScenarioValue: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.brand.primary,
+    },
+    attrRowUnchanged: {
+      opacity: 0.7,
+    },
+    attrLabelUnchanged: {
+      color: theme.colors.text.muted,
+    },
+    modalRoot: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    modalBackdropFlex: {
+      flex: 1,
+    },
+    modalSheet: {
+      borderTopLeftRadius: theme.radius.modal,
+      borderTopRightRadius: theme.radius.modal,
+      paddingHorizontal: layout.screenPadding,
+      paddingTop: layout.modalPaddingTop,
+      paddingBottom: layout.modalPaddingBottom,
+      maxHeight: '70%',
+    },
+    modalTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.text.primary,
+      marginBottom: layout.inputPadding,
+    },
+    modalList: {
+      flexGrow: 0,
+    },
+    modalListContent: {
+      paddingBottom: spacing.base,
+    },
+    modalOption: {
+      paddingVertical: spacing.base,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.subtle,
+    },
+    modalOptionText: {
+      fontSize: 14,
+      color: theme.colors.text.primary,
+      fontWeight: '600',
+    },
+    modalOptionTextSecondary: {
+      fontSize: 14,
+      color: theme.colors.text.secondary,
+      fontWeight: '500',
+    },
+    modalDivider: {
+      height: 1,
+      marginVertical: spacing.sm,
+    },
+    modalOptionContent: {
+      flexDirection: 'column',
+      gap: layout.micro,
+    },
+    modalOptionMetadata: {
+      fontSize: 12,
+      color: theme.colors.text.subtle,
+      fontWeight: '400',
+    },
+    modalEmptyText: {
+      fontSize: 14,
+      color: theme.colors.text.subtle,
+      fontStyle: 'italic',
+      paddingVertical: spacing.base,
+    },
+    modalOptionSubtext: {
+      fontSize: 12,
+      color: theme.colors.text.subtle,
+      marginTop: layout.micro,
+    },
+    projectedHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.tiny,
+      gap: spacing.base,
+    },
+    headerQualifier: {
+      color: theme.colors.text.muted,
+    },
+    projectedMainSubtitle: {
+      fontSize: 13,
+      fontWeight: '400',
+      color: theme.colors.text.muted,
+      lineHeight: 17,
+    },
+    projectedSubHeading: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      marginBottom: spacing.base,
+    },
+    column: {
+      marginBottom: spacing.xl,
+    },
+    cashflowColumn: {
+      marginBottom: spacing.sm,
+    },
+    cashflowCentered: {
+      width: '100%',
+    },
+    cashflowPrimaryCard: {
+      width: '100%',
+    },
+    cashflowCardStack: {
+      position: 'relative',
+      width: '100%',
+      paddingHorizontal: layout.inputPadding,
+    },
+    cashflowSpine: {
+      position: 'absolute',
+      left: spacing.xl + spacing.sm,
+      top: spacing.xs,
+      bottom: spacing.xs,
+      width: 1,
+      zIndex: 0,
+    },
+    cashflowSubGroup: {
+      marginTop: 0,
+      marginBottom: 0,
+    },
+    cashflowCard: {},
+    cashflowMb: {
+      marginBottom: spacing.sm,
+    },
+    cashflowGapMd: {
+      height: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cashflowGapLg: {
+      height: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cashflowChevron: {
+      fontSize: 12,
+      color: theme.colors.border.default,
+      fontWeight: '400',
+    },
+    cashflowEndSpacer: {
+      height: 12,
+    },
+    cashflowSubCard: {
+      width: '90%',
+      alignSelf: 'flex-end',
+    },
+    cashflowSubRow: {
+      flexDirection: 'row',
+      alignSelf: 'center',
+      width: '84%',
+      justifyContent: 'space-between',
+      alignItems: 'stretch',
+    },
+    cashflowSubCardHalf: {
+      width: '49%',
+    },
+    cashflowSubCardHalfLeft: {
+      marginRight: spacing.tiny,
+    },
+    cashflowTextCentered: {
+      textAlign: 'center',
+    },
+    cashflowCardRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      width: '100%',
+      gap: spacing.base,
+    },
+    cashflowCardLeft: {
+      flex: 1,
+      flexShrink: 1,
+      paddingRight: 100,
+    },
+    cashflowCardLeftIndented: {
+      flex: 1,
+      flexShrink: 1,
+      paddingRight: 100,
+    },
+    cashflowCardRight: {
+      position: 'absolute',
+      right: spacing.sm,
+      top: spacing.tiny,
+      alignItems: 'flex-end',
+    },
+    cashflowValueRight: {
+      textAlign: 'right',
+    },
+    projectedCard: {
+      padding: spacing.sm,
+      marginBottom: 0,
+      borderRadius: 24,
+      borderWidth: 0.5,
+      borderColor: theme.colors.border.default,
+    },
+    projectedCardMinimal: {
+      padding: spacing.sm,
+      marginBottom: 0,
+      borderRadius: 24,
+    },
+    projectedCardBordered: {
+      padding: spacing.sm,
+      marginBottom: 0,
+      borderRadius: 24,
+      borderWidth: 0.5,
+      borderColor: theme.colors.border.default,
+    },
+    projectedCardTitle: {
+      fontSize: 12,
+      fontWeight: '500',
+      marginBottom: 1,
+      color: theme.colors.text.tertiary,
+    },
+    projectedSubCardTitle: {
+      fontSize: 12,
+      fontWeight: '500',
+      marginBottom: 1,
+      color: theme.colors.text.muted,
+    },
+    projectedPrimaryValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 0,
+      color: theme.colors.text.primary,
+    },
+    projectedPrimaryValueOutcome: {},
+    projectedSubCardValue: {
+      color: theme.colors.text.muted,
+    },
+    projectedSubtext: {
+      fontSize: 10,
+      fontWeight: '400',
+      color: theme.colors.text.muted,
+      marginTop: layout.micro,
+    },
+    projectedDelta: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text.muted,
+      marginTop: spacing.tiny,
+    },
+    projectedDeltaScenario: {},
+    projectedDeltaAge: {
+      color: theme.colors.text.muted,
+    },
+    projectedPrimaryValueScenario: {},
+    dualValueRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    dualValueDivider: {
+      width: 1,
+      height: 20,
+    },
+    balanceSheetDualColumn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      gap: spacing.tiny,
+    },
+    balanceSheetColumn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    balanceSheetDeltaRow: {
+      minHeight: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    balanceSheetDivider: {
+      width: 1,
+      alignSelf: 'stretch',
+    },
+    dotSeparatorTight: {
+      alignItems: 'center',
+      marginVertical: 4,
+    },
+    dot: {
+      fontSize: 10,
+      color: theme.colors.border.default,
+    },
+    projectedBalanceSheetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+      flexWrap: 'wrap',
+    },
+    projectedBalanceSheetCard: {
+      flex: 1,
+      minHeight: 80,
+      padding: spacing.sm,
+      borderRadius: 24,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    projectedBalanceSheetOperator: {
+      fontSize: 14,
+      fontWeight: '400',
+      color: theme.colors.text.disabled,
+      marginHorizontal: 2,
+    },
+    scenarioImpactBlocks: {
+      gap: layout.md,
+      marginTop: spacing.sm,
+    },
+    scenarioImpactBlock: {
+      borderRadius: 8,
+      padding: layout.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+    },
+    scenarioImpactBlockTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.xs,
+    },
+    scenarioImpactBlockValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: spacing.xs,
+    },
+    scenarioImpactPositive: {},
+    scenarioImpactNegative: {
+      color: theme.colors.text.muted,
+    },
+    scenarioImpactBlockSubline: {
+      fontSize: 12,
+      color: theme.colors.text.muted,
+      lineHeight: 16,
+    },
+    scenarioImpactBalanceSheetRows: {
+      gap: spacing.xs,
+      marginTop: spacing.xs,
+    },
+    scenarioImpactBalanceSheetRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    scenarioImpactBalanceSheetLabel: {
+      fontSize: 13,
+      color: theme.colors.text.muted,
+    },
+    scenarioImpactBalanceSheetValue: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    projectedSnapshotMuted: {
+      opacity: 0.7,
+    },
+    projectedSnapshotMutedText: {
+      color: theme.colors.text.muted,
+    },
+    projectedSnapshotMutedCard: {
+      borderColor: theme.colors.border.default,
+    },
+    insightsList: {
+      marginTop: layout.md,
+    },
+    bodyText: {
+      fontSize: 13,
+      fontWeight: snapshotTypography.bodyWeight,
+      color: theme.colors.text.secondary,
+      marginBottom: spacing.xs,
+      lineHeight: 18,
+    },
+    bodyTextMuted: {
+      color: theme.colors.text.muted,
+      opacity: 0.7,
+    },
+    snapshotCard: {
+      paddingVertical: spacing.tiny,
+      paddingHorizontal: spacing.sm,
+      marginBottom: spacing.sm,
+      borderRadius: spacing.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      zIndex: 1,
+    },
+    snapshotCardTitle: {
+      fontSize: snapshotTypography.cardTitleSize,
+      fontWeight: snapshotTypography.cardTitleWeight,
+      marginBottom: 1,
+      color: theme.colors.text.primary,
+    },
+    snapshotSubCardTitle: {
+      color: theme.colors.text.secondary,
+    },
+    snapshotSubCardValue: {
+      color: theme.colors.text.secondary,
+    },
+    snapshotPrimaryValue: {
+      fontSize: snapshotTypography.primaryValueSize,
+      fontWeight: snapshotTypography.primaryValueWeight,
+      marginBottom: 1,
+      color: theme.colors.text.primary,
+    },
+    snapshotPrimaryValueOutcome: {},
+    snapshotPrimaryValueScenario: {},
+    snapshotCardDescription: {
+      fontSize: snapshotTypography.bodySize,
+      fontWeight: snapshotTypography.bodyWeight,
+      color: theme.colors.text.muted,
+      marginTop: 1,
+    },
+    snapshotDeltaValue: {
+      fontSize: snapshotTypography.bodySize,
+      fontWeight: snapshotTypography.bodyWeight,
+      color: theme.colors.text.muted,
+      marginTop: 1,
+    },
+    snapshotDeltaValueMuted: {},
+    comparisonValuesContainer: {
+      alignItems: 'flex-end',
+    },
+    comparisonValuesRow: {
+      flexDirection: 'row',
+      gap: spacing.base,
+      alignItems: 'flex-start',
+    },
+    comparisonValueColumn: {
+      minWidth: 70,
+      alignItems: 'flex-end',
+    },
+    comparisonDeltaRow: {
+      flexDirection: 'row',
+      gap: spacing.base,
+      alignItems: 'flex-start',
+      marginTop: 2,
+    },
+    chartHelperText: {
+      fontSize: 12,
+      color: theme.colors.text.muted,
+      textAlign: 'center',
+      marginTop: spacing.xs,
+      fontStyle: 'italic',
+    },
+    reconciliationOverlayContainer: {
+      marginTop: layout.md,
+      marginBottom: spacing.xs,
+    },
+    reconciliationToggle: {
+      borderRadius: 6,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: layout.inputPadding,
+      borderWidth: 1,
+      borderColor: theme.colors.border.default,
+    },
+    reconciliationToggleText: {
+      fontSize: 11,
+      color: theme.colors.text.muted,
+      fontFamily: 'monospace',
+    },
+    reconciliationPanel: {
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      borderRadius: 6,
+      padding: layout.inputPadding,
+      marginTop: spacing.sm,
+    },
+    reconciliationTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.text.tertiary,
+      marginBottom: spacing.sm,
+      fontFamily: 'monospace',
+    },
+    reconciliationRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.tiny,
+    },
+    reconciliationLabel: {
+      fontSize: 11,
+      color: theme.colors.text.muted,
+      fontFamily: 'monospace',
+      flex: 1,
+    },
+    reconciliationValue: {
+      fontSize: 11,
+      color: theme.colors.text.primary,
+      fontFamily: 'monospace',
+      fontWeight: '600',
+      textAlign: 'right',
+    },
+    reconciliationPass: {},
+    reconciliationFail: {},
+    reconciliationWarning: {
+      borderWidth: 1,
+      borderRadius: 4,
+      padding: spacing.sm,
+      marginTop: spacing.sm,
+    },
+    reconciliationWarningText: {
+      fontSize: 11,
+      fontFamily: 'monospace',
+    },
+    warningBanner: {
+      marginTop: layout.sectionGap,
+      marginHorizontal: layout.screenPadding,
+      padding: layout.blockPadding,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    warningBannerText: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    modalWarningBanner: {
+      marginBottom: spacing.base,
+      padding: layout.blockPadding,
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+    modalWarningBannerText: {
+      fontSize: 13,
+      lineHeight: 18,
+    },
+  });
+}
 
 

@@ -430,7 +430,7 @@ export default function ProfilesManagementScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Reset"
                 >
-                  <Text style={[styles.modalButtonResetText, theme.typography.button, { color: '#fff' }]}>Reset</Text>
+                  <Text style={[styles.modalButtonResetText, theme.typography.button, { color: theme.colors.brand.onPrimary }]}>Reset</Text>
                 </Pressable>
               </View>
             </View>
@@ -469,7 +469,7 @@ export default function ProfilesManagementScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Delete"
                 >
-                  <Text style={[styles.modalButtonDeleteText, theme.typography.button, { color: '#fff' }]}>Delete</Text>
+                  <Text style={[styles.modalButtonDeleteText, theme.typography.button, { color: theme.colors.brand.onPrimary }]}>Delete</Text>
                 </Pressable>
               </View>
             </View>

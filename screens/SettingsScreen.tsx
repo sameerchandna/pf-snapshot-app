@@ -9,6 +9,7 @@ import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius } from '../ui/theme/theme';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.card,
     paddingVertical: layout.rowPaddingVertical,
     paddingHorizontal: layout.md,
   },
