@@ -7,7 +7,6 @@ import { loadScenarios, loadActiveScenarioId } from '../scenarioState/scenarioPe
 import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import type { Scenario } from '../domain/scenario/types';
 import { emptySnapshotState } from '../domain/domainValidation';
-import { ensureSystemCash } from '../domain/systemAssets';
 
 const PROFILES_STORAGE_KEY = '@profiles_state';
 const MIGRATION_FLAG_KEY = '@profiles_migrated';
@@ -123,8 +122,7 @@ export async function migrateLegacyStateToProfiles(): Promise<ProfilesState | nu
     const now = Date.now();
     const migratedProfileId: ProfileId = 'migrated-profile';
     
-    // Ensure SYSTEM_CASH exists in migrated snapshot state
-    const migratedSnapshotState = ensureSystemCash(legacySnapshotState || emptySnapshotState());
+    const migratedSnapshotState = legacySnapshotState || emptySnapshotState();
     
     const migratedProfile: ProfileState = {
       snapshotState: migratedSnapshotState,

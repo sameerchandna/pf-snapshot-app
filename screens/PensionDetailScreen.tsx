@@ -4,7 +4,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Swipeable } from 'react-native-gesture-handler';
 
 import { useSnapshot } from '../context/SnapshotContext';
-import { getUserEditableAssets } from '../domain/systemAssets';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { ContributionItem } from '../types';
 import { selectPension } from '../engines/selectors';
@@ -186,7 +185,7 @@ export default function PensionDetailScreen() {
             <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
               <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-                {getUserEditableAssets(state.assets).map(a => (
+                {state.assets.map(a => (
                   <Pressable
                     key={a.id}
                     onPress={() => handleSelectAsset(a.id)}

@@ -4,6 +4,7 @@
 A local-only personal finance snapshot and projection tool. Users enter their income, expenses, assets, and liabilities to see a current financial snapshot, run multi-year projections, and model "what-if" scenarios. No cloud, no transaction tracking, no advice — purely observational.
 
 ## Read before making any significant change
+- [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md) — file paths, types, functions, navigation routes (read this first)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — data flow and ownership model (Snapshot → Projection → Scenarios → Attribution)
 - [docs/INVARIANTS.md](docs/INVARIANTS.md) — correctness rules that must never be violated
 - [docs/CHANGE_PROTOCOL.md](docs/CHANGE_PROTOCOL.md) — when docs must be updated before implementation
@@ -56,8 +57,7 @@ A local-only personal finance snapshot and projection tool. Users enter their in
 - **Projection** is ephemeral — computed from Snapshot + assumptions, never persisted, never mutates Snapshot.
 - **Scenarios** modify projection inputs only — reversible, one active at a time, fall back to baseline if invalid.
 - **Attribution** is observational — never mutates any state.
-- **SYSTEM_CASH** always exists, exactly once per profile — cannot be deleted, renamed, or given a growth rate.
-- **Flow vs Stock** — flows affect stocks only through explicit rules. Monthly surplus does not auto-accumulate into SYSTEM_CASH.
+- **Flow vs Stock** — flows affect stocks only through explicit rules. Monthly surplus does not auto-accumulate into asset balances.
 - **Doctrine changes** (anything altering system meaning or invariants) require updating the relevant docs/ file before writing code.
 
 ---
@@ -89,7 +89,6 @@ When building a new screen, follow this pattern:
 - `engines/loanEngine.ts` — amortisation and loan calculations
 - `engines/computeA3Attribution.ts` — A3 attribution reconciliation math
 - `context/SnapshotContext.tsx` setters — mutation boundary
-- `domain/systemAssets.ts` — SYSTEM_CASH enforcement and migration logic
 - Any core invariant listed in `docs/INVARIANTS.md`
 
 If a proposed change touches these, re-read `docs/INVARIANTS.md` and `docs/CHANGE_PROTOCOL.md` first.

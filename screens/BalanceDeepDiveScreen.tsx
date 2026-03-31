@@ -14,7 +14,6 @@ import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 import { useSnapshot } from '../context/SnapshotContext';
-import { isSystemCash } from '../domain/systemAssets';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
 import { computeSingleAssetTimeSeries, computeSingleLiabilityTimeSeries } from '../engines/projectionEngine';
@@ -89,7 +88,7 @@ export default function BalanceDeepDiveScreen() {
   // Filter to savings assets only (exclude SYSTEM_CASH and inactive assets)
   const savingsAssets = useMemo(() => {
     if (!Array.isArray(state.assets)) return [];
-    return state.assets.filter(a => !isSystemCash(a) && a.isActive !== false);
+    return state.assets.filter(a => a.isActive !== false);
   }, [state.assets]);
 
   // Resolve item name from itemId (gracefully handle missing/invalid)

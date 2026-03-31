@@ -20,7 +20,7 @@ import {
 } from '../engines/projectionEngine';
 import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
-import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
+import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE } from '../constants';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { radius } from '../ui/theme/theme';
 import { useTheme } from '../ui/theme/useTheme';
@@ -107,7 +107,7 @@ export default function ProjectionRefactorValidationScreen() {
       }
 
       // Step 3: Single-asset helper sanity
-      const activeAssets = state.assets.filter(a => a.isActive !== false && a.id !== SYSTEM_CASH_ID);
+      const activeAssets = state.assets.filter(a => a.isActive !== false);
       if (activeAssets.length > 0) {
         const testAsset = activeAssets[0];
         let assetSeries: Array<{ age: number; balance: number; cumulativeContributions: number; cumulativeGrowth: number }>;

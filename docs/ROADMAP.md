@@ -81,16 +81,16 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 11 — Scenario Redesign (Make It Human)
-- [ ] 11.1: Scenario template type: { question, description, kind, defaults }
-- [ ] 11.2: Create 4–5 presets: "Overpay my mortgage", "Invest more each month", "Go part-time", "Have a baby", "Retire early"
-- [ ] 11.3: Scenario picker screen — list of tappable life questions
-- [ ] 11.4: Slider-based amount explorer with live mini-chart preview
-- [ ] 11.5: Comparison panel: baseline vs scenario outcome delta
-- [ ] 11.6: Savings what-if: contribution and rate sliders
-- [ ] 11.7: Mortgage what-if: overpayment, term, rate sensitivity
-- [ ] 11.8: Save / discard semantics
-- [ ] 11.9: Guardrails — no advice framing, no optimisation bias
+## Phase 11 — Scenario Redesign (Make It Human) ✓
+- [x] 11.1: Scenario template type: { question, description, kind, defaults }
+- [x] 11.2: Create 5 presets: "Invest more each month", "Overpay my mortgage" (enabled); "Go part-time", "Have a baby", "Retire early" (coming soon)
+- [x] 11.3: WhatIfPickerScreen — template cards, coming-soon badges, replaces Accounts tab
+- [x] 11.4: ScenarioExplorerScreen — slider explorer + target picker + live mini-chart
+- [x] 11.5: Comparison panel: baseline vs scenario outcome delta (net worth / assets / liabilities)
+- [ ] 11.6: Savings what-if: contribution and rate sliders (deferred to sub-phase)
+- [ ] 11.7: Mortgage what-if: overpayment, term, rate sensitivity (deferred to sub-phase)
+- [x] 11.8: Save / discard semantics (saves scenario, activates it, navigates back)
+- [x] 11.9: Guardrails — no advice framing, no optimisation bias, affordability clamp
 
 ---
 

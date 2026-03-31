@@ -80,8 +80,7 @@ export function validateProjectionRefactor(state: SnapshotState): ValidationResu
   let assetHelperPass = true;
   let liabilityHelperPass = true;
 
-  // Test asset helper with first active asset (excluding SYSTEM_CASH)
-  const activeAssets = state.assets.filter(a => a.isActive !== false && a.id !== 'SYSTEM_CASH');
+  const activeAssets = state.assets.filter(a => a.isActive !== false);
   if (activeAssets.length > 0) {
     const testAsset = activeAssets[0];
     let assetSeries: Array<{ age: number; balance: number; cumulativeContributions: number; cumulativeGrowth: number }>;

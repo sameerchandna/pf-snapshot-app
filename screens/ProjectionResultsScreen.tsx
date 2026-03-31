@@ -47,7 +47,7 @@ import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, fo
 import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
 import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows, selectExpenses } from '../engines/selectors';
-import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
+import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE } from '../constants';
 import { interpretProjection } from '../insights/interpretProjection';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
@@ -1309,7 +1309,7 @@ export default function ProjectionResultsScreen() {
     }
 
     // Use applyScenarioToProjectionInputs() for consistency with persisted scenarios
-    // This ensures FLOW scenarios work through contribution deltas (no SYSTEM_CASH transfers)
+    // This ensures FLOW scenarios work through contribution deltas
     // Pass state for affordability validation (Phase 2.1)
     const inputs = applyScenarioToProjectionInputs(baselineProjectionInputs, domainScenario, state);
 

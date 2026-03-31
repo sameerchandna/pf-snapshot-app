@@ -7,7 +7,6 @@
 
 import type { SnapshotState } from '../types';
 import { coerceSnapshotState, emptySnapshotState } from '../domain/domainValidation';
-import { ensureSystemCash } from '../domain/systemAssets';
 
 export const SNAPSHOT_SCHEMA_VERSION = 1 as const;
 
@@ -25,14 +24,12 @@ export function loadSnapshotState(raw: unknown): SnapshotState {
       return emptySnapshotState();
     }
     const coerced = coerceSnapshotState(raw.state);
-    const withGroups = applyTemplateGroupsIfMissing(coerced);
-    return ensureSystemCash(withGroups);
+    return applyTemplateGroupsIfMissing(coerced);
   }
 
   // Legacy format: snapshot state stored directly
   const coerced = coerceSnapshotState(raw);
-  const withGroups = applyTemplateGroupsIfMissing(coerced);
-  return ensureSystemCash(withGroups);
+  return applyTemplateGroupsIfMissing(coerced);
 }
 
 export function saveSnapshotState(state: SnapshotState): PersistedSnapshot {

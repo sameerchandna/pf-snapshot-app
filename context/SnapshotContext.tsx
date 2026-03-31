@@ -19,8 +19,6 @@ import { loadProfilesState, saveProfilesState, switchActiveProfile, createBlankP
 import { migrateLegacyStateToProfiles } from '../persistence/profileMigration';
 import { setProfilesStateProvider } from '../scenarioState/scenarioStore';
 import type { ProfileId } from '../types';
-import { ensureSystemCashExists } from '../domain/systemAssets';
-import { SYSTEM_CASH_ID } from '../constants';
 
 interface SnapshotContextType {
   state: SnapshotState;
@@ -66,17 +64,7 @@ const getInitialState = (): SnapshotState => ({
     { id: 'assets-investments', name: 'Investments' },
     { id: 'assets-other', name: 'Other' },
   ],
-  assets: [
-    {
-      id: SYSTEM_CASH_ID,
-      name: 'Cash',
-      balance: 0,
-      annualGrowthRatePct: 0,
-      groupId: 'assets-cash',
-      availability: { type: 'immediate' },
-      isActive: true,
-    },
-  ],
+  assets: [],
   liabilityGroups: [
     { id: 'liab-credit', name: 'Credit' },
     { id: 'liab-other', name: 'Other' },
@@ -365,8 +353,7 @@ export function SnapshotProvider({ children }: { children: React.ReactNode }) {
   }, [setStateFromUI]);
 
   const setAssets = useCallback((items: AssetItem[]) => {
-    const assetsWithSystemCash = ensureSystemCashExists(items);
-    setStateFromUI(s => ({ ...s, assets: assetsWithSystemCash }));
+    setStateFromUI(s => ({ ...s, assets: items }));
   }, [setStateFromUI]);
 
   const setLiabilityGroups = useCallback((groups: Group[]) => {

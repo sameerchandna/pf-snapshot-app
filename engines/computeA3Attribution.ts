@@ -2,8 +2,7 @@ import type { SnapshotState } from '../types';
 import type { ProjectionSeriesPoint, ProjectionSummary, ProjectionEngineInputs } from './projectionEngine';
 import { initLoan, stepLoanMonth } from './loanEngine';
 import { selectPension } from './selectors';
-import { ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
-import { isSystemCash } from '../domain/systemAssets';
+import { ATTRIBUTION_TOLERANCE } from '../constants';
 
 export type A3Attribution = {
   startingNetWorth: number;
@@ -480,15 +479,14 @@ export function computeA3Attribution({
   // monthlySurplus is display-only, not part of asset roll-forward
   // ONLY enforce this when cashflow is modeled (snapshot mode)
   // In projection-only mode, scenario allocations are already validated at apply-time
-  // NOTE: Negative surplus is valid (external funding / SYSTEM_CASH does not auto-adjust)
+  // NOTE: Negative surplus is valid (external funding)
   // Downgrade to WARN since this is a valid projection state, not an error
   if (isCashflowModeled && monthlySurplus < -ATTRIBUTION_TOLERANCE) {
-    console.warn(`[A3 Attribution] Cashflow overspend (allocations exceed net surplus, |delta| > £${ATTRIBUTION_TOLERANCE}). This may indicate external funding or SYSTEM_CASH mutation.`, {
+    console.warn(`[A3 Attribution] Cashflow overspend (allocations exceed net surplus, |delta| > £${ATTRIBUTION_TOLERANCE}). This may indicate external funding.`, {
       monthlySurplus,
       netSurplus: out.cashflow.netSurplus,
       postTaxContributions: out.cashflow.postTaxContributions,
       debtRepayment: out.cashflow.debtRepayment,
-      note: 'Negative surplus is valid when external funding exists or SYSTEM_CASH is explicitly adjusted',
     });
   }
 
@@ -499,25 +497,6 @@ export function computeA3Attribution({
       console.error(`[A3 Attribution] endingNetWorth mismatch: attribution=${endingNetWorth}, projection=${projectionSummary.endNetWorth}, delta=${netWorthDelta}`);
     }
 
-    // 6) SYSTEM_CASH invariants
-    const systemCash = activeAssets.find(isSystemCash);
-    if (!systemCash) {
-      console.error('[A3 Attribution] SYSTEM_CASH not found in active assets');
-    } else {
-      // Assert SYSTEM_CASH properties
-      if (systemCash.id !== SYSTEM_CASH_ID) {
-        console.error(`[A3 Attribution] SYSTEM_CASH has incorrect id: ${systemCash.id}`);
-      }
-      if ((systemCash.annualGrowthRatePct ?? 0) !== 0) {
-        console.error(`[A3 Attribution] SYSTEM_CASH must have 0% growth, found: ${systemCash.annualGrowthRatePct}`);
-      }
-      if (systemCash.availability?.type !== 'immediate') {
-        console.error(`[A3 Attribution] SYSTEM_CASH must have immediate availability, found: ${systemCash.availability?.type}`);
-      }
-      if (systemCash.isActive === false) {
-        console.error('[A3 Attribution] SYSTEM_CASH must be active');
-      }
-    }
   }
 
   return out;

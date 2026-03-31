@@ -10,7 +10,6 @@
 //   - inflation adjustment applied once at the end (today's money)
 
 import { initLoan, stepLoanMonth } from './loanEngine';
-import { SYSTEM_CASH_ID } from '../constants';
 
 export type ProjectionEngineInputs = {
   // Today's instruments
@@ -41,7 +40,7 @@ export type ProjectionEngineInputs = {
   monthlyDebtReduction: number;
   liabilityOverpaymentsMonthly?: Array<{ liabilityId: string; amountMonthly: number }>;
   
-  // Scenario transfers (explicit asset-to-asset transfers, e.g., SYSTEM_CASH -> target asset)
+  // Scenario transfers (explicit asset-to-asset transfers)
   // 
   // NOTE: scenarioTransfers is no longer used for FLOW scenarios (FLOW_TO_ASSET, FLOW_TO_DEBT).
   // FLOW scenarios work through contribution deltas (assetContributionsMonthly, liabilityOverpaymentsMonthly).
@@ -81,7 +80,6 @@ function isLoanLike(x: ProjectionEngineInputs['liabilitiesToday'][number]): x is
   return x.kind === 'loan' && typeof x.remainingTermYears === 'number' && Number.isFinite(x.remainingTermYears) && x.remainingTermYears >= 1;
 }
 
-// Removed isCashAsset - now using SYSTEM_CASH_ID constant
 
 /**
  * Canonical monthly simulation loop.
@@ -384,26 +382,6 @@ function runMonthlySimulation(
     }
   }
 
-  // Dev guardrails: SYSTEM_CASH invariants
-  // 
-  // Cash is STOCK-only: treated as a normal asset (opening balance, growth, optional contributions).
-  // FLOW scenarios do not mutate cash balance - they work through contribution deltas to other assets/liabilities.
-  // Cash balance is reserved for STOCK scenarios (lump-sum transfers via scenarioTransfers).
-  if (__DEV__) {
-    const systemCashAsset = assetStates.find(a => a.id === SYSTEM_CASH_ID);
-    if (!systemCashAsset) {
-      console.error('[Projection Engine] SYSTEM_CASH not found in asset states');
-    } else {
-      // Check that SYSTEM_CASH never went negative (for future STOCK scenarios with lump-sum transfers)
-      // This is a guardrail for scenarioTransfers, not for FLOW scenarios
-      if (systemCashAsset.balance < 0) {
-        console.error(
-          `[Projection Engine] SYSTEM_CASH balance went negative: ${systemCashAsset.balance}. ` +
-          `This should only happen with STOCK scenarios (lump-sum transfers), not FLOW scenarios.`
-        );
-      }
-    }
-  }
 
   return {
     finalState: {

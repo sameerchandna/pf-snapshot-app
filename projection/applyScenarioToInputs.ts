@@ -18,7 +18,7 @@ import type { SnapshotState } from '../types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { scenarioToDelta } from '../domain/scenario/delta';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
-import { SYSTEM_CASH_ID, UI_TOLERANCE } from '../constants';
+import { UI_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../engines/selectors';
 
 /**
@@ -192,7 +192,6 @@ export function applyScenarioToProjectionInputs(
 
   // Phase 2.1: Affordability validation for FLOW_TO_ASSET scenarios
   // A FLOW_TO_ASSET scenario is unaffordable if applying it would make monthly surplus negative beyond tolerance.
-  // Validation is flow-only: Snapshot and SYSTEM_CASH are not mutated.
   if (scenario.kind === 'FLOW_TO_ASSET' && snapshotState) {
     const baselineSurplus = selectMonthlySurplus(snapshotState);
     const surplusAfter = baselineSurplus - scenario.amountMonthly;
@@ -213,7 +212,6 @@ export function applyScenarioToProjectionInputs(
 
   // Phase 2.2: Affordability validation for FLOW_TO_DEBT scenarios
   // A FLOW_TO_DEBT scenario is unaffordable if applying it would make monthly surplus negative beyond tolerance.
-  // Validation is flow-only: Snapshot and SYSTEM_CASH are not mutated.
   if (scenario.kind === 'FLOW_TO_DEBT' && snapshotState) {
     const baselineSurplus = selectMonthlySurplus(snapshotState);
     const surplusAfter = baselineSurplus - scenario.amountMonthly;
@@ -269,30 +267,9 @@ export function applyScenarioToProjectionInputs(
   // Get delta from scenario domain
   const delta = scenarioToDelta(scenario);
 
-  // DEV guardrail: Assert FLOW scenarios do not mutate cash balance
-  // Cash is STOCK-only - FLOW scenarios work through contribution deltas to other assets/liabilities
-  if (__DEV__) {
-    if (delta.assetContributionsDelta) {
-      const cashContribution = delta.assetContributionsDelta.find(c => c.assetId === SYSTEM_CASH_ID);
-      if (cashContribution && cashContribution.amountMonthly > 0) {
-        console.error(
-          `[FLOW Scenario Guardrail] FLOW scenario ${scenario.id} attempts to add contribution to SYSTEM_CASH. ` +
-          `FLOW scenarios must not mutate cash balance - cash is STOCK-only. ` +
-          `FLOW scenarios work through contribution deltas to other assets/liabilities only.`
-        );
-      }
-    }
-  }
-
   // SCENARIO BOUNDARY: Merge FLOW scenario deltas into baseline contributions
-  // 
-  // FLOW vs STOCK semantics:
-  // - FLOW scenarios (FLOW_TO_ASSET, FLOW_TO_DEBT) represent monthly cashflow changes.
-  // - FLOW scenarios work directly through contribution deltas (no SYSTEM_CASH transfers).
-  // - FLOW scenarios must NOT mutate cash balance - cash is STOCK-only.
-  // - STOCK: SYSTEM_CASH.balance represents accumulated cash balance (asset state, unchanged).
-  // 
-  // FLOW_TO_ASSET: delta added to assetContributionsMonthly (target must not be SYSTEM_CASH)
+  //
+  // FLOW_TO_ASSET: delta added to assetContributionsMonthly
   // FLOW_TO_DEBT: delta added to liabilityOverpaymentsMonthly
   const mergedAssetContributions = mergeAssetContributions(
     baseline.assetContributionsMonthly,

@@ -25,6 +25,7 @@ import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
 import CashflowSubCard from '../components/cashflow/CashflowSubCard';
 import CashflowCardWrapper from '../components/cashflow/CashflowCardWrapper';
 import { getMutedBorderColor } from '../ui/utils/getMutedBorderColor';
+import Button from '../components/Button';
 
 export default function SnapshotScreen() {
   const { theme } = useTheme();
@@ -385,6 +386,16 @@ export default function SnapshotScreen() {
             </View>
           </SectionCard>
         ) : null}
+
+        {/* VIEW REPORT */}
+        <Button
+          variant="secondary"
+          size="md"
+          onPress={() => navigation.navigate('Report')}
+          style={styles.viewReportButton}
+        >
+          View full report
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
@@ -672,6 +683,9 @@ const styles = StyleSheet.create({
   },
   insightsList: {
     marginTop: layout.micro,
+  },
+  viewReportButton: {
+    marginBottom: spacing.huge,
   },
   bodyText: {
     // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)

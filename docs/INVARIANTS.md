@@ -61,15 +61,6 @@ Violations indicate defects and must be rejected.
 
 ---
 
-## Cash Invariants
-
-- SYSTEM_CASH must always exist.
-- Exactly one SYSTEM_CASH must exist per profile.
-- SYSTEM_CASH must not be deleted or renamed.
-- SYSTEM_CASH balance must not be implicitly modified.
-- FLOW-based scenarios must not cause SYSTEM_CASH balance changes.
-- Negative SYSTEM_CASH balance is only permitted through explicit stock-based operations.
-
 ---
 
 ## Validity & Guard Invariants

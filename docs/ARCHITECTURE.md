@@ -98,7 +98,7 @@ Explanation is observational, not prescriptive.
 
 ### Stock
 - Represents balances at a point in time
-- Examples: asset balances, liability balances, SYSTEM_CASH balance
+- Examples: asset balances, liability balances
 
 ### Flow
 - Represents movement over time
@@ -125,26 +125,12 @@ All simulation operates on monthly granularity only.
 
 ## Cash Semantics
 
-### SYSTEM_CASH
-SYSTEM_CASH is a system-defined asset that always exists.
-
-Properties:
-- Exactly one SYSTEM_CASH per profile
-- Cannot be deleted or renamed
-- Balance is user-defined stock
-- Does not auto-accumulate from monthly surplus
-
-SYSTEM_CASH is preserved and enforced on:
-- Snapshot creation
-- Asset mutation
-- Profile load and migration
-
 ### Available and Surplus Cash
 - Available cash = net income minus expenses
 - Monthly surplus = available cash minus monthly allocations
 
 Surplus is informational only.
-Unused surplus does not modify SYSTEM_CASH automatically.
+Unused surplus does not modify asset balances automatically.
 
 Negative surplus indicates over-allocation and is surfaced diagnostically.
 
@@ -155,7 +141,6 @@ Negative surplus indicates over-allocation and is surfaced diagnostically.
 The system enforces correctness through:
 - Boundary validation of persisted state
 - Explicit guards on scenario validity
-- Enforcement of SYSTEM_CASH existence
 - Filtering of inactive items at computation boundaries
 
 Internal logic assumes Snapshot validity once validated.

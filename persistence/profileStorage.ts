@@ -5,8 +5,6 @@ import type { ProfilesState, ProfileState, ProfileId, SnapshotState, GoalConfig 
 import { emptySnapshotState, coerceSnapshotState } from '../domain/domainValidation';
 import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
-import { ensureSystemCash } from '../domain/systemAssets';
-import { SYSTEM_CASH_ID } from '../constants';
 
 const PROFILES_STORAGE_KEY = '@profiles_state';
 
@@ -151,17 +149,7 @@ function getInitialSnapshotState(): SnapshotState {
       { id: 'assets-investments', name: 'Investments' },
       { id: 'assets-other', name: 'Other' },
     ],
-    assets: [
-      {
-        id: SYSTEM_CASH_ID,
-        name: 'Cash',
-        balance: 0,
-        annualGrowthRatePct: 0,
-        groupId: 'assets-cash',
-        availability: { type: 'immediate' },
-        isActive: true,
-      },
-    ],
+    assets: [],
     liabilityGroups: [
       { id: 'liab-credit', name: 'Credit' },
       { id: 'liab-other', name: 'Other' },
@@ -577,9 +565,7 @@ function validateProfileState(raw: unknown): ProfileState | null {
     lastOpenedAt: typeof raw.meta.lastOpenedAt === 'number' ? raw.meta.lastOpenedAt : Date.now(),
   };
 
-  // Coerce and validate snapshotState, then run SYSTEM_CASH migration
-  const coercedSnapshotState = coerceSnapshotState(raw.snapshotState);
-  const migratedSnapshotState = ensureSystemCash(coercedSnapshotState);
+  const migratedSnapshotState = coerceSnapshotState(raw.snapshotState);
 
   // Validate goalState — default to empty if missing or invalid (backward compat)
   const rawGoalState = isRecord(raw.goalState) ? raw.goalState : null;

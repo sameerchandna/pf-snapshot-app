@@ -38,7 +38,6 @@ All functionality is designed to support clarity, internal consistency, and fina
 - All data is stored locally on the device.
 - No backend services, authentication, or cloud sync exist.
 - Persistence and data migration are handled automatically.
-- A system-defined cash asset (SYSTEM_CASH) always exists and cannot be removed.
 
 ### Meaningful User Data (Entry Surface Only)
 For the purposes of the Entry / Launch screen, a user is considered to 'have data'

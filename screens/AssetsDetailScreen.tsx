@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useSnapshot } from '../context/SnapshotContext';
-import { getUserEditableAssets } from '../domain/systemAssets';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { AssetItem, Group } from '../types';
 import { selectAssets } from '../engines/selectors';
@@ -278,7 +277,7 @@ export default function AssetsDetailScreen() {
       emptyStateText="No assets yet."
       groups={state.assetGroups}
       setGroups={setAssetGroups}
-      items={getUserEditableAssets(state.assets)}
+      items={state.assets}
       setItems={setAssets}
       getItemId={item => item.id}
       getItemName={item => item.name}

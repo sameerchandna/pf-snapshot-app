@@ -7,7 +7,6 @@ import GroupHeader from '../components/GroupHeader';
 import EducationBox from '../components/EducationBox';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
-import { getUserEditableAssets } from '../domain/systemAssets';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
@@ -113,7 +112,7 @@ export default function ScenarioEditorScreen() {
 
   // Preview text
   const previewText = useMemo(() => {
-    return getScenarioPreviewText(scenarioKind, assetId, liabilityId, parseFloat(amountMonthly) || 0, getUserEditableAssets(state.assets), loanLiabilities);
+    return getScenarioPreviewText(scenarioKind, assetId, liabilityId, parseFloat(amountMonthly) || 0, state.assets, loanLiabilities);
   }, [scenarioKind, assetId, liabilityId, amountMonthly, state.assets, loanLiabilities]);
 
   // Handle save
@@ -413,7 +412,7 @@ export default function ScenarioEditorScreen() {
                   <Text style={[styles.modalOptionText, { color: theme.colors.text.primary, fontSize: theme.typography.bodyLarge.fontSize, fontWeight: '600' }]}>{asset.name}</Text>
                 </Pressable>
               ))}
-              {getUserEditableAssets(state.assets).length === 0 ? <Text style={[styles.modalEmptyText, { color: theme.colors.text.muted, fontSize: theme.typography.bodyLarge.fontSize }]}>No assets available</Text> : null}
+              {state.assets.length === 0 ? <Text style={[styles.modalEmptyText, { color: theme.colors.text.muted, fontSize: theme.typography.bodyLarge.fontSize }]}>No assets available</Text> : null}
             </ScrollView>
           </View>
         </View>

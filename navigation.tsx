@@ -17,6 +17,8 @@ import LoanDetailScreen from './screens/LoanDetailScreen';
 import DeductionsDetailScreen from './screens/DeductionsDetailScreen';
 import NetWorthDetailScreen from './screens/NetWorthDetailScreen';
 import AccountsScreen from './screens/AccountsScreen';
+import WhatIfPickerScreen from './screens/WhatIfPickerScreen';
+import ScenarioExplorerScreen from './screens/ScenarioExplorerScreen';
 import ProjectionResultsScreen from './screens/ProjectionResultsScreen';
 import ProjectionSettingsScreen from './screens/ProjectionSettingsScreen';
 import ScenarioManagementScreen from './screens/ScenarioManagementScreen';
@@ -29,7 +31,7 @@ import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
 import GoalEditorScreen from './screens/GoalEditorScreen';
 
 const Stack = createNativeStackNavigator();
-const AccountsStack = createNativeStackNavigator();
+const WhatIfStack = createNativeStackNavigator();
 const ProjectionStack = createNativeStackNavigator();
 const SettingsStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -40,12 +42,12 @@ const TAB_HEADER_SHOWN: boolean = false;
 
 // Use unique internal route names for tabs to avoid nested name collisions like "Snapshot > Snapshot".
 const TAB_ROUTE_SNAPSHOT: string = 'SnapshotTab';
-const TAB_ROUTE_ACCOUNTS: string = 'AccountsTab';
+const TAB_ROUTE_WHATIF: string = 'WhatIfTab';
 const TAB_ROUTE_PROJECTION: string = 'ProjectionTab';
 const TAB_ROUTE_SETTINGS: string = 'SettingsTab';
 
 const TAB_LABEL_SNAPSHOT: string = 'Snapshot';
-const TAB_LABEL_ACCOUNTS: string = 'Accounts';
+const TAB_LABEL_WHATIF: string = 'What If';
 const TAB_LABEL_PROJECTION: string = 'Projection';
 const TAB_LABEL_SETTINGS: string = 'Settings';
 
@@ -70,19 +72,19 @@ function SnapshotStackNavigator() {
       <Stack.Screen name="LoanDetail" component={LoanDetailScreen} />
       <Stack.Screen name="NetWorthDetail" component={NetWorthDetailScreen} />
       <Stack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
+      <Stack.Screen name="Report" component={AccountsScreen} />
     </Stack.Navigator>
   );
 }
 
-function AccountsStackNavigator() {
+function WhatIfStackNavigator() {
   return (
-    <AccountsStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
-      <AccountsStack.Screen name="Accounts" component={AccountsScreen} />
-      <AccountsStack.Screen name="AccountsAssetsDetail" component={AssetsDetailScreen} />
-      <AccountsStack.Screen name="LiabilitiesDetail" component={LiabilitiesDetailScreen} />
-      <AccountsStack.Screen name="LoanDetail" component={LoanDetailScreen} />
-      <AccountsStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
-    </AccountsStack.Navigator>
+    <WhatIfStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
+      <WhatIfStack.Screen name="WhatIfPicker" component={WhatIfPickerScreen} />
+      <WhatIfStack.Screen name="ScenarioExplorer" component={ScenarioExplorerScreen} />
+      <WhatIfStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
+      <WhatIfStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
+    </WhatIfStack.Navigator>
   );
 }
 
@@ -132,9 +134,9 @@ export default function AppNavigator() {
         options={{ title: TAB_LABEL_SNAPSHOT, tabBarLabel: TAB_LABEL_SNAPSHOT }}
       />
       <Tab.Screen
-        name={TAB_ROUTE_ACCOUNTS}
-        component={AccountsStackNavigator}
-        options={{ title: TAB_LABEL_ACCOUNTS, tabBarLabel: TAB_LABEL_ACCOUNTS }}
+        name={TAB_ROUTE_WHATIF}
+        component={WhatIfStackNavigator}
+        options={{ title: TAB_LABEL_WHATIF, tabBarLabel: TAB_LABEL_WHATIF }}
       />
       <Tab.Screen
         name={TAB_ROUTE_PROJECTION}

@@ -29,15 +29,3 @@ export const UI_TOLERANCE = 0.01; // GBP
  */
 export const AGE_COMPARISON_TOLERANCE = 0.01; // Dimensionless (years)
 
-/**
- * System-defined Cash asset identifier.
- * 
- * SYSTEM_CASH is a special asset that:
- * - Always exists exactly once per profile
- * - Cannot be deleted or renamed by user
- * - Has 0% growth rate and immediate availability
- * - Is excluded from asset edit/delete UI and pickers
- * - Is included in balances, net worth, and charts
- * - Used internally for scenario funding (not user-visible)
- */
-export const SYSTEM_CASH_ID = 'SYSTEM_CASH';

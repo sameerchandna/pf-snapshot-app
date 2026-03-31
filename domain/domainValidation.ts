@@ -69,8 +69,6 @@ export function makeFlatItem(raw: { id: unknown; name: unknown; amount: unknown 
 
 // ---------- SnapshotState loader (unknown persisted JSON -> domain state)
 // Validates shape + values. Falls back safely to empty defaults.
-import { SYSTEM_CASH_ID } from '../constants';
-
 export function emptySnapshotState(): SnapshotState {
   return {
     grossIncomeItems: [],
@@ -84,17 +82,7 @@ export function emptySnapshotState(): SnapshotState {
       { id: 'assets-investments', name: 'Investments' },
       { id: 'assets-other', name: 'Other' },
     ],
-    assets: [
-      {
-        id: SYSTEM_CASH_ID,
-        name: 'Cash',
-        balance: 0,
-        annualGrowthRatePct: 0,
-        groupId: 'assets-cash',
-        availability: { type: 'immediate' },
-        isActive: true,
-      },
-    ],
+    assets: [],
     liabilityGroups: [
       { id: 'liab-credit', name: 'Credit' },
       { id: 'liab-other', name: 'Other' },

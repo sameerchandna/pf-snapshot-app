@@ -4,7 +4,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Swipeable } from 'react-native-gesture-handler';
 
 import { useSnapshot } from '../context/SnapshotContext';
-import { getUserEditableAssets } from '../domain/systemAssets';
 import EditableCollectionScreen from './EditableCollectionScreen';
 import { ContributionItem } from '../types';
 import { formatCurrencyFullSigned } from '../ui/formatters';
@@ -126,7 +125,7 @@ export default function ContributionsDetailScreen() {
       <>
         <Pressable
           onPress={() => {
-            if (getUserEditableAssets(state.assets).length === 0) {
+            if (state.assets.length === 0) {
               navigation.navigate('AssetsDetail', { createForContribution: true, returnRouteKey: route.key, returnRouteName: 'AssetContributionDetail' });
               return;
             }
@@ -165,7 +164,7 @@ export default function ContributionsDetailScreen() {
             <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
               <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-                {getUserEditableAssets(state.assets).map(a => (
+                {state.assets.map(a => (
                   <Pressable
                     key={a.id}
                     onPress={() => handleSelectAsset(a.id)}
