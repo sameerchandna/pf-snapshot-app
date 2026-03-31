@@ -503,7 +503,7 @@ export function deleteProfile(
  * Validates and coerces unknown data into ProfilesState.
  * Falls back to empty state on validation failure.
  */
-function validateProfilesState(raw: unknown): ProfilesState {
+export function validateProfilesState(raw: unknown): ProfilesState {
   if (!isRecord(raw)) {
     console.error('Invalid profiles state: not an object');
     return createEmptyProfilesState();

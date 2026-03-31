@@ -3,20 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './navigation';
 import { SnapshotProvider } from './context/SnapshotContext';
-import { ModeProvider, useMode } from './context/ModeContext';
 import { ThemeProvider } from './ui/theme/ThemeContext';
 import { useTheme } from './ui/theme/useTheme';
 
 function AppContent() {
-  const { mode, modeInitialized } = useMode();
   const { theme, isDark } = useTheme();
 
-  // Don't render until mode is determined
-  if (!modeInitialized) {
-    return null; // Or a loading screen
-  }
-
-  // Configure navigation theme to respect dark mode
   const navigationTheme = {
     dark: isDark,
     colors: {
@@ -48,7 +40,7 @@ function AppContent() {
   };
 
   return (
-    <SnapshotProvider mode={mode}>
+    <SnapshotProvider>
       <NavigationContainer theme={navigationTheme}>
         <AppNavigator />
       </NavigationContainer>
@@ -59,12 +51,9 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ModeProvider>
-        <ThemeProvider>
-          <AppContent />
-        </ThemeProvider>
-      </ModeProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
-

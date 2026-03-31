@@ -2,8 +2,6 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
-import DemoModeBanner from './DemoModeBanner';
-
 type Props = {
   title: string;
   totalText?: string;
@@ -28,7 +26,6 @@ export default function ScreenHeader({ title, totalText, subtitle, subtitleFootn
         {subtitleFootnote ? <Text style={[styles.subtitleFootnote, { color: theme.colors.text.disabled }]}>{subtitleFootnote}</Text> : null}
         {rightAccessory ? <View style={styles.rightAccessory}>{rightAccessory}</View> : null}
       </View>
-      <DemoModeBanner />
     </View>
   );
 }

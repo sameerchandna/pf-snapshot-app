@@ -3453,40 +3453,23 @@ export default function ProjectionResultsScreen() {
             title="Projection" 
             subtitle="Explore where your finances could land"
             rightAccessory={
-              <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+              __DEV__ ? (
                 <Pressable
-                  onPress={() => navigation.navigate('Entry')}
+                  onPress={handleExportDebugJSON}
                   style={({ pressed }) => [
                     {
                       paddingHorizontal: spacing.sm,
                       paddingVertical: spacing.xs,
                       borderRadius: 4,
-                      backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                      backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
                     },
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel="Explore"
+                  accessibilityLabel="Export debug JSON"
                 >
-                  <Text style={{ fontSize: 14, color: theme.colors.text.secondary, fontWeight: '500' }}>Explore</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
                 </Pressable>
-                {__DEV__ ? (
-                  <Pressable
-                    onPress={handleExportDebugJSON}
-                    style={({ pressed }) => [
-                      {
-                        paddingHorizontal: spacing.sm,
-                        paddingVertical: spacing.xs,
-                        borderRadius: 4,
-                        backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
-                      },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Export debug JSON"
-                  >
-                    <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
-                  </Pressable>
-                ) : null}
-              </View>
+              ) : undefined
             }
           />
 

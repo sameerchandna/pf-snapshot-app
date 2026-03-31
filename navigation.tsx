@@ -22,14 +22,11 @@ import ProjectionSettingsScreen from './screens/ProjectionSettingsScreen';
 import ScenarioManagementScreen from './screens/ScenarioManagementScreen';
 import ScenarioEditorScreen from './screens/ScenarioEditorScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import ProfilesManagementScreen from './screens/ProfilesManagementScreen';
 import A3ValidationScreen from './screens/A3ValidationScreen';
 import ProjectionRefactorValidationScreen from './screens/ProjectionRefactorValidationScreen';
 import SnapshotDataSummaryScreen from './screens/SnapshotDataSummaryScreen';
 import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
-import EntryScreen from './screens/EntryScreen';
 
-const RootStack = createNativeStackNavigator();
 const Stack = createNativeStackNavigator();
 const AccountsStack = createNativeStackNavigator();
 const ProjectionStack = createNativeStackNavigator();
@@ -104,7 +101,6 @@ function SettingsStackNavigator() {
   return (
     <SettingsStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
       <SettingsStack.Screen name="Settings" component={SettingsScreen} />
-      <SettingsStack.Screen name="Profiles" component={ProfilesManagementScreen} />
       <SettingsStack.Screen name="A3Validation" component={A3ValidationScreen} />
       <SettingsStack.Screen name="ProjectionRefactorValidation" component={ProjectionRefactorValidationScreen} />
       <SettingsStack.Screen name="SnapshotDataSummary" component={SnapshotDataSummaryScreen} />
@@ -112,7 +108,7 @@ function SettingsStackNavigator() {
   );
 }
 
-function MainTabsNavigator() {
+export default function AppNavigator() {
   const { theme } = useTheme();
 
   return (
@@ -149,14 +145,5 @@ function MainTabsNavigator() {
         options={{ title: TAB_LABEL_SETTINGS, tabBarLabel: TAB_LABEL_SETTINGS }}
       />
     </Tab.Navigator>
-  );
-}
-
-export default function AppNavigator() {
-  return (
-    <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      <RootStack.Screen name="Entry" component={EntryScreen} />
-      <RootStack.Screen name="MainTabs" component={MainTabsNavigator} options={{ headerShown: false }} />
-    </RootStack.Navigator>
   );
 }

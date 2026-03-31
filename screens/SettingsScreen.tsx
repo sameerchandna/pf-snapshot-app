@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
@@ -10,11 +10,48 @@ import { spacing } from '../ui/spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
 import { radius } from '../ui/theme/theme';
+import { useSnapshot } from '../context/SnapshotContext';
+import { exportData, importData } from '../persistence/exportImport';
+import { saveProfilesState } from '../persistence/profileStorage';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { themeOverride, setThemeOverride } = useThemeContext();
   const { theme } = useTheme();
+  const { profilesState, reloadFromStorage } = useSnapshot();
+
+  const handleExport = async () => {
+    if (!profilesState) return;
+    try {
+      await exportData(profilesState);
+    } catch (e) {
+      Alert.alert('Export failed', String(e));
+    }
+  };
+
+  const handleImport = () => {
+    Alert.alert(
+      'Import Profile Data',
+      'This will replace all current data with the contents of the backup file. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Import',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const imported = await importData();
+              if (!imported) return;
+              await saveProfilesState(imported);
+              await reloadFromStorage();
+            } catch (e) {
+              Alert.alert('Import failed', String(e));
+            }
+          },
+        },
+      ]
+    );
+  };
   
   const handleThemeChange = (event: any) => {
     const index = event.nativeEvent.selectedSegmentIndex;
@@ -28,29 +65,6 @@ export default function SettingsScreen() {
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
       <ScreenHeader title="Settings" />
       <View style={styles.content}>
-        <View style={styles.section}>
-          <GroupHeader title="Profiles" />
-          <Pressable
-            onPress={() => navigation.navigate('Profiles')}
-            style={({ pressed }) => [
-              styles.row,
-              {
-                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
-                borderColor: theme.colors.border.subtle,
-              }
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Profiles"
-          >
-            <View style={styles.rowLeft}>
-              <Text style={[styles.rowTitle, { color: theme.colors.text.tertiary }]}>Profiles</Text>
-              <Text style={[styles.rowSubtitle, { color: theme.colors.text.muted }]}>Manage local profiles</Text>
-            </View>
-            <Text style={[styles.rowChevron, { color: theme.colors.text.disabled }]} accessible={false}>
-              {'\u203A'}
-            </Text>
-          </Pressable>
-        </View>
         <View style={styles.section}>
           <GroupHeader title="Appearance (Testing)" />
           <View style={styles.themeToggleContainer}>
@@ -66,6 +80,43 @@ export default function SettingsScreen() {
               activeFontStyle={{ color: theme.colors.text.primary }}
             />
           </View>
+        </View>
+        <View style={styles.section}>
+          <GroupHeader title="Data" />
+          <Pressable
+            onPress={handleExport}
+            style={({ pressed }) => [
+              styles.row,
+              {
+                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                borderColor: theme.colors.border.subtle,
+              }
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Export profile data"
+          >
+            <View style={styles.rowLeft}>
+              <Text style={[styles.rowTitle, { color: theme.colors.text.tertiary }]}>Export Profile Data</Text>
+              <Text style={[styles.rowSubtitle, { color: theme.colors.text.muted }]}>Save a backup file you can import on another device</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={handleImport}
+            style={({ pressed }) => [
+              styles.row,
+              {
+                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                borderColor: theme.colors.border.subtle,
+              }
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Import profile data"
+          >
+            <View style={styles.rowLeft}>
+              <Text style={[styles.rowTitle, { color: theme.colors.text.tertiary }]}>Import Profile Data</Text>
+              <Text style={[styles.rowSubtitle, { color: theme.colors.text.muted }]}>Restore from a backup file (replaces current data)</Text>
+            </View>
+          </Pressable>
         </View>
         <View style={styles.section}>
           <GroupHeader title="Advanced" />
@@ -142,6 +193,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: layout.screenPadding,
+    gap: layout.sectionGap,
   },
   section: {
     gap: layout.md,

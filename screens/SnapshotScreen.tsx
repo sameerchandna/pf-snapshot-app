@@ -150,23 +150,6 @@ export default function SnapshotScreen() {
       <ScreenHeader
         title="Snapshot"
         subtitle="Your current financial position"
-        rightAccessory={
-          <Pressable
-            onPress={() => navigation.navigate('Entry')}
-            style={({ pressed }) => [
-              {
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: 4,
-                backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Explore"
-          >
-            <Text style={[theme.typography.button, { color: theme.colors.text.secondary }]}>Explore</Text>
-          </Pressable>
-        }
       />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
