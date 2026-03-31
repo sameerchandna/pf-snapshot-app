@@ -1,9 +1,9 @@
-import type { SnapshotState } from './types';
+import type { SnapshotState } from '../types';
 import type { ProjectionSeriesPoint, ProjectionSummary, ProjectionEngineInputs } from './projectionEngine';
 import { initLoan, stepLoanMonth } from './loanEngine';
 import { selectPension } from './selectors';
-import { ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from './constants';
-import { isSystemCash } from './systemAssets';
+import { ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
+import { isSystemCash } from '../domain/systemAssets';
 
 export type A3Attribution = {
   startingNetWorth: number;

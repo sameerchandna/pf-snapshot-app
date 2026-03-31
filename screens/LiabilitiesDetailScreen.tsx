@@ -1,15 +1,15 @@
 import React, { useMemo } from 'react';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, LiabilityItem } from '../types';
-import { selectLiabilities } from '../selectors';
+import { selectLiabilities } from '../engines/selectors';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { formatCurrencyFull } from '../formatters';
+import { formatCurrencyFull } from '../ui/formatters';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { Swipeable } from 'react-native-gesture-handler';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 

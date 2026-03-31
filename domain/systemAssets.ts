@@ -7,8 +7,8 @@
 // - Is excluded from asset edit/delete UI and pickers
 // - Is included in balances, net worth, and charts
 
-import type { AssetItem, SnapshotState } from './types';
-import { SYSTEM_CASH_ID, ATTRIBUTION_TOLERANCE } from './constants';
+import type { AssetItem, SnapshotState } from '../types';
+import { SYSTEM_CASH_ID, ATTRIBUTION_TOLERANCE } from '../constants';
 
 /**
  * Checks if an asset is the system-defined Cash asset.

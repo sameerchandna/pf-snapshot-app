@@ -10,21 +10,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import { 
   computeProjectionSeries, 
   computeProjectionSummary, 
   assertProjectionDeterminism,
   computeSingleAssetTimeSeries,
   computeSingleLiabilityTimeSeries,
-} from '../projectionEngine';
-import { computeA3Attribution } from '../computeA3Attribution';
+} from '../engines/projectionEngine';
+import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
-import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 type ValidationResult = {
   aggregateDeterminism: 'PASS' | 'FAIL' | 'PENDING';

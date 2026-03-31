@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Group } from '../types';
 import EditableCollectionScreen from './EditableCollectionScreen';
-import { useSnapshot } from '../SnapshotContext';
-import { formatPercent } from '../formatters';
+import { useSnapshot } from '../context/SnapshotContext';
+import { formatPercent } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
+import { spacing } from '../ui/spacing';
 import { Swipeable } from 'react-native-gesture-handler';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 

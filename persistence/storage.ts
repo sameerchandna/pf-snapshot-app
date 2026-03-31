@@ -1,8 +1,8 @@
 // Persistence layer using AsyncStorage
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SnapshotState } from './types';
-import { emptySnapshotState } from './domainValidation';
+import { SnapshotState } from '../types';
+import { emptySnapshotState } from '../domain/domainValidation';
 import { loadSnapshotState as loadSnapshotStateRaw, saveSnapshotState as saveSnapshotStateRaw } from './persistenceModel';
 
 const STORAGE_KEY = '@snapshot_state';

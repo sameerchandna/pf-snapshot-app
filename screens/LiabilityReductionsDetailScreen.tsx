@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, LiabilityReductionItem } from '../types';
-import { selectLoanDerivedRows, selectSnapshotLiabilityReduction } from '../selectors';
-import { formatCurrencyFullSigned } from '../formatters';
+import { selectLoanDerivedRows, selectSnapshotLiabilityReduction } from '../engines/selectors';
+import { formatCurrencyFullSigned } from '../ui/formatters';
 import { StyleSheet } from 'react-native';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 

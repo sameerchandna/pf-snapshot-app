@@ -1,8 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import Icon, { type IconName } from './Icon';
 import IconButton from './IconButton';
 

@@ -12,14 +12,14 @@
 // - FLOW_TO_DEBT scenarios are validated for affordability and paid-off target if snapshotState is provided (Phase 2.2).
 // - Scenario delta reconciliation is asserted in __DEV__ mode (Phase 2.3).
 
-import type { ProjectionEngineInputs } from '../projectionEngine';
+import type { ProjectionEngineInputs } from '../engines/projectionEngine';
 import type { Scenario } from '../domain/scenario/types';
 import type { SnapshotState } from '../types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { scenarioToDelta } from '../domain/scenario/delta';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { SYSTEM_CASH_ID, UI_TOLERANCE } from '../constants';
-import { selectMonthlySurplus } from '../selectors';
+import { selectMonthlySurplus } from '../engines/selectors';
 
 /**
  * Phase 2.3: Reconciliation helper functions

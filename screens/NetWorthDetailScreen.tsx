@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import DetailScreenShell from '../components/DetailScreenShell';
 import { HelpContent } from './EditableCollectionScreen';
-import { selectAssets, selectLiabilities, selectNetWorth } from '../selectors';
-import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { selectAssets, selectLiabilities, selectNetWorth } from '../engines/selectors';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 const netWorthHelpContent: HelpContent = {
   title: 'Net Worth',

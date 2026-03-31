@@ -5,8 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
-import { layout } from '../layout';
-import { spacing } from '../spacing';
+import { layout } from '../ui/layout';
+import { spacing } from '../ui/spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
 

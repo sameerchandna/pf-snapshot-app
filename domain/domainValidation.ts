@@ -6,7 +6,7 @@
 //
 // Inside the app (selectors/calculations/rendering), data is assumed valid.
 
-import type { AssetItem, SnapshotState } from './types';
+import type { AssetItem, SnapshotState } from '../types';
 
 function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
@@ -69,7 +69,7 @@ export function makeFlatItem(raw: { id: unknown; name: unknown; amount: unknown 
 
 // ---------- SnapshotState loader (unknown persisted JSON -> domain state)
 // Validates shape + values. Falls back safely to empty defaults.
-import { SYSTEM_CASH_ID } from './constants';
+import { SYSTEM_CASH_ID } from '../constants';
 
 export function emptySnapshotState(): SnapshotState {
   return {

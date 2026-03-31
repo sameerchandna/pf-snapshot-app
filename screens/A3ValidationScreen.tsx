@@ -4,16 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
-import { useSnapshot } from '../SnapshotContext';
-import { computeProjectionSeries, computeProjectionSummary } from '../projectionEngine';
-import { computeA3Attribution } from '../computeA3Attribution';
-import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
+import { useSnapshot } from '../context/SnapshotContext';
+import { computeProjectionSeries, computeProjectionSummary } from '../engines/projectionEngine';
+import { computeA3Attribution } from '../engines/computeA3Attribution';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { ATTRIBUTION_TOLERANCE } from '../constants';
-import { selectMonthlySurplus } from '../selectors';
+import { selectMonthlySurplus } from '../engines/selectors';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 // Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() instead
 // Monthly surplus is now single-sourced from selector (no manual computation, no clamping)

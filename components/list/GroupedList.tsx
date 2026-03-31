@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useTheme } from '../../ui/theme/useTheme';
-import { spacing } from '../../spacing';
+import { spacing } from '../../ui/spacing';
 import AddEntry from './AddEntry';
 
 export type Group<TItem> = {

@@ -25,8 +25,8 @@
 import React, { ReactNode, useState } from 'react';
 import { StyleSheet, Text, View, LayoutChangeEvent } from 'react-native';
 import { useTheme } from '../../ui/theme/useTheme';
-import { layout } from '../../layout';
-import { spacing } from '../../spacing';
+import { layout } from '../../ui/layout';
+import { spacing } from '../../ui/spacing';
 
 type Props = {
   title: string;

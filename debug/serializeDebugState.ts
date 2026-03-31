@@ -2,9 +2,9 @@
 // Exports lossless JSON representation of app state for debugging
 
 import type { SnapshotState, ScenarioState } from '../types';
-import type { ProjectionSummary, ProjectionSeriesPoint } from '../projectionEngine';
-import type { A3Attribution } from '../computeA3Attribution';
-import { selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
+import type { ProjectionSummary, ProjectionSeriesPoint } from '../engines/projectionEngine';
+import type { A3Attribution } from '../engines/computeA3Attribution';
+import { selectSnapshotTotals, selectLoanDerivedRows } from '../engines/selectors';
 
 export interface DebugStatePayload {
   snapshot: {

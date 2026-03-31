@@ -5,8 +5,8 @@ import ScreenHeader from './ScreenHeader';
 import { HelpContent } from '../screens/EditableCollectionScreen';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from './Icon';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 type Props = {
   title: string;

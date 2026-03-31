@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { Group, IncomeItem } from '../types';
-import { selectGrossIncome } from '../selectors';
-import { formatCurrencyFull } from '../formatters';
+import { selectGrossIncome } from '../engines/selectors';
+import { formatCurrencyFull } from '../ui/formatters';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 const grossIncomeHelpContent: HelpContent = {

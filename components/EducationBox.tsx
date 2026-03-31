@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { spacing } from '../spacing';
+import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
 
 type Props = {

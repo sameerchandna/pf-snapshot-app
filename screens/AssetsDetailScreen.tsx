@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { useSnapshot } from '../SnapshotContext';
-import { getUserEditableAssets } from '../systemAssets';
+import { useSnapshot } from '../context/SnapshotContext';
+import { getUserEditableAssets } from '../domain/systemAssets';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { AssetItem, Group } from '../types';
-import { selectAssets } from '../selectors';
-import { formatCurrencyFull } from '../formatters';
+import { selectAssets } from '../engines/selectors';
+import { formatCurrencyFull } from '../ui/formatters';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { parseItemName } from '../domainValidation';
+import { parseItemName } from '../domain/domainValidation';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { Swipeable } from 'react-native-gesture-handler';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 

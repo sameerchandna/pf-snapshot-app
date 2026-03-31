@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TextInput } from 'react-native';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import EditorActionGroup from './EditorActionGroup';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 type ItemEditorProps = {
   // State

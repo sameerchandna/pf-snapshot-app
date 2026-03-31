@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
+import { spacing } from '../ui/spacing';
 import DemoModeBanner from './DemoModeBanner';
 
 type Props = {

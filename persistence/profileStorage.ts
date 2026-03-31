@@ -1,12 +1,12 @@
 // Profile persistence layer using AsyncStorage
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ProfilesState, ProfileState, ProfileId, SnapshotState } from './types';
-import { emptySnapshotState, coerceSnapshotState } from './domainValidation';
-import { createBaselineScenario, BASELINE_SCENARIO_ID } from './domain/scenario/types';
-import type { Scenario, ScenarioId } from './domain/scenario/types';
-import { ensureSystemCash } from './systemAssets';
-import { SYSTEM_CASH_ID } from './constants';
+import type { ProfilesState, ProfileState, ProfileId, SnapshotState } from '../types';
+import { emptySnapshotState, coerceSnapshotState } from '../domain/domainValidation';
+import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
+import type { Scenario, ScenarioId } from '../domain/scenario/types';
+import { ensureSystemCash } from '../domain/systemAssets';
+import { SYSTEM_CASH_ID } from '../constants';
 
 const PROFILES_STORAGE_KEY = '@profiles_state';
 

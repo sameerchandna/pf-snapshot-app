@@ -12,17 +12,17 @@ import {
   ProjectionInputs,
   SnapshotState,
   ProfilesState,
-} from './types';
-import { coerceSnapshotState } from './domainValidation';
-import { loadProfilesState, loadProfilesStateIfPresent, saveProfilesState, switchActiveProfile, createBlankProfile, renameProfile as renameProfileHelper, resetProfile as resetProfileHelper, deleteProfile as deleteProfileHelper, createEmptyProfilesState } from './profileStorage';
-import { migrateLegacyStateToProfiles } from './profileMigration';
-import { setProfilesStateProvider } from './scenarioState/scenarioStore';
-import type { ProfileId } from './types';
-import { ensureSystemCashExists } from './systemAssets';
-import { SYSTEM_CASH_ID } from './constants';
-import type { AppMode } from './context/ModeContext';
-import { getDemoProfile, DEFAULT_DEMO_PROFILE_ID, type DemoProfileId } from './demo/demoProfiles';
-import { createBaselineScenario, BASELINE_SCENARIO_ID } from './domain/scenario/types';
+} from '../types';
+import { coerceSnapshotState } from '../domain/domainValidation';
+import { loadProfilesState, loadProfilesStateIfPresent, saveProfilesState, switchActiveProfile, createBlankProfile, renameProfile as renameProfileHelper, resetProfile as resetProfileHelper, deleteProfile as deleteProfileHelper, createEmptyProfilesState } from '../persistence/profileStorage';
+import { migrateLegacyStateToProfiles } from '../persistence/profileMigration';
+import { setProfilesStateProvider } from '../scenarioState/scenarioStore';
+import type { ProfileId } from '../types';
+import { ensureSystemCashExists } from '../domain/systemAssets';
+import { SYSTEM_CASH_ID } from '../constants';
+import type { AppMode } from './ModeContext';
+import { getDemoProfile, DEFAULT_DEMO_PROFILE_ID, type DemoProfileId } from '../demo/demoProfiles';
+import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 
 interface SnapshotContextType {
   state: SnapshotState;

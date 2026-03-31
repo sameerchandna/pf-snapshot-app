@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '../../ui/theme/useTheme';
 import IconButton from '../IconButton';
-import { spacing } from '../../spacing';
+import { spacing } from '../../ui/spacing';
 
 interface CashflowCardWrapperProps {
   children: React.ReactNode;

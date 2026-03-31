@@ -1,13 +1,13 @@
 // One-time migration from legacy single-profile state to ProfilesState
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ProfilesState, ProfileState, ProfileId } from './types';
+import type { ProfilesState, ProfileState, ProfileId } from '../types';
 import { loadSnapshotStateIfPresent } from './storage';
-import { loadScenarios, loadActiveScenarioId } from './scenarioState/scenarioPersistence';
-import { createBaselineScenario, BASELINE_SCENARIO_ID } from './domain/scenario/types';
-import type { Scenario } from './domain/scenario/types';
-import { emptySnapshotState } from './domainValidation';
-import { ensureSystemCash } from './systemAssets';
+import { loadScenarios, loadActiveScenarioId } from '../scenarioState/scenarioPersistence';
+import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
+import type { Scenario } from '../domain/scenario/types';
+import { emptySnapshotState } from '../domain/domainValidation';
+import { ensureSystemCash } from '../domain/systemAssets';
 
 const PROFILES_STORAGE_KEY = '@profiles_state';
 const MIGRATION_FLAG_KEY = '@profiles_migrated';

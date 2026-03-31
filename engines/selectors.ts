@@ -4,9 +4,9 @@
 // - No validation (assume state is valid; boundaries already enforce that)
 // - Deterministic and side-effect free
 
-import type { SnapshotState } from './types';
+import type { SnapshotState } from '../types';
 import { initLoan, stepLoanMonth } from './loanEngine';
-import type { Scenario } from './domain/scenario/types';
+import type { Scenario } from '../domain/scenario/types';
 
 // ----- Low-level helpers
 export function sumFlat(items: ReadonlyArray<{ monthlyAmount: number }>): number {

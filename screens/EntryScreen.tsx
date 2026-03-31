@@ -15,12 +15,12 @@ import SectionCard from '../components/SectionCard';
 import SectionHeader from '../components/SectionHeader';
 import Icon from '../components/Icon';
 import { useTheme } from '../ui/theme/useTheme';
-import { useSnapshot } from '../SnapshotContext';
-import { computeProjectionSeries } from '../projectionEngine';
+import { useSnapshot } from '../context/SnapshotContext';
+import { computeProjectionSeries } from '../engines/projectionEngine';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
-import { formatCurrencyCompact } from '../formatters';
-import { layout } from '../layout';
-import { spacing } from '../spacing';
+import { formatCurrencyCompact } from '../ui/formatters';
+import { layout } from '../ui/layout';
+import { spacing } from '../ui/spacing';
 import { DEMO_PROFILES, DEFAULT_DEMO_PROFILE_ID, type DemoProfileId } from '../demo/demoProfiles';
 import { detectKeyMoments, generateInsightText } from '../insights/insightEngine';
 

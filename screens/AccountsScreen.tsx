@@ -6,11 +6,11 @@ import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
 import Divider from '../components/Divider';
-import Row from '../components/Row';
-import { useSnapshot } from '../SnapshotContext';
-import { formatCurrencyFull } from '../formatters';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import Row from '../components/PressableRow';
+import { useSnapshot } from '../context/SnapshotContext';
+import { formatCurrencyFull } from '../ui/formatters';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 import type { AssetItem, LiabilityItem } from '../types';
 

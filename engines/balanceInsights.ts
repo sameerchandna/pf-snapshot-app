@@ -18,7 +18,7 @@
  * - Read-only
  */
 
-import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE } from './constants';
+import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE } from '../constants';
 
 /**
  * Balance Insight type for Balance Deep Dive only.

@@ -3,7 +3,7 @@
 // Phase 6.9: Adds meaningful user data detection for Entry screen
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { loadProfilesStateIfPresent } from '../profileStorage';
+import { loadProfilesStateIfPresent } from '../persistence/profileStorage';
 import { hasMeaningfulUserData } from '../entryHelpers';
 
 export type AppMode = 'user' | 'demo';

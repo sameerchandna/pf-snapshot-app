@@ -3,7 +3,7 @@ import { Keyboard, KeyboardAvoidingView, Modal, Platform, View, Text, StyleSheet
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable, ScrollView } from 'react-native-gesture-handler';
 import { Group } from '../types';
-import { parseItemName, parseMoney } from '../domainValidation';
+import { parseItemName, parseMoney } from '../domain/domainValidation';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
 import SectionCard from '../components/SectionCard';
@@ -14,8 +14,8 @@ import SwipeAction from '../components/SwipeAction';
 import EditorActionGroup from '../components/EditorActionGroup';
 import ItemEditor from '../components/ItemEditor';
 import GroupedList, { Group as GroupedListGroup } from '../components/list/GroupedList';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 
 // Minimal, opinionated help content structure

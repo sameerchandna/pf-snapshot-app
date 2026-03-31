@@ -8,10 +8,10 @@ import GroupHeader from '../components/GroupHeader';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import SwipeAction from '../components/SwipeAction';
-import Row from '../components/Row';
-import { layout } from '../layout';
-import { spacing } from '../spacing';
-import { useSnapshot } from '../SnapshotContext';
+import Row from '../components/PressableRow';
+import { layout } from '../ui/layout';
+import { spacing } from '../ui/spacing';
+import { useSnapshot } from '../context/SnapshotContext';
 import { useTheme } from '../ui/theme/useTheme';
 import type { ProfileId, ProfileState, ProfilesState } from '../types';
 

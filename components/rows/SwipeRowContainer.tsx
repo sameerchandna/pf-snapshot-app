@@ -22,7 +22,7 @@
 import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { spacing } from '../../spacing';
+import { spacing } from '../../ui/spacing';
 
 // Swipe gesture configuration constants
 const SWIPE_ACTIVE_OFFSET_X = 10; // Minimum horizontal movement to activate swipe (px)

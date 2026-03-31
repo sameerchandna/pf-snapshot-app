@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './navigation';
-import { SnapshotProvider } from './SnapshotContext';
+import { SnapshotProvider } from './context/SnapshotContext';
 import { ModeProvider, useMode } from './context/ModeContext';
 import { ThemeProvider } from './ui/theme/ThemeContext';
 import { useTheme } from './ui/theme/useTheme';

@@ -2,7 +2,7 @@
 // Filters inactive items and contributions to inactive assets
 
 import type { SnapshotState } from '../types';
-import type { ProjectionEngineInputs } from '../projectionEngine';
+import type { ProjectionEngineInputs } from '../engines/projectionEngine';
 
 /**
  * Builds ProjectionEngineInputs from SnapshotState, filtering inactive items.

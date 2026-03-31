@@ -4,15 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import ScreenHeader from '../components/ScreenHeader';
 import GroupHeader from '../components/GroupHeader';
-import { useSnapshot } from '../SnapshotContext';
-import { initLoan, stepLoanMonth } from '../loanEngine';
+import { useSnapshot } from '../context/SnapshotContext';
+import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import type { LiabilityItem } from '../types';
-import { parseItemName } from '../domainValidation';
-import { formatCurrencyFull, formatPercent } from '../formatters';
-import { deriveLoanStateAsOfToday } from '../loanDerivation';
+import { parseItemName } from '../domain/domainValidation';
+import { formatCurrencyFull, formatPercent } from '../ui/formatters';
+import { deriveLoanStateAsOfToday } from '../engines/loanDerivation';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 type RouteParams = {
   template: 'mortgage' | 'loan';

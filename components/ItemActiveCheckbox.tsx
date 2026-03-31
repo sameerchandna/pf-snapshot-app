@@ -8,7 +8,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
+import { spacing } from '../ui/spacing';
 
 type Props = {
   isActive: boolean;

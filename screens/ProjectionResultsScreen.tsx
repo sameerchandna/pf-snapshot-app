@@ -10,13 +10,13 @@ import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
-import Row from '../components/Row';
+import Row from '../components/PressableRow';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
 import ControlBar, { type ControlBarPillItem, type ControlBarIconItem } from '../components/ControlBar';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 import CashflowCardStack from '../components/cashflow/CashflowCardStack';
 import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
@@ -36,15 +36,15 @@ const snapshotTypography = {
   bodyWeight: '400' as const,
 };
 
-import { useSnapshot } from '../SnapshotContext';
-import { computeProjectionSeries, computeProjectionSummary, annualPctToMonthlyRate, deflateToTodaysMoney, type ProjectionEngineInputs } from '../projectionEngine';
-import { computeA3Attribution, type A3Attribution } from '../computeA3Attribution';
+import { useSnapshot } from '../context/SnapshotContext';
+import { computeProjectionSeries, computeProjectionSummary, annualPctToMonthlyRate, deflateToTodaysMoney, type ProjectionEngineInputs } from '../engines/projectionEngine';
+import { computeA3Attribution, type A3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
-import { initLoan, stepLoanMonth } from '../loanEngine';
-import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../formatters';
+import { initLoan, stepLoanMonth } from '../engines/loanEngine';
+import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/formatters';
 import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
-import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
+import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../engines/selectors';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
 import { detectKeyMoments, generateInsightText, type KeyMoment } from '../insights/insightEngine';
 import { serializeDebugState } from '../debug/serializeDebugState';

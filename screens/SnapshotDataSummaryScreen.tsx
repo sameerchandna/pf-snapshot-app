@@ -4,17 +4,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 
 import ScreenHeader from '../components/ScreenHeader';
-import { useSnapshot } from '../SnapshotContext';
-import { initLoan, stepLoanMonth } from '../loanEngine';
-import { formatCurrencyFull, formatPercent } from '../formatters';
-import { selectSnapshotTotals, selectLoanDerivedRows } from '../selectors';
+import { useSnapshot } from '../context/SnapshotContext';
+import { initLoan, stepLoanMonth } from '../engines/loanEngine';
+import { formatCurrencyFull, formatPercent } from '../ui/formatters';
+import { selectSnapshotTotals, selectLoanDerivedRows } from '../engines/selectors';
 import type { AssetItem } from '../types';
-import { computeProjectionSummary, computeProjectionSeries, type ProjectionEngineInputs } from '../projectionEngine';
-import { computeA3Attribution } from '../computeA3Attribution';
+import { computeProjectionSummary, computeProjectionSeries, type ProjectionEngineInputs } from '../engines/projectionEngine';
+import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 function formatLiquidity(asset: AssetItem): string {
   if (!asset.availability) return 'immediate';

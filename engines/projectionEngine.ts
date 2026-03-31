@@ -10,7 +10,7 @@
 //   - inflation adjustment applied once at the end (today's money)
 
 import { initLoan, stepLoanMonth } from './loanEngine';
-import { SYSTEM_CASH_ID } from './constants';
+import { SYSTEM_CASH_ID } from '../constants';
 
 export type ProjectionEngineInputs = {
   // Today's instruments

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import DetailScreenShell from '../components/DetailScreenShell';
 import { HelpContent } from './EditableCollectionScreen';
 import {
@@ -8,10 +8,10 @@ import {
   selectAvailableCash,
   selectSnapshotLiabilityReduction,
   selectMonthlySurplus,
-} from '../selectors';
-import { formatCurrencyFullSigned } from '../formatters';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+} from '../engines/selectors';
+import { formatCurrencyFullSigned } from '../ui/formatters';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 
 const monthlySurplusHelpContent: HelpContent = {
   title: 'Monthly Surplus',

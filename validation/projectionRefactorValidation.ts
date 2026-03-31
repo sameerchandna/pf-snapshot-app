@@ -16,8 +16,8 @@ import {
   computeSingleAssetTimeSeries,
   computeSingleLiabilityTimeSeries,
   type ProjectionEngineInputs 
-} from '../projectionEngine';
-import { computeA3Attribution } from '../computeA3Attribution';
+} from '../engines/projectionEngine';
+import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE } from '../constants';
 import type { SnapshotState } from '../types';

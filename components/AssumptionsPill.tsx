@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import type { AssetItem } from '../types';
-import { formatCurrencyFull } from '../formatters';
+import { formatCurrencyFull } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from './Icon';
 

@@ -3,17 +3,17 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Swipeable } from 'react-native-gesture-handler';
 
-import { useSnapshot } from '../SnapshotContext';
-import { getUserEditableAssets } from '../systemAssets';
+import { useSnapshot } from '../context/SnapshotContext';
+import { getUserEditableAssets } from '../domain/systemAssets';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import { ContributionItem } from '../types';
-import { selectPension } from '../selectors';
-import { formatCurrencyFullSigned } from '../formatters';
-import { parseMoney } from '../domainValidation';
+import { selectPension } from '../engines/selectors';
+import { formatCurrencyFullSigned } from '../ui/formatters';
+import { parseMoney } from '../domain/domainValidation';
 import { useTheme } from '../ui/theme/useTheme';
 import Icon from '../components/Icon';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
 type RouteParams = {

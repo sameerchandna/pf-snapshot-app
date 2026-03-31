@@ -2,8 +2,8 @@ import React, { ReactNode, useRef, useState } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { ScrollView, Swipeable } from 'react-native-gesture-handler';
 import { useTheme } from '../../ui/theme/useTheme';
-import { spacing } from '../../spacing';
-import { layout } from '../../layout';
+import { spacing } from '../../ui/spacing';
+import { layout } from '../../ui/layout';
 import Row from './Row';
 
 export type Group<TItem> = {

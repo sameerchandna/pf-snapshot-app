@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../ui/theme/useTheme';
-import { spacing } from '../spacing';
+import { spacing } from '../ui/spacing';
 
 /**
  * Compact EditorActionGroup component for editor ADD/EDIT modes.

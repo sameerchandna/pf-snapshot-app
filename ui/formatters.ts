@@ -1,16 +1,16 @@
 /**
  * Centralized numeric formatting utilities.
- * 
+ *
  * All currency and percentage formatting should use these functions.
  * This ensures consistent formatting behavior across the app.
  */
 
-import { UI_TOLERANCE } from './constants';
+import { UI_TOLERANCE } from '../constants';
 
 /**
  * Format currency in full format (no sign, no compact notation).
  * Example: £1,234,567
- * 
+ *
  * @param value - The numeric value to format
  * @returns Formatted currency string
  */
@@ -21,7 +21,7 @@ export function formatCurrencyFull(value: number): string {
 /**
  * Format currency in full format with sign (negative shows "-", positive no sign).
  * Example: £1,234,567 or -£1,234,567
- * 
+ *
  * @param value - The numeric value to format
  * @returns Formatted currency string with sign for negative values
  */
@@ -33,7 +33,7 @@ export function formatCurrencyFullSigned(value: number): string {
 /**
  * Format currency in full format with always-visible sign (+ or -).
  * Example: +£1,234,567 or -£1,234,567 or +£0
- * 
+ *
  * @param value - The numeric value to format
  * @returns Formatted currency string with always-visible sign
  */
@@ -45,7 +45,7 @@ export function formatCurrencyFullAlwaysSigned(value: number): string {
 /**
  * Format currency in compact format (no sign, uses K/M notation).
  * Example: £1.2m, £234k, £1,234
- * 
+ *
  * @param value - The numeric value to format
  * @returns Formatted currency string in compact notation
  */
@@ -59,7 +59,7 @@ export function formatCurrencyCompact(value: number): string {
 /**
  * Format currency in compact format with sign (shows "—" for zero, uses K/M notation).
  * Example: +£1.2m, -£234k, — (for zero)
- * 
+ *
  * @param value - The numeric value to format
  * @returns Formatted currency string in compact notation with sign, or "—" for zero
  */
@@ -74,7 +74,7 @@ export function formatCurrencyCompactSigned(value: number): string {
 
 /**
  * Format percentage value.
- * 
+ *
  * @param value - The numeric percentage value (e.g., 1.5 for 1.5%)
  * @param options - Formatting options
  * @param options.decimals - Number of decimal places (default: 0 for round numbers)
@@ -90,13 +90,13 @@ export function formatPercent(
 ): string {
   const decimals = options?.decimals ?? 0;
   const handleUndefined = options?.handleUndefined ?? '0%';
-  
+
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return handleUndefined;
   }
-  
-  return `${value.toLocaleString('en-GB', { 
-    minimumFractionDigits: decimals, 
-    maximumFractionDigits: decimals 
+
+  return `${value.toLocaleString('en-GB', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
   })}%`;
 }

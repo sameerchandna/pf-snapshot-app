@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import DetailScreenShell from '../components/DetailScreenShell';
 import { HelpContent } from './EditableCollectionScreen';
-import { selectDeductions, selectGrossIncome, selectNetIncome, selectPension } from '../selectors';
-import { formatCurrencyFull, formatCurrencyFullSigned } from '../formatters';
-import { spacing } from '../spacing';
-import { layout } from '../layout';
+import { selectDeductions, selectGrossIncome, selectNetIncome, selectPension } from '../engines/selectors';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
+import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 
 const otherDeductionsHelpContent: HelpContent = {

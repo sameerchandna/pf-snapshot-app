@@ -5,9 +5,9 @@
 //
 // This is intentionally boring: best-effort persistence that never blocks boot.
 
-import type { SnapshotState } from './types';
-import { coerceSnapshotState, emptySnapshotState } from './domainValidation';
-import { ensureSystemCash } from './systemAssets';
+import type { SnapshotState } from '../types';
+import { coerceSnapshotState, emptySnapshotState } from '../domain/domainValidation';
+import { ensureSystemCash } from '../domain/systemAssets';
 
 export const SNAPSHOT_SCHEMA_VERSION = 1 as const;
 

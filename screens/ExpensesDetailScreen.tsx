@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useSnapshot } from '../SnapshotContext';
+import { useSnapshot } from '../context/SnapshotContext';
 import { ExpenseItem, Group } from '../types';
-import { selectSnapshotExpenses } from '../selectors';
-import { formatCurrencyFullSigned } from '../formatters';
-import { parseItemName, parseMoney } from '../domainValidation';
+import { selectSnapshotExpenses } from '../engines/selectors';
+import { formatCurrencyFullSigned } from '../ui/formatters';
+import { parseItemName, parseMoney } from '../domain/domainValidation';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import SemanticRow from '../components/rows/SemanticRow';
 import RowVisual from '../components/rows/RowVisual';
