@@ -18,6 +18,7 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { getScenarios, getActiveScenarioId, setActiveScenarioId, getActiveScenario, deleteScenario } from '../scenarioState';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius, typography } from '../ui/theme/theme';
 
 // Generate preview text for a scenario
 function getScenarioPreviewText(scenario: Scenario, assets: Array<{ id: string; name: string }>, liabilities: Array<{ id: string; name: string }>): string {
@@ -462,27 +463,25 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.small,
     borderWidth: 1.5,
   },
   rowBody: {
     flex: 1,
   },
   rowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.value,
     marginBottom: 2,
   },
   rowSubtext: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.bodyLarge,
   },
   emptyState: {
     paddingVertical: layout.sectionGap,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.bodyLarge,
     fontStyle: 'italic',
   },
   createRow: {
@@ -492,8 +491,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   createRowText: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.value,
   },
   swipeableContainer: {
     height: ROW_HEIGHT,
@@ -538,14 +536,12 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.valueLarge,
     marginBottom: spacing.sm,
   },
   deleteModalMessage: {
-    fontSize: 14,
+    ...typography.bodyLarge,
     marginBottom: layout.sectionGap,
-    lineHeight: 20,
   },
   deleteModalActions: {
     flexDirection: 'row',
@@ -566,12 +562,10 @@ const styles = StyleSheet.create({
     // backgroundColor set inline
   },
   deleteModalButtonCancelText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
   deleteModalButtonConfirmText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
   warningBanner: {
     marginTop: layout.sectionGap,
@@ -581,8 +575,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   warningBannerText: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.bodyLarge,
   },
   rowDisabled: {
     opacity: 0.5,

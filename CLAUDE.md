@@ -29,6 +29,21 @@ A local-only personal finance snapshot and projection tool. Users enter their in
 - Snapshot screens use full currency (`formatCurrencyFull`), Projection screens use compact (`formatCurrencyCompact`) — do not mix
 - No local formatting helpers
 
+### Typography
+- All text styles use `theme.typography.*` spreads — never write `fontSize`, `fontWeight`, or `lineHeight` as bare numbers
+- In components/screens with `makeStyles(theme)` or inline styles: `...theme.typography.label`, `...theme.typography.body`, etc.
+- In static module-level `StyleSheet.create()`: import `{ typography }` from `'../ui/theme/theme'` and spread `...typography.body` etc.
+- Available tokens: `header`, `sectionTitle`, `groupTitle`, `bodyLarge`, `body`, `bodySmall`, `caption`, `valueLarge`, `value`, `valueSmall`, `button`, `input`, `label`
+- `fontWeight: '500'` does not exist in the token set — use `'400'` or `'600'`
+- Exception: Victory chart `tickLabels`/`labels` props (SVG API, no spread support) — use `theme.typography.X.fontSize` directly
+
+### Border radius
+- Always `theme.radius.*` or the standalone `radius.*` import — never write `borderRadius: 8` etc.
+- In `makeStyles(theme)` or inline: `theme.radius.medium`, `theme.radius.pill`, etc.
+- In static StyleSheets: import `{ radius }` from `'../ui/theme/theme'`
+- Scale: `none=0`, `small=4`, `base=6`, `medium=8`, `card=10`, `large=12`, `modal=14`, `pill=24`
+- Exception: geometric half-radii (e.g. `borderRadius: height / 2` for circles) — leave as computed values
+
 ### Colors
 - Always `theme.*` tokens from `useTheme()` — no hex values, no hardcoded colours
 - No opacity-based pressed states — use background colour changes instead
@@ -58,6 +73,8 @@ When building a new screen, follow this pattern:
 6. If it's a collection screen, provide a `renderRow` override — no default row renderer exists
 7. Use `CollectionRowWithActions` as the base row primitive for editable lists
 8. Follow existing navigation patterns: stack navigator inside the relevant tab
+9. All text styles via `...theme.typography.*` spreads — no bare `fontSize`/`fontWeight` numbers
+10. All corner radii via `theme.radius.*` — no bare `borderRadius` numbers
 
 ---
 

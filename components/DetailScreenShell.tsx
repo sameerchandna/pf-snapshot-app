@@ -7,6 +7,7 @@ import { useTheme } from '../ui/theme/useTheme';
 import Icon from './Icon';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import { typography, radius } from '../ui/theme/theme';
 
 type Props = {
   title: string;
@@ -125,21 +126,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   hintSheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radius.rounded,
+    borderTopRightRadius: radius.rounded,
     padding: spacing.xl,
     maxHeight: '80%',
   },
   hintTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.sectionTitle,
     marginBottom: spacing.xs,
   },
   hintScroll: {
     marginTop: spacing.base,
   },
   hintScrollContent: {
-    paddingBottom: 24,
+    paddingBottom: spacing.huge,
   },
   helpSectionDivider: {
     borderTopWidth: 1,
@@ -147,13 +147,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
   },
   helpSectionHeading: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
     marginBottom: spacing.sm,
   },
   helpParagraph: {
-    fontSize: 13,
-    lineHeight: 20,
+    ...typography.bodyLarge,
     marginBottom: layout.inputPadding,
   },
   helpBulletsContainer: {
@@ -161,13 +159,11 @@ const styles = StyleSheet.create({
     marginBottom: layout.inputPadding,
   },
   helpBullet: {
-    fontSize: 13,
-    lineHeight: 20,
+    ...typography.bodyLarge,
     marginBottom: spacing.xs,
   },
   helpExample: {
-    fontSize: 13,
-    lineHeight: 20,
+    ...typography.bodyLarge,
     marginTop: spacing.tiny,
     marginBottom: layout.inputPadding,
   },

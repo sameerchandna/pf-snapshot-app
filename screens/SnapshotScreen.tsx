@@ -18,6 +18,7 @@ import { getActiveScenario, getScenarios, getActiveScenarioId } from '../scenari
 import type { Scenario } from '../domain/scenario/types';
 import { UI_TOLERANCE } from '../constants';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius } from '../ui/theme/theme';
 import CashflowHeroValue from '../components/cashflow/CashflowHeroValue';
 import CashflowCardStack from '../components/cashflow/CashflowCardStack';
 import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
@@ -324,9 +325,9 @@ export default function SnapshotScreen() {
                     <TrendUp size={20} color={theme.colors.domain.asset} weight="regular" />
                   </View>
                   <View style={styles.balanceSheetContentColumn}>
-                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Assets</Text>
+                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Assets</Text>
                     <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.asset }]}>{totalAssetsText}</Text>
-                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you own</Text>
+                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you own</Text>
                   </View>
                   <View style={styles.balanceSheetActionColumn}>
                     {isEditableCard('AssetsDetail') ? (
@@ -350,9 +351,9 @@ export default function SnapshotScreen() {
                     <TrendDown size={20} color={theme.colors.domain.liability} weight="regular" />
                   </View>
                   <View style={styles.balanceSheetContentColumn}>
-                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary, fontSize: 15 }]}>Liabilities</Text>
+                    <Text style={[styles.cardTitle, styles.cashflowTextCentered, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>Liabilities</Text>
                     <Text style={[styles.primaryValue, styles.cashflowTextCentered, theme.typography.value, { color: theme.colors.domain.liability }]}>{totalLiabilitiesText}</Text>
-                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted, fontSize: 13 }]}>What you owe</Text>
+                    <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you owe</Text>
                   </View>
                   <View style={styles.balanceSheetActionColumn}>
                     {isEditableCard('LiabilitiesDetail') ? (
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
-    borderRadius: spacing.xl,
+    borderRadius: radius.modal,
     borderWidth: 1,
     zIndex: 1,
   },
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
-    borderRadius: spacing.xl,
+    borderRadius: radius.modal,
     borderWidth: 1,
     zIndex: 1,
     minHeight: 28, // Ensures consistent base height for primary line (4px top + 20px lineHeight + 4px bottom)
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: spacing.xl,
+    borderRadius: radius.modal,
     zIndex: 0,
   },
   cashflowCardStack: {
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     padding: spacing.sm,
-    borderRadius: 24,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -555,7 +556,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     padding: spacing.sm,
-    borderRadius: 24,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -675,7 +676,6 @@ const styles = StyleSheet.create({
   bodyText: {
     // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
     marginBottom: spacing.xs,
-    lineHeight: 18,
   },
   // Wrapper styles for card + ➕ icon layout
   cashflowCardWrapper: {
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
   addIconVisualCircle: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.large,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   cashflowIconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.modal,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,

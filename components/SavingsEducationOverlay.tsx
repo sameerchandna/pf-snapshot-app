@@ -23,6 +23,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography } from '../ui/theme/theme';
 import IconButton from './IconButton';
 
 type Props = {
@@ -100,8 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.valueLarge,
     flex: 1,
   },
   modalBody: {
@@ -115,12 +115,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.base,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.valueSmall,
     marginBottom: spacing.xs,
   },
   sectionText: {
-    fontSize: 13,
-    lineHeight: 20,
+    ...typography.bodyLarge,
   },
 });

@@ -106,6 +106,11 @@ export const lightTheme = {
       fontWeight: '400' as const,
       lineHeight: 16,
     },
+    bodyMedium: {
+      fontSize: 13,
+      fontWeight: '400' as const,
+      lineHeight: 18,
+    },
     bodySmall: {
       fontSize: 11,
       fontWeight: '400' as const,
@@ -120,6 +125,11 @@ export const lightTheme = {
       fontSize: 18,
       fontWeight: '600' as const,
       lineHeight: 22,
+    },
+    valueHero: {
+      fontSize: 22,
+      fontWeight: '700' as const,
+      lineHeight: 28,
     },
     value: {
       fontSize: 15,
@@ -155,6 +165,7 @@ export const lightTheme = {
     card: 10,   // Apple-standard card/section corner radius
     large: 12,
     modal: 14,  // Modal sheet top corner radius
+    rounded: 16, // Rounded cards and bottom sheet corners
     pill: 24,
   },
   shadows: {
@@ -273,6 +284,11 @@ export const darkTheme = {
       fontWeight: '400' as const,
       lineHeight: 16,
     },
+    bodyMedium: {
+      fontSize: 13,
+      fontWeight: '400' as const,
+      lineHeight: 18,
+    },
     bodySmall: {
       fontSize: 11,
       fontWeight: '400' as const,
@@ -287,6 +303,11 @@ export const darkTheme = {
       fontSize: 18,
       fontWeight: '600' as const,
       lineHeight: 22,
+    },
+    valueHero: {
+      fontSize: 22,
+      fontWeight: '700' as const,
+      lineHeight: 28,
     },
     value: {
       fontSize: 15,
@@ -322,6 +343,7 @@ export const darkTheme = {
     card: 10,   // Apple-standard card/section corner radius
     large: 12,
     modal: 14,  // Modal sheet top corner radius
+    rounded: 16, // Rounded cards and bottom sheet corners
     pill: 24,
   },
   shadows: {
@@ -359,5 +381,29 @@ export const radius = {
   card: 10,   // Apple-standard card/section corner radius
   large: 12,
   modal: 14,  // Modal sheet top corner radius
+  rounded: 16, // Rounded cards and bottom sheet corners
   pill: 24,
+} as const;
+
+/**
+ * Standalone typography tokens — same values as theme.typography, exported separately
+ * so static StyleSheets (outside components) can use them without needing useTheme().
+ * Typography scale (fontSize/fontWeight/lineHeight) does not differ between light and dark themes.
+ */
+export const typography = {
+  header:       { fontSize: 20, fontWeight: '600' as const, lineHeight: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '600' as const, lineHeight: 20 },
+  groupTitle:   { fontSize: 12, fontWeight: '700' as const, lineHeight: 16, letterSpacing: 0.6 },
+  bodyLarge:    { fontSize: 14, fontWeight: '400' as const, lineHeight: 20 },
+  body:         { fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
+  bodyMedium:   { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
+  bodySmall:    { fontSize: 11, fontWeight: '400' as const, lineHeight: 14 },
+  caption:      { fontSize: 10, fontWeight: '400' as const, lineHeight: 14 },
+  valueLarge:   { fontSize: 18, fontWeight: '600' as const, lineHeight: 22 },
+  valueHero:    { fontSize: 22, fontWeight: '700' as const, lineHeight: 28 },
+  value:        { fontSize: 15, fontWeight: '600' as const, lineHeight: 20 },
+  valueSmall:   { fontSize: 14, fontWeight: '600' as const, lineHeight: 18 },
+  button:       { fontSize: 14, fontWeight: '600' as const, lineHeight: 20 },
+  input:        { fontSize: 15, fontWeight: '400' as const, lineHeight: 20 },
+  label:        { fontSize: 12, fontWeight: '600' as const, lineHeight: 16 },
 } as const;

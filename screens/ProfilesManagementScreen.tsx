@@ -13,6 +13,7 @@ import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useSnapshot } from '../context/SnapshotContext';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius } from '../ui/theme/theme';
 import type { ProfileId, ProfileState, ProfilesState } from '../types';
 
 const ROW_HEIGHT = 44;
@@ -579,7 +580,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.small,
     borderWidth: 1.5,
   },
   rowTitle: {
@@ -622,14 +623,14 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT - 8,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.medium,
   },
   swipeActionReset: {
     width: 35,
     height: ROW_HEIGHT - 8,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.medium,
     marginLeft: spacing.xs,
   },
   swipeActionDelete: {
@@ -637,7 +638,7 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT - 8,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.medium,
     marginLeft: spacing.xs,
   },
   modalBackdrop: {
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    borderRadius: 12,
+    borderRadius: radius.large,
     padding: 20,
     width: '100%',
     maxWidth: 320,
@@ -659,11 +660,10 @@ const styles = StyleSheet.create({
   modalMessage: {
     // Typography moved to inline style with theme token
     marginBottom: layout.sectionGap,
-    lineHeight: 20,
   },
   modalInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     padding: spacing.base,
     // Typography moved to inline style with theme token
     marginBottom: layout.sectionGap,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   modalButton: {
     paddingVertical: layout.inputPadding,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     minWidth: 80,
     alignItems: 'center',
   },

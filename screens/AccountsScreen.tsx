@@ -12,6 +12,7 @@ import { formatCurrencyFull } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius, typography } from '../ui/theme/theme';
 import type { AssetItem, LiabilityItem } from '../types';
 
 const ROUTE_ASSETS_DETAIL: string = 'AccountsAssetsDetail';
@@ -176,7 +177,7 @@ export default function AccountsScreen() {
                     showBottomDivider={false}
                   >
                     <View style={styles.rowBody}>
-                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { fontWeight: '500', color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>{item.name}</Text>
                       <Text style={[styles.rowSubtext, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
                       <Text style={[styles.rowMetadata, theme.typography.bodySmall, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
@@ -213,7 +214,7 @@ export default function AccountsScreen() {
             <View style={styles.list}>
               {liabilityRows.map(item => {
                 const metadata = buildLiabilityMetadata(item);
-                
+
                 return (
                   <Row
                     key={item.id}
@@ -222,7 +223,7 @@ export default function AccountsScreen() {
                     showBottomDivider={false}
                   >
                     <View style={styles.rowBody}>
-                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { fontWeight: '500', color: theme.colors.text.primary }]}>{item.name}</Text>
+                      <Text style={[styles.rowTitle, theme.typography.bodyLarge, { color: theme.colors.text.primary }]}>{item.name}</Text>
                       <Text style={[styles.rowSubtext, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{formatCurrencyFull(item.balance)}</Text>
                       <Text style={[styles.rowMetadata, theme.typography.bodySmall, { color: theme.colors.text.muted }]}>{metadata}</Text>
                     </View>
@@ -255,27 +256,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
+    ...typography.groupTitle,
   },
   sectionTotal: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.valueSmall,
   },
   list: {
     gap: spacing.sm,
   },
   bullet: {
+    ...typography.bodyLarge,
     width: 16,
-    fontSize: 14,
     marginTop: 1,
   },
   rowBody: {
     flex: 1,
   },
   rowTitle: {
-    // Typography via theme.typography.bodyLarge with fontWeight override
+    // Typography via theme.typography.bodyLarge
   },
   rowSubtext: {
     // Typography via theme.typography.bodyLarge
@@ -289,7 +287,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.bodyLarge,
     marginBottom: spacing.sm,
   },
   emptyButton: {
@@ -297,7 +295,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   emptyButtonText: {
-    fontSize: 14,
+    ...typography.button,
   },
 });
 

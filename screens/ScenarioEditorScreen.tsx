@@ -18,7 +18,7 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { validateScenario } from '../domain/scenario/validation';
 import { getScenarios, saveScenario, setActiveScenarioId } from '../scenarioState';
 import { useTheme } from '../ui/theme/useTheme';
-import { radius } from '../ui/theme/theme';
+import { radius, typography } from '../ui/theme/theme';
 
 type RouteParams = {
   scenarioId?: ScenarioId;
@@ -322,7 +322,7 @@ export default function ScenarioEditorScreen() {
                     <Text style={[
                       styles.selectorValue,
                       { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
-                      !assetId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '500' }
+                      !assetId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
                     ]} numberOfLines={1}>
                       {assetId ? state.assets.find(a => a.id === assetId)?.name || 'Unknown asset' : 'Select asset'}
                     </Text>
@@ -345,7 +345,7 @@ export default function ScenarioEditorScreen() {
                     <Text style={[
                       styles.selectorValue,
                       { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
-                      !liabilityId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '500' }
+                      !liabilityId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
                     ]} numberOfLines={1}>
                       {liabilityId ? loanLiabilities.find(l => l.id === liabilityId)?.name || 'Unknown loan' : 'Select loan'}
                     </Text>
@@ -489,11 +489,11 @@ const styles = StyleSheet.create({
   radioCircleInner: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.base,
     // backgroundColor set inline
   },
   radioText: {
-    fontSize: 15,
+    ...typography.value,
     // color, fontWeight set inline
   },
   lockedTypeRow: {
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.inputPaddingHorizontal,
   },
   lockedTypeText: {
-    fontSize: 15,
+    ...typography.value,
     fontStyle: 'italic',
     // color set inline
   },
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     marginTop: layout.inputMarginBottom,
   },
   label: {
-    fontSize: 14,
+    ...typography.button,
     marginBottom: layout.componentGapSmall,
     // color, fontWeight set inline
   },
@@ -545,8 +545,7 @@ const styles = StyleSheet.create({
     // backgroundColor, borderColor, borderRadius set inline
   },
   previewText: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.bodyLarge,
     // color set inline
   },
   errorCard: {
@@ -560,8 +559,7 @@ const styles = StyleSheet.create({
     // color, fontSize, fontWeight set inline
   },
   errorText: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.bodyLarge,
     // color set inline
   },
   actionsRow: {
@@ -581,8 +579,8 @@ const styles = StyleSheet.create({
     // backgroundColor set inline
   },
   modalSheet: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     paddingHorizontal: layout.modalPadding,
     paddingTop: layout.modalPaddingTop,
     paddingBottom: layout.modalPaddingBottom,

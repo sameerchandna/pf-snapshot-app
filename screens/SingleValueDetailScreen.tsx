@@ -5,6 +5,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import { radius, typography } from '../ui/theme/theme';
 
 type Props = {
   title: string;
@@ -173,45 +174,42 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: spacing.base,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     marginBottom: spacing.base,
     borderWidth: 1,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '500',
+    ...typography.label,
     marginBottom: spacing.xs,
   },
   valueRow: {
     paddingVertical: spacing.sm,
   },
   value: {
-    fontSize: 22,
-    fontWeight: '600',
+    ...typography.valueLarge,
   },
   editHint: {
-    fontSize: 12,
+    ...typography.body,
     marginTop: spacing.tiny,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: radius.base,
     padding: layout.inputPadding,
-    fontSize: 18,
+    ...typography.valueLarge,
   },
   errorCard: {
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: radius.base,
     padding: layout.inputPadding,
     marginBottom: spacing.sm,
   },
   errorTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...typography.groupTitle,
     marginBottom: spacing.tiny,
   },
   errorText: {
-    fontSize: 12,
+    ...typography.body,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -222,12 +220,11 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.base,
-    borderRadius: 6,
+    borderRadius: radius.base,
     borderWidth: 1,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...typography.bodyLarge,
   },
 });
 

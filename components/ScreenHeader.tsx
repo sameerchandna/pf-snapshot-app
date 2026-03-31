@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
+import { typography } from '../ui/theme/theme';
 type Props = {
   title: string;
   totalText?: string;
@@ -39,27 +40,25 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === 'ios' ? 10 : 0,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...typography.header,
     marginBottom: spacing.tiny,
   },
   subtitle: {
-    fontSize: 12,
+    ...typography.body,
   },
   subtitleAfterTotal: {
     marginTop: spacing.sm,
   },
   subtitleFootnote: {
-    fontSize: 12,
+    ...typography.body,
     marginTop: 2,
   },
   headerTotal: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.valueLarge,
   },
   rightAccessory: {
     position: 'absolute',
-    right: 16,
+    right: spacing.xl,
     top: 18,
   },
 });

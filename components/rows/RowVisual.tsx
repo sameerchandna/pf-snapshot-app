@@ -112,9 +112,8 @@ export default function RowVisual({
             <Text
               style={[
                 styles.title,
+                theme.typography.sectionTitle,
                 {
-                  fontSize: 16,
-                  lineHeight: 20,
                   fontWeight: '400',
                   color: titleColor,
                 },
@@ -130,10 +129,8 @@ export default function RowVisual({
                   <Text
                     style={[
                       styles.trailingText,
+                      theme.typography.value,
                       {
-                        fontSize: 15,
-                        lineHeight: 19,
-                        fontWeight: '500',
                         color: trailingColor,
                       },
                     ]}
@@ -150,9 +147,8 @@ export default function RowVisual({
             <Text
               style={[
                 styles.subtitle,
+                theme.typography.valueSmall,
                 {
-                  fontSize: 14,
-                  lineHeight: 18,
                   fontWeight: '400',
                   color: subtitleColor,
                 },

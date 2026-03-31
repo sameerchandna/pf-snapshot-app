@@ -11,6 +11,7 @@ import { selectPension } from '../engines/selectors';
 import { formatCurrencyFullSigned } from '../ui/formatters';
 import { parseMoney } from '../domain/domainValidation';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography, radius } from '../ui/theme/theme';
 import Icon from '../components/Icon';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
@@ -369,11 +370,10 @@ const styles = StyleSheet.create({
   },
   selectorValue: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
   selectorPlaceholder: {
-    fontWeight: '500',
+    fontWeight: '400',
   },
   modalRoot: {
     flex: 1,
@@ -383,16 +383,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalSheet: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 18,
     maxHeight: '70%',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.sectionTitle,
     marginBottom: layout.inputPadding,
   },
   modalList: {
@@ -406,7 +405,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
 });

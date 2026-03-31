@@ -10,6 +10,7 @@ import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { parseItemName } from '../domain/domainValidation';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius, typography } from '../ui/theme/theme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -350,30 +351,30 @@ export default function AssetsDetailScreen() {
 const styles = StyleSheet.create({
   quickCreateCard: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.card,
     padding: spacing.base,
     marginBottom: spacing.base,
   },
   quickHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs },
-  quickTitle: { fontSize: 13, fontWeight: '700' },
-  quickContextTag: { fontSize: 11, fontWeight: '700' },
-  quickHint: { fontSize: 12, marginBottom: spacing.sm, lineHeight: 16 },
-  quickError: { fontSize: 12, marginBottom: spacing.sm },
+  quickTitle: { ...typography.groupTitle },
+  quickContextTag: { ...typography.bodySmall, fontWeight: '700' },
+  quickHint: { ...typography.body, marginBottom: spacing.sm },
+  quickError: { ...typography.body, marginBottom: spacing.sm },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   quickInput: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
-    fontSize: 16,
+    ...typography.input,
   },
   quickButton: {
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     borderWidth: 1,
   },
-  quickButtonText: { fontSize: 13, fontWeight: '700' },
+  quickButtonText: { ...typography.groupTitle },
 });
 

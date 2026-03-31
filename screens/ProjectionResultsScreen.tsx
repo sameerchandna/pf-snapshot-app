@@ -3460,14 +3460,14 @@ export default function ProjectionResultsScreen() {
                     {
                       paddingHorizontal: spacing.sm,
                       paddingVertical: spacing.xs,
-                      borderRadius: 4,
+                      borderRadius: theme.radius.small,
                       backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.border.subtle,
                     },
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel="Export debug JSON"
                 >
-                  <Text style={{ fontSize: 12, color: theme.colors.text.secondary }}>Export JSON</Text>
+                  <Text style={{ fontSize: theme.typography.body.fontSize, color: theme.colors.text.secondary }}>Export JSON</Text>
                 </Pressable>
               ) : undefined
             }
@@ -3736,7 +3736,7 @@ export default function ProjectionResultsScreen() {
                   tickLabelComponent={<VictoryLabel dy={6} />}
                   style={{
                     axis: { stroke: chartPalette.axis },
-                    tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
+                    tickLabels: { fontSize: theme.typography.bodySmall.fontSize, fill: chartPalette.tickLabels },
                     grid: { stroke: 'transparent' }, // Phase 7.11: Remove horizontal gridlines
                   }}
                 />
@@ -3746,7 +3746,7 @@ export default function ProjectionResultsScreen() {
                   tickFormat={t => formatCurrencyCompact(Number(t))}
                   style={{
                     axis: { stroke: chartPalette.axis },
-                    tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: chartPalette.tickLabels },
                     grid: { stroke: 'transparent' }, // Phase 7.11: Remove vertical gridlines
                   }}
                 />
@@ -4588,25 +4588,22 @@ function makeStyles(theme: Theme) {
     toolbarPill: {
       height: 28,
       paddingHorizontal: layout.inputPadding,
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       justifyContent: 'center',
       alignItems: 'center',
     },
     pillText: {
-      fontSize: 12,
-      fontWeight: '600',
+      ...theme.typography.label,
     },
     scenarioStatus: {
       marginRight: spacing.base,
     },
     scenarioPrimary: {
-      fontSize: 12,
-      fontWeight: '600',
+      ...theme.typography.label,
     },
     scenarioSecondary: {
       marginTop: layout.micro,
-      fontSize: 11,
-      fontWeight: '500',
+      ...theme.typography.bodySmall,
     },
     scenarioSelector: {
       height: 28,
@@ -4614,33 +4611,31 @@ function makeStyles(theme: Theme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.tiny,
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
     },
     scenarioSelectorText: {
-      fontSize: 12,
-      fontWeight: '600',
+      ...theme.typography.label,
     },
     scenarioSelectorChevron: {
-      fontSize: 10,
+      ...theme.typography.caption,
     },
     agePill: {
       height: 28,
       paddingHorizontal: spacing.base,
-      borderRadius: 14,
+      borderRadius: theme.radius.pill,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
     },
     agePillText: {
-      fontSize: 12,
-      fontWeight: '500',
+      ...theme.typography.label,
     },
     ageChevron: {
       marginLeft: spacing.xs,
-      fontSize: 10,
+      ...theme.typography.caption,
     },
     iconText: {
-      fontSize: 14,
+      ...theme.typography.bodyLarge,
     },
     settingsIcon: {
       opacity: 0.6,
@@ -4668,7 +4663,7 @@ function makeStyles(theme: Theme) {
       gap: spacing.tiny,
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.sm,
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       minHeight: 32,
       flexShrink: 1,
       minWidth: 0,
@@ -4682,7 +4677,7 @@ function makeStyles(theme: Theme) {
       minWidth: 60,
     },
     toolbarButtonText: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.primary,
       flexShrink: 1,
@@ -4693,7 +4688,7 @@ function makeStyles(theme: Theme) {
       height: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       flexShrink: 0,
     },
     quickWhatIfContainer: {
@@ -4706,13 +4701,13 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.colors.border.subtle,
     },
     quickWhatIfHint: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontStyle: 'italic',
       color: theme.colors.text.muted,
       marginBottom: spacing.sm,
     },
     quickWhatIfHintAmount: {
-      fontWeight: '500',
+      fontWeight: '600',
     },
     quickRow: {
       flexDirection: 'row',
@@ -4722,13 +4717,13 @@ function makeStyles(theme: Theme) {
     },
     quickLabel: {
       width: 96,
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.subtle,
     },
     quickWhatIfSelector: {
       borderWidth: 1,
       borderColor: theme.colors.border.subtle,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.base,
       minHeight: 40,
@@ -4741,28 +4736,25 @@ function makeStyles(theme: Theme) {
     },
     quickWhatIfSelectorValue: {
       flex: 1,
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
     },
     quickWhatIfPlaceholder: {
-      fontWeight: '500',
+      fontWeight: '600',
       color: theme.colors.text.subtle,
     },
     quickWhatIfHelper: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontStyle: 'italic',
       color: theme.colors.text.muted,
-      fontWeight: '400',
     },
     quickWhatIfAmountInput: {
       borderWidth: 1,
       borderColor: theme.colors.border.subtle,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.base,
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
       minHeight: 40,
     },
@@ -4770,22 +4762,20 @@ function makeStyles(theme: Theme) {
       borderWidth: 1.5,
     },
     quickWhatIfAvailableCash: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontStyle: 'italic',
       color: theme.colors.text.muted,
-      fontWeight: '400',
     },
     quickWhatIfAvailableCashAmount: {
-      fontWeight: '500',
+      fontWeight: '600',
     },
     quickWhatIfError: {
-      fontSize: 12,
-      lineHeight: 16,
+      ...theme.typography.label,
       marginTop: spacing.tiny,
     },
     clearScenarioText: {
       marginTop: spacing.sm,
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.disabled,
       textDecorationLine: 'underline',
     },
@@ -4798,7 +4788,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: 2,
     },
     educationText: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.secondary,
       lineHeight: 18,
     },
@@ -4819,21 +4809,20 @@ function makeStyles(theme: Theme) {
       minWidth: 96,
       height: 22,
       paddingHorizontal: layout.inputPadding,
-      borderRadius: 11,
+      borderRadius: theme.radius.large,
       justifyContent: 'center',
       alignItems: 'center',
     },
     chartMiniToggleActive: {},
     chartMiniToggleText: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.muted,
-      fontWeight: '500',
     },
     chartMiniToggleTextActive: {
       fontWeight: '600',
     },
     toggleCard: {
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.base,
       flexDirection: 'row',
@@ -4848,15 +4837,14 @@ function makeStyles(theme: Theme) {
       flex: 1,
     },
     toggleLabel: {
-      fontSize: 14,
-      fontWeight: '500',
+      ...theme.typography.bodyLarge,
+      fontWeight: '600',
       color: theme.colors.text.primary,
       marginBottom: spacing.tiny,
     },
     toggleHelper: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.muted,
-      lineHeight: 16,
     },
     chartCard: {
       overflow: 'visible',
@@ -4883,15 +4871,13 @@ function makeStyles(theme: Theme) {
     legendSwatch: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: theme.radius.small,
     },
     legendText: {
-      fontSize: 12,
-      fontWeight: '500',
+      ...theme.typography.label,
     },
     legendTextMuted: {
-      fontSize: 11,
-      fontWeight: '400',
+      ...theme.typography.bodySmall,
     },
     valueBar: {
       flexDirection: 'column',
@@ -4906,8 +4892,8 @@ function makeStyles(theme: Theme) {
       gap: spacing.base,
     },
     valueBarRowLabel: {
-      fontSize: 11,
-      fontWeight: '500',
+      ...theme.typography.bodySmall,
+      fontWeight: '600',
       marginRight: spacing.xs,
     },
     valueBarItem: {
@@ -4918,18 +4904,16 @@ function makeStyles(theme: Theme) {
     valueBarDot: {
       width: 8,
       height: 8,
-      borderRadius: 4,
+      borderRadius: theme.radius.small,
     },
     valueBarLabel: {
-      fontSize: 12,
-      fontWeight: '400',
+      ...theme.typography.body,
     },
     valueBarValue: {
-      fontSize: 12,
+      ...theme.typography.body,
     },
     insightText: {
-      fontSize: 11.5,
-      lineHeight: 16,
+      ...theme.typography.bodySmall,
       marginTop: spacing.xs,
       marginBottom: 0,
       textAlign: 'center',
@@ -4938,7 +4922,7 @@ function makeStyles(theme: Theme) {
     chartValuesCard: {
       position: 'absolute',
       padding: spacing.sm,
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       borderWidth: 1,
       minWidth: 140,
       zIndex: 10,
@@ -4947,36 +4931,34 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.xs,
     },
     chartValuesPrimaryLabel: {
-      fontSize: 10,
-      fontWeight: '500',
+      ...theme.typography.caption,
+      fontWeight: '600',
       marginBottom: layout.micro,
     },
     chartValuesPrimaryValue: {
-      fontSize: 16,
+      ...theme.typography.sectionTitle,
       fontWeight: '700',
     },
     chartValuesSecondary: {
       gap: layout.micro,
     },
     chartValuesSecondaryText: {
-      fontSize: 11,
-      fontWeight: '400',
+      ...theme.typography.bodySmall,
     },
     outcomeSubtitle: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
       marginBottom: layout.inputPadding,
     },
     outcomeSummary: {
-      fontSize: 14,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.tertiary,
-      lineHeight: 20,
       marginTop: spacing.base,
     },
     ageSelector: {
       borderWidth: 1,
       borderColor: theme.colors.border.subtle,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       paddingVertical: layout.inputPadding,
       paddingHorizontal: spacing.base,
       marginTop: layout.inputPadding,
@@ -4989,18 +4971,17 @@ function makeStyles(theme: Theme) {
       gap: layout.inputPadding,
     },
     ageSelectorLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
     },
     ageSelectorValue: {
       flex: 1,
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
       textAlign: 'right',
     },
     ageSelectorControlRow: {
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.base,
       marginTop: layout.md,
@@ -5009,8 +4990,8 @@ function makeStyles(theme: Theme) {
       gap: spacing.sm,
     },
     ageSelectorControlLabel: {
-      fontSize: 14,
-      fontWeight: '500',
+      ...theme.typography.bodyLarge,
+      fontWeight: '600',
       color: theme.colors.text.primary,
     },
     ageSelectorControlButton: {
@@ -5019,20 +5000,18 @@ function makeStyles(theme: Theme) {
       gap: spacing.xs,
     },
     ageSelectorControlValue: {
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
     },
     keyDriversCard: {
       borderWidth: 1,
       borderColor: theme.colors.border.default,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       padding: layout.inputPadding,
       marginBottom: spacing.tiny,
     },
     keyDriversTitle: {
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
       marginBottom: spacing.xs,
     },
@@ -5047,11 +5026,11 @@ function makeStyles(theme: Theme) {
     },
     keyDriversLabel: {
       flex: 1,
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.tertiary,
     },
     keyDriversValue: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.primary,
       textAlign: 'right',
@@ -5062,13 +5041,13 @@ function makeStyles(theme: Theme) {
       alignItems: 'flex-start',
     },
     keyDriversValueScenario: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       textAlign: 'right',
       minWidth: 70,
     },
     keyDriversValueDelta: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
@@ -5077,26 +5056,24 @@ function makeStyles(theme: Theme) {
     attrCard: {
       borderWidth: 1,
       borderColor: theme.colors.border.subtle,
-      borderRadius: 12,
+      borderRadius: theme.radius.large,
       padding: spacing.base,
     },
     breakdownGroupContainer: {
       marginTop: spacing.base,
     },
     attrTitle: {
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
       marginBottom: spacing.xs,
     },
     attrSubtitle: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.secondary,
       marginBottom: spacing.sm,
-      lineHeight: 16,
     },
     attrEducation: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.muted,
       marginBottom: layout.inputPadding,
       lineHeight: 16,
@@ -5112,11 +5089,11 @@ function makeStyles(theme: Theme) {
     },
     attrLabel: {
       flex: 1,
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.tertiary,
     },
     attrValue: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.primary,
       textAlign: 'right',
@@ -5135,21 +5112,21 @@ function makeStyles(theme: Theme) {
       flex: 1,
     },
     attrHeaderLabel: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
       minWidth: 70,
     },
     attrHeaderLabelScenario: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.brand.primary,
       textAlign: 'right',
       minWidth: 70,
     },
     attrHeaderLabelDelta: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
@@ -5161,34 +5138,34 @@ function makeStyles(theme: Theme) {
       alignItems: 'flex-start',
     },
     attrValueScenario: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       textAlign: 'right',
       minWidth: 70,
     },
     attrValueDelta: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
       minWidth: 60,
     },
     attrValueScenarioUnchanged: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
       minWidth: 70,
     },
     keyDriversValueScenarioUnchanged: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
       minWidth: 70,
     },
     scenarioResultSummary: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.brand.primary,
       marginBottom: spacing.sm,
@@ -5205,21 +5182,21 @@ function makeStyles(theme: Theme) {
       flex: 1,
     },
     keyDriversHeaderLabel: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
       minWidth: 70,
     },
     keyDriversHeaderLabelScenario: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.brand.primary,
       textAlign: 'right',
       minWidth: 70,
     },
     keyDriversHeaderLabelDelta: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.muted,
       textAlign: 'right',
@@ -5230,7 +5207,7 @@ function makeStyles(theme: Theme) {
       paddingTop: spacing.base,
     },
     endNetWorthLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.primary,
       marginBottom: spacing.xs,
@@ -5242,20 +5219,20 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.tiny,
     },
     endNetWorthBaselineLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
     },
     endNetWorthBaselineValue: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.primary,
     },
     endNetWorthScenarioLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
     },
     endNetWorthScenarioValue: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.brand.primary,
     },
@@ -5281,7 +5258,7 @@ function makeStyles(theme: Theme) {
       maxHeight: '70%',
     },
     modalTitle: {
-      fontSize: 16,
+      ...theme.typography.sectionTitle,
       fontWeight: '700',
       color: theme.colors.text.primary,
       marginBottom: layout.inputPadding,
@@ -5298,14 +5275,13 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.colors.border.subtle,
     },
     modalOptionText: {
-      fontSize: 14,
+      ...theme.typography.valueSmall,
       color: theme.colors.text.primary,
-      fontWeight: '600',
     },
     modalOptionTextSecondary: {
-      fontSize: 14,
+      ...theme.typography.bodyLarge,
+      fontWeight: '600',
       color: theme.colors.text.secondary,
-      fontWeight: '500',
     },
     modalDivider: {
       height: 1,
@@ -5316,18 +5292,17 @@ function makeStyles(theme: Theme) {
       gap: layout.micro,
     },
     modalOptionMetadata: {
-      fontSize: 12,
+      ...theme.typography.body,
       color: theme.colors.text.subtle,
-      fontWeight: '400',
     },
     modalEmptyText: {
-      fontSize: 14,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.subtle,
       fontStyle: 'italic',
       paddingVertical: spacing.base,
     },
     modalOptionSubtext: {
-      fontSize: 12,
+      ...theme.typography.body,
       color: theme.colors.text.subtle,
       marginTop: layout.micro,
     },
@@ -5342,14 +5317,12 @@ function makeStyles(theme: Theme) {
       color: theme.colors.text.muted,
     },
     projectedMainSubtitle: {
-      fontSize: 13,
-      fontWeight: '400',
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
       lineHeight: 17,
     },
     projectedSubHeading: {
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
       color: theme.colors.text.muted,
       marginBottom: spacing.base,
     },
@@ -5397,9 +5370,8 @@ function makeStyles(theme: Theme) {
       justifyContent: 'center',
     },
     cashflowChevron: {
-      fontSize: 12,
+      ...theme.typography.body,
       color: theme.colors.border.default,
-      fontWeight: '400',
     },
     cashflowEndSpacer: {
       height: 12,
@@ -5453,37 +5425,36 @@ function makeStyles(theme: Theme) {
     projectedCard: {
       padding: spacing.sm,
       marginBottom: 0,
-      borderRadius: 24,
+      borderRadius: theme.radius.pill,
       borderWidth: 0.5,
       borderColor: theme.colors.border.default,
     },
     projectedCardMinimal: {
       padding: spacing.sm,
       marginBottom: 0,
-      borderRadius: 24,
+      borderRadius: theme.radius.pill,
     },
     projectedCardBordered: {
       padding: spacing.sm,
       marginBottom: 0,
-      borderRadius: 24,
+      borderRadius: theme.radius.pill,
       borderWidth: 0.5,
       borderColor: theme.colors.border.default,
     },
     projectedCardTitle: {
-      fontSize: 12,
-      fontWeight: '500',
+      ...theme.typography.label,
+      fontWeight: '600',
       marginBottom: 1,
       color: theme.colors.text.tertiary,
     },
     projectedSubCardTitle: {
-      fontSize: 12,
-      fontWeight: '500',
+      ...theme.typography.label,
+      fontWeight: '600',
       marginBottom: 1,
       color: theme.colors.text.muted,
     },
     projectedPrimaryValue: {
-      fontSize: 16,
-      fontWeight: '600',
+      ...theme.typography.sectionTitle,
       marginBottom: 0,
       color: theme.colors.text.primary,
     },
@@ -5492,13 +5463,12 @@ function makeStyles(theme: Theme) {
       color: theme.colors.text.muted,
     },
     projectedSubtext: {
-      fontSize: 10,
-      fontWeight: '400',
+      ...theme.typography.caption,
       color: theme.colors.text.muted,
       marginTop: layout.micro,
     },
     projectedDelta: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontWeight: '600',
       color: theme.colors.text.muted,
       marginTop: spacing.tiny,
@@ -5544,7 +5514,7 @@ function makeStyles(theme: Theme) {
       marginVertical: 4,
     },
     dot: {
-      fontSize: 10,
+      ...theme.typography.caption,
       color: theme.colors.border.default,
     },
     projectedBalanceSheetRow: {
@@ -5558,14 +5528,13 @@ function makeStyles(theme: Theme) {
       flex: 1,
       minHeight: 80,
       padding: spacing.sm,
-      borderRadius: 24,
+      borderRadius: theme.radius.pill,
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
     projectedBalanceSheetOperator: {
-      fontSize: 14,
-      fontWeight: '400',
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.disabled,
       marginHorizontal: 2,
     },
@@ -5574,19 +5543,19 @@ function makeStyles(theme: Theme) {
       marginTop: spacing.sm,
     },
     scenarioImpactBlock: {
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       padding: layout.md,
       borderWidth: 1,
       borderColor: theme.colors.border.default,
     },
     scenarioImpactBlockTitle: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       fontWeight: '600',
       color: theme.colors.text.tertiary,
       marginBottom: spacing.xs,
     },
     scenarioImpactBlockValue: {
-      fontSize: 18,
+      ...theme.typography.valueLarge,
       fontWeight: '700',
       marginBottom: spacing.xs,
     },
@@ -5595,9 +5564,8 @@ function makeStyles(theme: Theme) {
       color: theme.colors.text.muted,
     },
     scenarioImpactBlockSubline: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.muted,
-      lineHeight: 16,
     },
     scenarioImpactBalanceSheetRows: {
       gap: spacing.xs,
@@ -5609,12 +5577,11 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
     },
     scenarioImpactBalanceSheetLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.muted,
     },
     scenarioImpactBalanceSheetValue: {
-      fontSize: 14,
-      fontWeight: '600',
+      ...theme.typography.valueSmall,
     },
     projectedSnapshotMuted: {
       opacity: 0.7,
@@ -5629,8 +5596,7 @@ function makeStyles(theme: Theme) {
       marginTop: layout.md,
     },
     bodyText: {
-      fontSize: 13,
-      fontWeight: snapshotTypography.bodyWeight,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.secondary,
       marginBottom: spacing.xs,
       lineHeight: 18,
@@ -5649,8 +5615,8 @@ function makeStyles(theme: Theme) {
       zIndex: 1,
     },
     snapshotCardTitle: {
-      fontSize: snapshotTypography.cardTitleSize,
-      fontWeight: snapshotTypography.cardTitleWeight,
+      ...theme.typography.bodyLarge,
+      fontWeight: '600',
       marginBottom: 1,
       color: theme.colors.text.primary,
     },
@@ -5661,22 +5627,19 @@ function makeStyles(theme: Theme) {
       color: theme.colors.text.secondary,
     },
     snapshotPrimaryValue: {
-      fontSize: snapshotTypography.primaryValueSize,
-      fontWeight: snapshotTypography.primaryValueWeight,
+      ...theme.typography.value,
       marginBottom: 1,
       color: theme.colors.text.primary,
     },
     snapshotPrimaryValueOutcome: {},
     snapshotPrimaryValueScenario: {},
     snapshotCardDescription: {
-      fontSize: snapshotTypography.bodySize,
-      fontWeight: snapshotTypography.bodyWeight,
+      ...theme.typography.body,
       color: theme.colors.text.muted,
       marginTop: 1,
     },
     snapshotDeltaValue: {
-      fontSize: snapshotTypography.bodySize,
-      fontWeight: snapshotTypography.bodyWeight,
+      ...theme.typography.body,
       color: theme.colors.text.muted,
       marginTop: 1,
     },
@@ -5700,7 +5663,7 @@ function makeStyles(theme: Theme) {
       marginTop: 2,
     },
     chartHelperText: {
-      fontSize: 12,
+      ...theme.typography.label,
       color: theme.colors.text.muted,
       textAlign: 'center',
       marginTop: spacing.xs,
@@ -5711,26 +5674,26 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.xs,
     },
     reconciliationToggle: {
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       paddingVertical: spacing.xs,
       paddingHorizontal: layout.inputPadding,
       borderWidth: 1,
       borderColor: theme.colors.border.default,
     },
     reconciliationToggleText: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       color: theme.colors.text.muted,
       fontFamily: 'monospace',
     },
     reconciliationPanel: {
       borderWidth: 1,
       borderColor: theme.colors.border.subtle,
-      borderRadius: 6,
+      borderRadius: theme.radius.base,
       padding: layout.inputPadding,
       marginTop: spacing.sm,
     },
     reconciliationTitle: {
-      fontSize: 12,
+      ...theme.typography.label,
       fontWeight: '600',
       color: theme.colors.text.tertiary,
       marginBottom: spacing.sm,
@@ -5743,13 +5706,13 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.tiny,
     },
     reconciliationLabel: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       color: theme.colors.text.muted,
       fontFamily: 'monospace',
       flex: 1,
     },
     reconciliationValue: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       color: theme.colors.text.primary,
       fontFamily: 'monospace',
       fontWeight: '600',
@@ -5759,33 +5722,32 @@ function makeStyles(theme: Theme) {
     reconciliationFail: {},
     reconciliationWarning: {
       borderWidth: 1,
-      borderRadius: 4,
+      borderRadius: theme.radius.small,
       padding: spacing.sm,
       marginTop: spacing.sm,
     },
     reconciliationWarningText: {
-      fontSize: 11,
+      ...theme.typography.bodySmall,
       fontFamily: 'monospace',
     },
     warningBanner: {
       marginTop: layout.sectionGap,
       marginHorizontal: layout.screenPadding,
       padding: layout.blockPadding,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       borderWidth: 1,
     },
     warningBannerText: {
-      fontSize: 14,
-      lineHeight: 20,
+      ...theme.typography.bodyLarge,
     },
     modalWarningBanner: {
       marginBottom: spacing.base,
       padding: layout.blockPadding,
-      borderRadius: 8,
+      borderRadius: theme.radius.medium,
       borderWidth: 1,
     },
     modalWarningBannerText: {
-      fontSize: 13,
+      ...theme.typography.bodyLarge,
       lineHeight: 18,
     },
   });

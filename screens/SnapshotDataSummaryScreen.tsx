@@ -15,6 +15,7 @@ import { serializeDebugState } from '../debug/serializeDebugState';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import { typography } from '../ui/theme/theme';
 
 function formatLiquidity(asset: AssetItem): string {
   if (!asset.availability) return 'immediate';
@@ -403,16 +404,14 @@ const styles = StyleSheet.create({
     // backgroundColor moved to inline style with theme.colors.bg.subtle
   },
   sectionHeader: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...typography.valueSmall,
     // color moved to inline style with theme.colors.text.primary
     marginBottom: layout.inputPadding,
   },
   monoText: {
-    fontSize: 12,
+    ...typography.body,
     fontFamily: 'monospace',
     // color moved to inline style with theme.colors.text.tertiary
-    lineHeight: 18,
     marginBottom: 2,
   },
   assetBlock: {
@@ -436,8 +435,7 @@ const styles = StyleSheet.create({
     // borderColor moved to inline style with theme.colors.border.default
   },
   copyButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.valueSmall,
     // color moved to inline style with theme.colors.text.tertiary
   },
   feedbackContainer: {
@@ -448,8 +446,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     // color moved to inline style with theme.colors.semantic.successText
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.valueSmall,
   },
   debugButton: {
     // backgroundColor moved to inline style with theme.colors.semantic.warningBg

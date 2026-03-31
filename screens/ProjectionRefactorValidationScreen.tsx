@@ -22,6 +22,7 @@ import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
+import { radius } from '../ui/theme/theme';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     borderWidth: 1,
     // borderColor moved to inline style
-    borderRadius: 8,
+    borderRadius: radius.medium,
     padding: spacing.base,
     // backgroundColor moved to inline style
   },

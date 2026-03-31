@@ -109,7 +109,7 @@ export default function RowActionIcon({
       style={{
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: theme.radius.large,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'transparent',

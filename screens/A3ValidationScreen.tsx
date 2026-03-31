@@ -8,6 +8,7 @@ import { useSnapshot } from '../context/SnapshotContext';
 import { computeProjectionSeries, computeProjectionSummary } from '../engines/projectionEngine';
 import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
+import { radius } from '../ui/theme/theme';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { ATTRIBUTION_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../engines/selectors';
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     borderWidth: 1,
     // borderColor moved to inline style
-    borderRadius: 8,
+    borderRadius: radius.medium,
     padding: spacing.base,
     // backgroundColor moved to inline style
   },

@@ -5,6 +5,7 @@ import { layout } from '../ui/layout';
 import type { AssetItem } from '../types';
 import { formatCurrencyFull } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius, typography } from '../ui/theme/theme';
 import Icon from './Icon';
 
 type Props = {
@@ -326,14 +327,14 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
 const styles = StyleSheet.create({
   pill: {
     width: '100%',
-    borderRadius: 12,
+    borderRadius: radius.large,
     padding: spacing.sm,
   },
   whatIfPill: {
     marginTop: spacing.xs,
   },
   whatIfButton: {
-    borderRadius: 8,
+    borderRadius: radius.medium,
   },
   row: {
     flexDirection: 'row',
@@ -353,17 +354,16 @@ const styles = StyleSheet.create({
   activeDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.small,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...typography.button,
   },
   subtitle: {
-    fontSize: 12,
+    ...typography.body,
   },
   triangle: {
-    fontSize: 12,
+    ...typography.body,
   },
   expandedContent: {
     marginTop: spacing.sm,
@@ -377,13 +377,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   fieldLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...typography.label,
     marginBottom: spacing.xs,
   },
   selector: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
   },
@@ -395,23 +394,21 @@ const styles = StyleSheet.create({
   },
   selectorValue: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.valueSmall,
   },
   selectorPlaceholder: {
-    fontWeight: '500',
+    fontWeight: '400',
   },
   availableCashText: {
-    fontSize: 11,
+    ...typography.bodySmall,
     fontStyle: 'italic',
     marginTop: spacing.xs,
   },
   amountInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     padding: layout.inputPadding,
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.valueSmall,
   },
   amountInputError: {
     borderWidth: 1.5,
@@ -420,14 +417,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   validationErrorText: {
-    fontSize: 12,
-    lineHeight: 16,
+    ...typography.body,
   },
   helperTextContainer: {
     marginTop: spacing.xs,
   },
   helperText: {
-    fontSize: 11,
+    ...typography.bodySmall,
     fontStyle: 'italic',
     marginTop: spacing.xs,
   },
@@ -437,8 +433,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   clearButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.valueSmall,
     textAlign: 'left',
   },
   modalRoot: {
@@ -449,16 +444,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalSheet: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 18,
     maxHeight: '70%',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.sectionTitle,
     marginBottom: layout.inputPadding,
   },
   modalList: {
@@ -476,15 +470,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   modalOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.valueSmall,
   },
   modalOptionMetadata: {
-    fontSize: 12,
-    fontWeight: '400',
+    ...typography.body,
   },
   modalEmptyText: {
-    fontSize: 14,
+    ...typography.bodyLarge,
     fontStyle: 'italic',
     paddingVertical: spacing.base,
   },

@@ -8,6 +8,7 @@ import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography, radius } from '../ui/theme/theme';
 
 const otherDeductionsHelpContent: HelpContent = {
   title: 'Other Deductions',
@@ -95,25 +96,23 @@ export default function DeductionsDetailScreen() {
 const styles = StyleSheet.create({
   block: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.medium,
     padding: spacing.base,
     marginBottom: layout.inputPadding,
   },
   blockTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...typography.label,
     marginBottom: spacing.xs,
   },
   text: {
-    fontSize: 14,
+    ...typography.bodyLarge,
     marginBottom: layout.micro,
   },
   result: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...typography.valueLarge,
   },
   caption: {
-    fontSize: 12,
+    ...typography.body,
     marginTop: spacing.tiny,
   },
 });

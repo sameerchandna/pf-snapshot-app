@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import { typography, radius } from '../ui/theme/theme';
 import Icon, { type IconName } from './Icon';
 import IconButton from './IconButton';
 
@@ -259,15 +260,14 @@ const styles = StyleSheet.create({
   pillButton: {
     height: 28,
     paddingHorizontal: spacing.base,
-    borderRadius: 14,
+    borderRadius: radius.modal,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
   },
   pillButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    ...typography.body,
   },
   pillButtonTextActive: {
     fontWeight: '600',
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   pillChevron: {
-    fontSize: 10,
+    ...typography.caption,
     marginLeft: spacing.tiny,
   },
   itemButton: {
@@ -293,13 +293,11 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
   },
   itemButtonTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
     marginBottom: 2,
   },
   itemButtonSubtitle: {
-    fontSize: 11,
-    fontWeight: '400',
+    ...typography.bodySmall,
   },
   itemButtonChevron: {
     marginLeft: spacing.xs,

@@ -22,6 +22,7 @@ import { getActiveScenario, getScenarios, getActiveScenarioId } from '../scenari
 import { ATTRIBUTION_TOLERANCE } from '../constants';
 import { formatCurrencyFull, formatCurrencyCompact, formatPercent } from '../ui/formatters';
 import type { Theme } from '../ui/theme/theme';
+import { radius, typography } from '../ui/theme/theme';
 import { generateSavingsInsights, generateMortgageInsights, type BalanceInsight } from '../engines/balanceInsights';
 import SavingsEducationOverlay from '../components/SavingsEducationOverlay';
 import MortgageEducationOverlay from '../components/MortgageEducationOverlay';
@@ -1040,7 +1041,7 @@ export default function BalanceDeepDiveScreen() {
               <View style={styles.valueBarRow}>
                 <View style={styles.valueBarItem}>
                   <Text style={[styles.valueBarLabel, styles.valueBarLabelLarge, { color: theme.colors.text.muted }]}>Total balance</Text>
-                  <Text style={[styles.valueBarValue, styles.valueBarValueLarge, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                  <Text style={[styles.valueBarValue, styles.valueBarValueLarge, { color: theme.colors.text.primary }]}>
                     {formatCurrencyCompact(savingsBreakdown.headline)}
                   </Text>
                 </View>
@@ -1053,7 +1054,7 @@ export default function BalanceDeepDiveScreen() {
                   <View style={[styles.valueBarDot, { backgroundColor: chartPalette.contributions, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Contributions</Text>
                   <View style={styles.valueBarValueContainer}>
-                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary }]}>
                       {formatCurrencyCompact(savingsBreakdown.rows[1].value)}
                     </Text>
                     {savingsBreakdown.rows[1].percent && savingsBreakdown.rows[1].percent !== '—' && (
@@ -1069,7 +1070,7 @@ export default function BalanceDeepDiveScreen() {
                   <View style={[styles.valueBarDot, { backgroundColor: chartPalette.growth, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Growth</Text>
                   <View style={styles.valueBarValueContainer}>
-                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                    <Text style={[styles.valueBarValue, { color: theme.colors.text.primary }]}>
                       {formatCurrencyCompact(savingsBreakdown.rows[2].value)}
                     </Text>
                     {savingsBreakdown.rows[2].percent && savingsBreakdown.rows[2].percent !== '—' && (
@@ -1122,7 +1123,7 @@ export default function BalanceDeepDiveScreen() {
               <View style={styles.valueBarRow}>
                 <View style={styles.valueBarItem}>
                   <Text style={[styles.valueBarLabel, styles.valueBarLabelLarge, { color: theme.colors.text.muted }]}>Remaining balance</Text>
-                  <Text style={[styles.valueBarValue, styles.valueBarValueLarge, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                  <Text style={[styles.valueBarValue, styles.valueBarValueLarge, { color: theme.colors.text.primary }]}>
                     {formatCurrencyCompact(mortgageBreakdown.headline)}
                   </Text>
                 </View>
@@ -1134,7 +1135,7 @@ export default function BalanceDeepDiveScreen() {
                 <View style={styles.valueBarItem}>
                   <View style={[styles.valueBarDot, { backgroundColor: chartPalette.principal, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Principal paid</Text>
-                  <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                  <Text style={[styles.valueBarValue, { color: theme.colors.text.primary }]}>
                     {formatCurrencyCompact(mortgageBreakdown.rows[1].value)}
                   </Text>
                 </View>
@@ -1143,7 +1144,7 @@ export default function BalanceDeepDiveScreen() {
                 <View style={styles.valueBarItem}>
                   <View style={[styles.valueBarDot, { backgroundColor: chartPalette.interest, borderRadius: theme.radius.small }]} />
                   <Text style={[styles.valueBarLabel, { color: theme.colors.text.muted }]}>Interest paid</Text>
-                  <Text style={[styles.valueBarValue, { color: theme.colors.text.primary, fontWeight: '600' }]}>
+                  <Text style={[styles.valueBarValue, { color: theme.colors.text.primary }]}>
                     {formatCurrencyCompact(mortgageBreakdown.rows[2].value)}
                   </Text>
                 </View>
@@ -1338,7 +1339,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: {
-    fontSize: 12,
+    ...typography.body,
     textAlign: 'center',
   },
   modalBackdrop: {
@@ -1346,8 +1347,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     maxHeight: '80%',
   },
   modalHeader: {
@@ -1359,8 +1360,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.valueLarge,
   },
   modalList: {
     maxHeight: 400,
@@ -1376,8 +1376,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalSheet: {
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
     paddingHorizontal: layout.screenPadding,
     paddingTop: 14,
     paddingBottom: 18,
@@ -1388,8 +1388,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
   modalItem: {
     flexDirection: 'row',
@@ -1400,12 +1399,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalItemText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...typography.valueSmall,
     flex: 1,
   },
   modalItemType: {
-    fontSize: 12,
+    ...typography.body,
     marginLeft: spacing.sm,
   },
   chartContainer: {
@@ -1419,9 +1417,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 12,
+    ...typography.label,
     textAlign: 'center',
-    fontWeight: '500',
   },
   // Compact values card (matches ProjectionResultsScreen pattern)
   valueBar: {
@@ -1447,24 +1444,23 @@ const styles = StyleSheet.create({
     // borderRadius applied inline with theme.radius.small
   },
   valueBarLabel: {
-    fontSize: 12,
-    fontWeight: '400',
+    ...typography.body,
   },
   valueBarLabelLarge: {
-    fontSize: 14,
+    ...typography.bodyLarge,
   },
   valueBarValue: {
-    fontSize: 12,
+    ...typography.label,
   },
   valueBarValueLarge: {
-    fontSize: 14,
+    ...typography.valueSmall,
   },
   valueBarValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   valueBarPercent: {
-    fontSize: 12,
+    ...typography.body,
   },
   // Balance insights styles (matching ProjectionResultsScreen pattern)
   insightsDivider: {
@@ -1490,8 +1486,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   insightText: {
-    fontSize: 11.5,
-    lineHeight: 16,
+    ...typography.bodySmall,
     textAlign: 'center',
   },
   // Phase 5.8: Educational overlay styles

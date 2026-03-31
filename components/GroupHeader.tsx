@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography } from '../ui/theme/theme';
 
 type Props = {
   title: string;
@@ -30,7 +31,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 13,
+    ...typography.bodyMedium,
     fontWeight: '600',
     letterSpacing: 0.4,
   },

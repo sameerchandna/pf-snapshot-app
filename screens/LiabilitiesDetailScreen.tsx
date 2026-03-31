@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { formatCurrencyFull } from '../ui/formatters';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
+import { radius, typography } from '../ui/theme/theme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -270,17 +271,17 @@ const styles = StyleSheet.create({
   templateCard: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.card,
     paddingVertical: spacing.base,
     paddingHorizontal: spacing.base,
   },
   templateTitle: {
-    fontSize: 14,
+    ...typography.button,
     fontWeight: '700',
     marginBottom: spacing.tiny,
   },
   templateSub: {
-    fontSize: 12,
+    ...typography.body,
   },
 });
 

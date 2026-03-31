@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography } from '../ui/theme/theme';
 
 type Props = {
   title: string;
@@ -34,8 +35,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.sectionTitleBottom, // 4 - matches SnapshotScreen pattern
   },
   sectionSubtext: {
-    fontSize: 12,
-    fontWeight: '400',
+    ...typography.body,
     marginBottom: layout.sectionSubtextBottom, // 12 - matches SnapshotScreen pattern
   },
 });

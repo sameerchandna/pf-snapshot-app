@@ -81,7 +81,7 @@ export default function LoanDetailScreen() {
       borderColor: theme.colors.border.default,
     },
     doneButtonText: {
-      fontSize: 13,
+      ...theme.typography.bodyMedium,
       fontWeight: '600' as const,
       color: theme.colors.text.tertiary,
     },
@@ -94,13 +94,13 @@ export default function LoanDetailScreen() {
       marginBottom: spacing.base,
     },
     errorTitle: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       fontWeight: '700' as const,
       color: theme.colors.semantic.errorText,
       marginBottom: spacing.tiny,
     },
     errorText: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       color: theme.colors.semantic.errorText,
     },
     card: {
@@ -112,7 +112,7 @@ export default function LoanDetailScreen() {
       marginBottom: spacing.base,
     },
     label: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       fontWeight: '600' as const,
       color: theme.colors.text.tertiary,
       marginBottom: spacing.xs,
@@ -127,7 +127,7 @@ export default function LoanDetailScreen() {
       borderRadius: theme.radius.medium,
       paddingVertical: layout.inputPadding,
       paddingHorizontal: spacing.base,
-      fontSize: 16,
+      ...theme.typography.input,
       color: theme.colors.text.primary,
     },
     actionsRow: {
@@ -144,7 +144,7 @@ export default function LoanDetailScreen() {
       paddingHorizontal: layout.lg,
     },
     actionButtonText: {
-      fontSize: theme.typography.button.fontSize,
+      ...theme.typography.button,
       fontWeight: '600' as const,
       color: theme.colors.text.tertiary,
     },
@@ -154,25 +154,23 @@ export default function LoanDetailScreen() {
       marginBottom: spacing.xs,
     },
     readLabel: {
-      fontSize: 13,
+      ...theme.typography.bodyMedium,
       color: theme.colors.text.secondary,
     },
     readValue: {
-      fontSize: 13,
+      ...theme.typography.bodyMedium,
       fontWeight: '600' as const,
       color: theme.colors.text.primary,
     },
     footnote: {
+      ...theme.typography.body,
       marginTop: layout.inputPadding,
-      fontSize: theme.typography.body.fontSize,
       color: theme.colors.text.subtle,
-      lineHeight: 16,
     },
     helperText: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       color: theme.colors.text.secondary,
       marginBottom: spacing.sm,
-      lineHeight: 16,
     },
     infoBlock: {
       marginTop: spacing.base,
@@ -183,15 +181,14 @@ export default function LoanDetailScreen() {
       padding: layout.inputPadding,
     },
     infoTitle: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       fontWeight: '700' as const,
       color: theme.colors.text.tertiary,
       marginBottom: spacing.xs,
     },
     infoText: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       color: theme.colors.text.secondary,
-      lineHeight: 16,
     },
   });
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography, radius } from '../ui/theme/theme';
 
 type Props = {
   lines: string[];
@@ -39,24 +40,23 @@ export default function EducationBox({ lines, insight, title, variant = 'default
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 8,
+    borderRadius: radius.medium,
     // Slightly denser, token-based padding (applies consistently to all EducationBox instances).
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   containerWarning: {
-    borderRadius: 8,
+    borderRadius: radius.medium,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   title: {
-    fontSize: 12,
+    ...typography.label,
     fontWeight: '700',
     marginBottom: spacing.xs,
   },
   text: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.bodyMedium,
   },
   insightSpacing: {
     marginTop: spacing.xs,

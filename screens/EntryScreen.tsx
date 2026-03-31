@@ -15,6 +15,7 @@ import SectionCard from '../components/SectionCard';
 import SectionHeader from '../components/SectionHeader';
 import Icon from '../components/Icon';
 import { useTheme } from '../ui/theme/useTheme';
+import { typography } from '../ui/theme/theme';
 import { useSnapshot } from '../context/SnapshotContext';
 import { computeProjectionSeries } from '../engines/projectionEngine';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
@@ -444,8 +445,7 @@ const styles = StyleSheet.create({
     // borderRadius applied inline with theme.radius.small
   },
   legendText: {
-    fontSize: 11,
-    fontWeight: '400',
+    ...typography.bodySmall,
   },
   chartContainer: {
     justifyContent: 'center',
@@ -517,8 +517,7 @@ const styles = StyleSheet.create({
     // Disabled state handled via inline styles
   },
   toggleOptionText: {
-    fontSize: 13,
-    fontWeight: '500',
+    ...typography.label,
   },
   insightsContainer: {
     paddingTop: spacing.base,
@@ -527,10 +526,8 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   insightText: {
-    fontSize: 12,
-    fontWeight: '400',
+    ...typography.body,
     textAlign: 'center',
-    lineHeight: 18,
   },
   emptyStateContainer: {
     paddingTop: spacing.base,
@@ -538,9 +535,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.base,
   },
   emptyStateText: {
-    fontSize: 12,
-    fontWeight: '400',
+    ...typography.body,
     textAlign: 'center',
-    lineHeight: 18,
   },
 });

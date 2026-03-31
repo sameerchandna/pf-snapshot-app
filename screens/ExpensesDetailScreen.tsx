@@ -4,7 +4,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { useSnapshot } from '../context/SnapshotContext';
 import { ExpenseItem, Group } from '../types';
 import { selectSnapshotExpenses } from '../engines/selectors';
-import { formatCurrencyFullSigned } from '../ui/formatters';
+import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { parseItemName, parseMoney } from '../domain/domainValidation';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
 import SemanticRow from '../components/rows/SemanticRow';
@@ -171,7 +171,7 @@ export default function ExpensesDetailScreen() {
     }
 
     if (parsed > maxValue) {
-      return `That value is too large. Max allowed is ${maxValue.toLocaleString('en-GB')}.`;
+      return `That value is too large. Max allowed is ${formatCurrencyFull(maxValue)}.`;
     }
 
     return null;

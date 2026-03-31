@@ -9,7 +9,7 @@ import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
-import { radius } from '../ui/theme/theme';
+import { radius, typography } from '../ui/theme/theme';
 import { useSnapshot } from '../context/SnapshotContext';
 import { exportData, importData } from '../persistence/exportImport';
 import { saveProfilesState } from '../persistence/profileStorage';
@@ -213,20 +213,19 @@ const styles = StyleSheet.create({
     gap: layout.micro,
   },
   rowTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
   },
   rowSubtitle: {
-    fontSize: 12,
+    ...typography.body,
   },
   rowChevron: {
-    fontSize: 18,
+    ...typography.valueLarge,
   },
   themeToggleContainer: {
     gap: spacing.sm,
   },
   themeToggleLabel: {
-    fontSize: 12,
+    ...typography.body,
   },
   segmentedControl: {
     height: 32,

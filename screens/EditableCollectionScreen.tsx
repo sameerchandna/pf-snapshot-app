@@ -17,6 +17,7 @@ import GroupedList, { Group as GroupedListGroup } from '../components/list/Group
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { formatCurrencyFull } from '../ui/formatters';
 
 // Minimal, opinionated help content structure
 export type HelpExample = {
@@ -426,7 +427,7 @@ export default function EditableCollectionScreen<TItem>({
     }
 
     if (parsed > maxValue) {
-      return { ok: false, message: `That value is too large. Max allowed is ${maxValue.toLocaleString('en-GB')}.` };
+      return { ok: false, message: `That value is too large. Max allowed is ${formatCurrencyFull(maxValue)}.` };
     }
 
     const secondaryTrimmed = draftSecondaryNumber.trim();
@@ -1143,7 +1144,7 @@ export default function EditableCollectionScreen<TItem>({
                       <View key={sectionIdx} style={sectionIdx > 0 ? { marginTop: spacing.xl, paddingTop: spacing.xl } : null}>
                         {sectionIdx > 0 && <Divider variant="default" />}
                         {section.heading ? (
-                          <Text style={[styles.helpSectionHeading, theme.typography.bodyLarge, { fontWeight: '600', color: theme.colors.text.primary }]}>{section.heading}</Text>
+                          <Text style={[styles.helpSectionHeading, theme.typography.button, { color: theme.colors.text.primary }]}>{section.heading}</Text>
                         ) : null}
                         {section.paragraphs?.map((para, paraIdx) => (
                           <Text key={paraIdx} style={[styles.helpParagraph, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>{para}</Text>
@@ -1151,7 +1152,7 @@ export default function EditableCollectionScreen<TItem>({
                         {section.example ? (
                           <Text style={[styles.helpExample, theme.typography.bodyLarge, { color: theme.colors.text.tertiary }]}>
                             {section.example.text}
-                            <Text style={[styles.helpExampleBold, theme.typography.bodyLarge, { fontWeight: '600', color: theme.colors.text.primary }]}>{section.example.boldValue}</Text>
+                            <Text style={[styles.helpExampleBold, theme.typography.button, { color: theme.colors.text.primary }]}>{section.example.boldValue}</Text>
                           </Text>
                         ) : null}
                         {section.bullets ? (
@@ -1193,7 +1194,7 @@ export default function EditableCollectionScreen<TItem>({
         <Modal transparent={true} visible={true} animationType="fade" onRequestClose={cancelDeleteItem}>
           <View style={[styles.deleteModalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
             <View style={[styles.deleteModalContent, { backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.large }]}>
-              <Text style={[styles.deleteModalTitle, theme.typography.valueLarge, { fontWeight: '700', color: theme.colors.text.primary }]}>Delete item?</Text>
+              <Text style={[styles.deleteModalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>Delete item?</Text>
               <Text style={[styles.deleteModalMessage, theme.typography.bodyLarge, { color: theme.colors.text.secondary }]}>This action cannot be undone.</Text>
               <View style={styles.deleteModalActions}>
                 <Pressable

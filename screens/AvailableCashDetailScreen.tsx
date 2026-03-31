@@ -79,19 +79,18 @@ export default function AvailableCashDetailScreen() {
       marginBottom: layout.inputPadding,
     },
     blockTitle: {
-      fontSize: theme.typography.body.fontSize,
+      ...theme.typography.body,
       fontWeight: '600' as const,
       color: theme.colors.text.tertiary,
       marginBottom: spacing.xs,
     },
     text: {
-      fontSize: theme.typography.bodyLarge.fontSize,
+      ...theme.typography.bodyLarge,
       color: theme.colors.text.tertiary,
       marginBottom: layout.micro,
     },
     result: {
-      fontSize: 22,
-      fontWeight: '700' as const,
+      ...theme.typography.valueHero,
       color: theme.colors.text.primary,
     },
   });

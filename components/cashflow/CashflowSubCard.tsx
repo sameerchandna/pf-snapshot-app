@@ -4,6 +4,7 @@ import { IconWeight } from 'phosphor-react-native';
 import { useTheme } from '../../ui/theme/useTheme';
 import { spacing } from '../../ui/spacing';
 import { layout } from '../../ui/layout';
+import { radius } from '../../ui/theme/theme';
 
 interface CashflowSubCardProps {
   title: string;
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.tiny,
     paddingHorizontal: spacing.sm,
     marginBottom: spacing.sm,
-    borderRadius: spacing.xl,
+    borderRadius: radius.rounded,
     borderWidth: 1,
     zIndex: 1,
     minHeight: 28, // Ensures consistent base height for primary line (4px top + 20px lineHeight + 4px bottom)

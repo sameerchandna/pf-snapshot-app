@@ -62,40 +62,65 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase A — Education Surface (Conceptual)
+## Phase 10 — Interpretation Layer + Projection Screen Restructure
 
-- [ ] Introduce 🧠 icon as the sole conceptual explanation affordance  
-  🧠 always represents "understand the mental model", never help, tips, or actions.
+### Part A — Interpretation engine
+- [ ] 10.1: Build `insights/interpretProjection.ts` — pure function: ProjectionSummary + Expenses → InterpretationResult
+  - Default insights (no goal needed): debt-free age, net worth trajectory, milestone ages (£100k–£1m), FI number (expenses x 25), retirement readiness (UK pension age 67)
+  - Custom goal insights (if user changes defaults): on-track / off-track, gap calculation
+- [ ] 10.2: GoalConfig type — { type: 'fi' | 'netWorthMilestone' | 'retirementIncome', target, targetAge? }. Stored in profile. Defaults computed from snapshot.
+- [ ] 10.3: Goal editing UI — accessible from interpretation card ("Change goal"), also in Settings
 
-- [ ] Add 🧠 icon at Snapshot section headers only  
-  Apply to Cash Flow and Balance Sheet to keep explanations intentional and non-intrusive.
-
-- [ ] Design lightweight 🧠 explanation modals  
-  Each modal includes: one-sentence summary, simple flow diagram, and 2–4 clarifying bullets; no advice or actions.
-
----
-
-## Phase B — Release Readiness
-- [ ] Error and empty state audit
-- [ ] Performance pass
-- [ ] Pre-release checklist
-- [ ] Profile Switcher (Entry Screen)
-  - Allow switching between existing USER profiles directly from the Entry screen (similar visual pattern to Demo profiles)
-  - Show the currently active profile and other available profiles
-  - Include a subtle "+" affordance to create a new profile using the existing profile creation flow
-  - This is a navigation and affordance change, not just visual polish
-  - Must preserve existing profile invariants:
-    * exactly one active profile
-    * profile isolation
-  - Must not introduce advice, nudging, or onboarding language
-  - Visual language should align with demo profile selector but remain semantically distinct (user profiles ≠ demo profiles)
-  - No persistence or logic changes beyond existing profile switching
+### Part B — Projection screen restructure
+- [ ] 10.4: Interpretation summary card (hero position, above chart)
+- [ ] 10.5: Key moment annotations on chart (debt-free, milestones)
+- [ ] 10.6: Remove quick scenarios from projection screen (moves to What If tab in Phase 14)
+- [ ] 10.7: Collapse projected cashflow behind "Show details" toggle
+- [ ] 10.8: Collapse attribution behind "Show details" toggle
+- [ ] 10.9: Simplify visible balance sheet to 3 numbers (assets, liabilities, net worth)
 
 ---
 
-## Phase C— Guided What-If & Scenario Exploration
-- [ ] Savings what-if (contribution and rate changes via sliders)
-- [ ] Mortgage what-if (overpayment, term, rate sensitivity)
-- [ ] Scenario preview vs baseline comparison
-- [ ] Explicit save / discard semantics
-- [ ] Guardrails to prevent advice framing or optimisation bias
+## Phase 11 — Scenario Redesign (Make It Human)
+- [ ] 11.1: Scenario template type: { question, description, kind, defaults }
+- [ ] 11.2: Create 4–5 presets: "Overpay my mortgage", "Invest more each month", "Go part-time", "Have a baby", "Retire early"
+- [ ] 11.3: Scenario picker screen — list of tappable life questions
+- [ ] 11.4: Slider-based amount explorer with live mini-chart preview
+- [ ] 11.5: Comparison panel: baseline vs scenario outcome delta
+- [ ] 11.6: Savings what-if: contribution and rate sliders
+- [ ] 11.7: Mortgage what-if: overpayment, term, rate sensitivity
+- [ ] 11.8: Save / discard semantics
+- [ ] 11.9: Guardrails — no advice framing, no optimisation bias
+
+---
+
+## Phase 12 — Retirement & Decumulation Simulation
+- [ ] 12.1: Retirement age in ProjectionInputs
+- [ ] 12.2: Engine: stop earned income after retirement age
+- [ ] 12.3: Engine: assets fund expense shortfall post-retirement
+- [ ] 12.4: Depletion detection: "Portfolio lasts until age X"
+- [ ] 12.5: Decumulation curve on chart
+- [ ] 12.6: Integrate retirement insights into interpretation card
+
+---
+
+## Phase 13 — Scenario Experiments & Financial Levers
+- [ ] 13.1: Experiment runner: flow delta → comparison projection → outcome difference
+- [ ] 13.2: Pre-built experiments: "Invest £200 more/month", "Cut expenses by £150"
+- [ ] 13.3: Lever ranking: which change has most impact?
+- [ ] 13.4: Results as outcome delta cards
+
+---
+
+## Phase 14 — Navigation Redesign
+- [ ] 14.1: Implement 4-tab structure: Snapshot (Where am I?) / Projection (Where am I going?) / What If (What changes it?) / Settings
+- [ ] 14.2: Migrate scenario/experiment screens into What If tab
+- [ ] 14.3: Clean up navigation stack
+
+---
+
+## Phase 15 — Release Readiness
+- [ ] 15.1: Error and empty state audit
+- [ ] 15.2: Performance pass
+- [ ] 15.3: Profile switcher on Entry screen
+- [ ] 15.4: Pre-release checklist

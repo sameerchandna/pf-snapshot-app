@@ -27,7 +27,7 @@ export default function GroupedListSection({ children, style }: GroupedListSecti
         styles.container,
         {
           backgroundColor: theme.colors.bg.card,
-          borderRadius: 10,
+          borderRadius: theme.radius.card,
         },
         style,
       ]}

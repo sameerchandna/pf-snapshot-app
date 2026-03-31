@@ -4,9 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { Group } from '../types';
 import EditableCollectionScreen from './EditableCollectionScreen';
 import { useSnapshot } from '../context/SnapshotContext';
-import { formatPercent } from '../ui/formatters';
+import { formatPercent, formatCurrencyFull } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
+import { typography } from '../ui/theme/theme';
 import { Swipeable } from 'react-native-gesture-handler';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
 
@@ -30,8 +31,7 @@ const ID_INFLATION: string = 'inflationPct';
 const ID_MONTHLY_DEBT_REDUCTION: string = 'monthlyDebtReduction';
 
 function formatGBPInt(value: number): string {
-  const sign = value < 0 ? '-' : '';
-  return `${sign}£${Math.abs(Math.round(value)).toLocaleString('en-GB')}`;
+  return formatCurrencyFull(Math.round(value));
 }
 
 
@@ -245,8 +245,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   doneButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.button,
     color: '#111',
   },
 });
