@@ -1,7 +1,7 @@
 // Profile persistence layer using AsyncStorage
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ProfilesState, ProfileState, ProfileId, SnapshotState } from '../types';
+import type { ProfilesState, ProfileState, ProfileId, SnapshotState, GoalConfig } from '../types';
 import { emptySnapshotState, coerceSnapshotState } from '../domain/domainValidation';
 import { createBaselineScenario, BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
@@ -24,6 +24,7 @@ export function createEmptyProfilesState(): ProfilesState {
       scenarios: [createBaselineScenario()],
       activeScenarioId: BASELINE_SCENARIO_ID,
     },
+    goalState: { goals: [] },
     meta: {
       name: 'My Profile',
       createdAt: now,
@@ -230,6 +231,7 @@ export function createBlankProfile(
       scenarios: [createBaselineScenario()],
       activeScenarioId: BASELINE_SCENARIO_ID,
     },
+    goalState: { goals: [] },
     meta: {
       name: trimmedName,
       createdAt: now,
@@ -416,6 +418,7 @@ export function resetProfile(
           scenarios: [createBaselineScenario()],
           activeScenarioId: BASELINE_SCENARIO_ID,
         },
+        goalState: { goals: [] },
         meta: {
           name: profile.meta.name, // Preserve name
           createdAt: profile.meta.createdAt, // Preserve creation date
@@ -578,16 +581,31 @@ function validateProfileState(raw: unknown): ProfileState | null {
   const coercedSnapshotState = coerceSnapshotState(raw.snapshotState);
   const migratedSnapshotState = ensureSystemCash(coercedSnapshotState);
 
+  // Validate goalState — default to empty if missing or invalid (backward compat)
+  const rawGoalState = isRecord(raw.goalState) ? raw.goalState : null;
+  const goals: GoalConfig[] = Array.isArray(rawGoalState?.goals)
+    ? (rawGoalState.goals as unknown[]).filter(isValidGoalConfig)
+    : [];
+
   return {
     snapshotState: migratedSnapshotState,
     scenarioState: {
       scenarios,
       activeScenarioId,
     },
+    goalState: { goals },
     meta,
   };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function isValidGoalConfig(v: unknown): v is GoalConfig {
+  if (!isRecord(v)) return false;
+  if (v.type === 'fi') return typeof v.target === 'number';
+  if (v.type === 'netWorthMilestone') return typeof v.target === 'number';
+  if (v.type === 'retirementIncome') return typeof v.target === 'number';
+  return false;
 }

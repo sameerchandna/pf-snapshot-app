@@ -109,6 +109,16 @@ export type ScenarioState = {
   monthlyAmount: number;
 };
 
+// Goal state (Phase 10)
+export type GoalConfig =
+  | { type: 'fi'; target: number }
+  | { type: 'netWorthMilestone'; target: number; targetAge?: number }
+  | { type: 'retirementIncome'; target: number; targetAge?: number };
+
+export interface GoalState {
+  goals: GoalConfig[];
+}
+
 // Profile domain (V1)
 export type ProfileId = string;
 
@@ -124,6 +134,7 @@ export interface ProfileState {
     scenarios: import('./domain/scenario/types').Scenario[];
     activeScenarioId?: import('./domain/scenario/types').ScenarioId;
   };
+  goalState: GoalState; // Phase 10
   meta: ProfileMeta;
 }
 

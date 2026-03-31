@@ -62,22 +62,22 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 10 — Interpretation Layer + Projection Screen Restructure
+## Phase 10 — Interpretation Layer + Projection Screen Restructure ✓
 
 ### Part A — Interpretation engine
-- [ ] 10.1: Build `insights/interpretProjection.ts` — pure function: ProjectionSummary + Expenses → InterpretationResult
+- [x] 10.1: Build `insights/interpretProjection.ts` — pure function: ProjectionSummary + Expenses → InterpretationResult
   - Default insights (no goal needed): debt-free age, net worth trajectory, milestone ages (£100k–£1m), FI number (expenses x 25), retirement readiness (UK pension age 67)
   - Custom goal insights (if user changes defaults): on-track / off-track, gap calculation
-- [ ] 10.2: GoalConfig type — { type: 'fi' | 'netWorthMilestone' | 'retirementIncome', target, targetAge? }. Stored in profile. Defaults computed from snapshot.
-- [ ] 10.3: Goal editing UI — accessible from interpretation card ("Change goal"), also in Settings
+- [x] 10.2: GoalConfig type — { type: 'fi' | 'netWorthMilestone' | 'retirementIncome', target, targetAge? }. Stored in profile. Defaults computed from snapshot.
+- [x] 10.3: Goal editing UI — accessible from Goals section "Edit" button; Reset to defaults supported
 
 ### Part B — Projection screen restructure
-- [ ] 10.4: Interpretation summary card (hero position, above chart)
-- [ ] 10.5: Key moment annotations on chart (debt-free, milestones)
-- [ ] 10.6: Remove quick scenarios from projection screen (moves to What If tab in Phase 14)
-- [ ] 10.7: Collapse projected cashflow behind "Show details" toggle
-- [ ] 10.8: Collapse attribution behind "Show details" toggle
-- [ ] 10.9: Simplify visible balance sheet to 3 numbers (assets, liabilities, net worth)
+- [x] 10.4: Interpretation summary card (hero position, above chart) — replaces Financial Health Summary
+- [x] 10.5: Key moment annotations on chart (debt-free, milestones £100k–£1M)
+- [x] 10.6: Remove quick scenarios from projection screen (moves to What If tab in Phase 11+)
+- [x] 10.7: Collapse projected cashflow behind "Show details" toggle
+- [x] 10.8: Collapse attribution behind "Show details" toggle
+- [x] 10.9: Simplify visible balance sheet to 3 numbers (assets, liabilities, net worth)
 
 ---
 

@@ -23,7 +23,8 @@ import { formatCurrencyCompact } from '../ui/formatters';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { DEMO_PROFILES, DEFAULT_DEMO_PROFILE_ID, type DemoProfileId } from '../demo/demoProfiles';
-import { detectKeyMoments, generateInsightText } from '../insights/insightEngine';
+import { interpretProjection } from '../insights/interpretProjection';
+import { selectExpenses } from '../engines/selectors';
 
 // Chart color palette (reused from ProjectionResultsScreen)
 function getChartPalette(theme: any) {
@@ -157,30 +158,20 @@ export default function EntryScreen() {
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
   const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
 
-  // Phase 6.8: Generate insights from key moments (using existing Phase 5 insight engine)
-  const insightsToShow = useMemo(() => {
-    if (baselineSeries.length === 0) {
-      return [];
-    }
-
-    // Detect key moments from baseline series
-    const keyMoments = detectKeyMoments(baselineSeries);
-
-    // Filter: only show insights for moments that have occurred by endAge
-    // Entry screen shows full projection, so use endAge as the reference point
-    const visibleMoments = keyMoments.filter(moment => moment.age <= state.projection.endAge);
-    
-    // Sort chronologically (earliest first) and limit to MAX 2
-    const sorted = visibleMoments.sort((a, b) => a.age - b.age);
-    const limited = sorted.slice(0, 2);
-    
-    // Generate text for each insight
-    return limited.map(moment => ({
-      id: moment.id,
-      text: generateInsightText(moment),
-      age: moment.age,
-    }));
-  }, [baselineSeries, state.projection.endAge]);
+  // Phase 10.1: Interpretation engine (replaces Phase 6.8 key moment text)
+  const interpretation = useMemo(() => {
+    if (baselineSeries.length === 0) return null;
+    return interpretProjection(
+      baselineSeries,
+      { endAssets: 0, endLiabilities: 0, endNetWorth: 0,
+        totalContributions: 0, totalPrincipalRepaid: 0,
+        totalScheduledMortgagePayment: 0, totalMortgageOverpayments: 0 },
+      selectExpenses(state),
+      state.projection.currentAge,
+      state.projection.endAge,
+      [], // no goals on entry screen — use computed defaults internally
+    );
+  }, [baselineSeries, state]);
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
@@ -368,16 +359,12 @@ export default function EntryScreen() {
           </View>
         )}
 
-        {/* Phase 6.8: Observational insights (persistent container) */}
+        {/* Phase 10.1: Interpretation headline (replaces Phase 6.8 key moment text) */}
         <View style={styles.insightsContainer}>
-          {insightsToShow.length > 0 && (
-            <>
-              {insightsToShow.map(insight => (
-                <Text key={insight.id} style={[styles.insightText, { color: theme.colors.text.muted }]}>
-                  {insight.text}
-                </Text>
-              ))}
-            </>
+          {interpretation && (
+            <Text style={[styles.insightText, { color: theme.colors.text.muted }]}>
+              {interpretation.headline}
+            </Text>
           )}
         </View>
 

@@ -26,6 +26,7 @@ import A3ValidationScreen from './screens/A3ValidationScreen';
 import ProjectionRefactorValidationScreen from './screens/ProjectionRefactorValidationScreen';
 import SnapshotDataSummaryScreen from './screens/SnapshotDataSummaryScreen';
 import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
+import GoalEditorScreen from './screens/GoalEditorScreen';
 
 const Stack = createNativeStackNavigator();
 const AccountsStack = createNativeStackNavigator();
@@ -93,6 +94,7 @@ function ProjectionStackNavigator() {
       <ProjectionStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
       <ProjectionStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
       <ProjectionStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
+      <ProjectionStack.Screen name="GoalEditor" component={GoalEditorScreen} />
     </ProjectionStack.Navigator>
   );
 }

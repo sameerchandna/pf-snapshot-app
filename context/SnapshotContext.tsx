@@ -6,6 +6,7 @@ import {
   ContributionItem,
   ExpenseItem,
   Group,
+  GoalConfig,
   IncomeItem,
   LiabilityItem,
   LiabilityReductionItem,
@@ -37,6 +38,7 @@ interface SnapshotContextType {
   setLiabilityGroups: (groups: Group[]) => void;
   setLiabilities: (items: LiabilityItem[]) => void;
   setProjection: (inputs: ProjectionInputs) => void;
+  setGoals: (goals: GoalConfig[]) => void;
   switchProfile: (profileId: ProfileId) => void;
   createProfile: (name: string) => ProfileId | null;
   renameProfile: (profileId: ProfileId, newName: string) => void;
@@ -379,6 +381,25 @@ export function SnapshotProvider({ children }: { children: React.ReactNode }) {
     setStateFromUI(s => ({ ...s, projection: inputs }));
   }, [setStateFromUI]);
 
+  const setGoals = useCallback((goals: GoalConfig[]) => {
+    hasLocalEditsRef.current = true;
+    setProfilesState(prev => {
+      if (!prev) return prev;
+      const activeProfile = prev.profiles[prev.activeProfileId];
+      if (!activeProfile) return prev;
+      return {
+        ...prev,
+        profiles: {
+          ...prev.profiles,
+          [prev.activeProfileId]: {
+            ...activeProfile,
+            goalState: { goals },
+          },
+        },
+      };
+    });
+  }, []);
+
   const reloadFromStorage = useCallback(async () => {
     const loaded = await loadProfilesState();
     hasLocalEditsRef.current = false;
@@ -403,6 +424,7 @@ export function SnapshotProvider({ children }: { children: React.ReactNode }) {
         setLiabilityGroups,
         setLiabilities,
         setProjection,
+        setGoals,
         switchProfile,
         createProfile,
         renameProfile,

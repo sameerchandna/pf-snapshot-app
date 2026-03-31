@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter } from 'victory-native';
@@ -23,6 +23,8 @@ import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
 import CashflowSubCard from '../components/cashflow/CashflowSubCard';
 import CashflowCardWrapper from '../components/cashflow/CashflowCardWrapper';
 import { getMutedBorderColor } from '../ui/utils/getMutedBorderColor';
+import InterpretationCard from '../components/InterpretationCard';
+import GoalsSection from '../components/GoalsSection';
 
 // Snapshot visual language constants (reused for Projected Snapshot)
 const snapshotTypography = {
@@ -44,9 +46,9 @@ import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/formatters';
 import { useWindowDimensions } from 'react-native';
 import type { AssetItem, ScenarioState, SnapshotState } from '../types';
-import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows } from '../engines/selectors';
+import { selectPension, selectMonthlySurplus, selectMonthlySurplusWithScenario, selectSnapshotTotals, selectLoanDerivedRows, selectExpenses } from '../engines/selectors';
 import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE, AGE_COMPARISON_TOLERANCE, SYSTEM_CASH_ID } from '../constants';
-import { detectKeyMoments, generateInsightText, type KeyMoment } from '../insights/insightEngine';
+import { interpretProjection } from '../insights/interpretProjection';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import type { Scenario, ScenarioId } from '../domain/scenario/types';
 import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
@@ -941,198 +943,6 @@ function ReconciliationOverlay({
   );
 }
 
-// Phase 5.1: Financial Health Summary
-// Threshold for expense dominance (expenses / income >= this value triggers T2)
-const EXPENSE_DOMINANCE_THRESHOLD = 0.8; // 80%
-
-type Insight = {
-  id: string;
-  text: string;
-  salience: {
-    magnitude: number;
-    dominance: number;
-    temporal: number;
-    isSnapshot: boolean;
-  };
-};
-
-function FinancialHealthSummary({
-  snapshotTotals,
-  baselineSummary,
-  baselineSeries,
-  currentAge,
-  endAge,
-  assets,
-  style,
-}: {
-  snapshotTotals: ReturnType<typeof selectSnapshotTotals>;
-  baselineSummary: ReturnType<typeof computeProjectionSummary>;
-  baselineSeries: ReturnType<typeof computeProjectionSeries>;
-  currentAge: number;
-  endAge: number;
-  assets: AssetItem[];
-  style?: any;
-}) {
-  const { theme } = useTheme();
-  const styles = makeStyles(theme);
-  const insights: Insight[] = [];
-
-  // T1 — Cashflow Balance
-  if (snapshotTotals.netIncome > UI_TOLERANCE && snapshotTotals.expenses > UI_TOLERANCE) {
-    const surplus = snapshotTotals.monthlySurplus;
-    const allocated = snapshotTotals.netIncome - snapshotTotals.expenses - surplus;
-    const surplusPct = snapshotTotals.netIncome > UI_TOLERANCE
-      ? Math.round((surplus / snapshotTotals.netIncome) * 100)
-      : 0;
-    insights.push({
-      id: 'T1',
-      text: `Monthly income of ${formatCurrencyCompact(snapshotTotals.netIncome)} exceeds expenses of ${formatCurrencyCompact(snapshotTotals.expenses)}, with ${formatCurrencyCompact(allocated)} allocated and ${formatCurrencyCompact(surplus)} (${surplusPct}%) remaining unallocated.`,
-      salience: {
-        magnitude: Math.abs(surplus),
-        dominance: Math.abs(surplusPct),
-        temporal: 0,
-        isSnapshot: true,
-      },
-    });
-  }
-
-  // T2 — Expense Dominance
-  if (snapshotTotals.netIncome > UI_TOLERANCE) {
-    const expenseRatio = snapshotTotals.expenses / snapshotTotals.netIncome;
-    if (expenseRatio >= EXPENSE_DOMINANCE_THRESHOLD) {
-      const expensePct = Math.round(expenseRatio * 100);
-      insights.push({
-        id: 'T2',
-        text: `Expenses consume ${expensePct}% of monthly income.`,
-        salience: {
-          magnitude: snapshotTotals.expenses,
-          dominance: expensePct,
-          temporal: 0,
-          isSnapshot: true,
-        },
-      });
-    }
-  }
-
-  // T3 — Unallocated Surplus
-  if (snapshotTotals.monthlySurplus > UI_TOLERANCE) {
-    const surplus = snapshotTotals.monthlySurplus;
-    const surplusPct = snapshotTotals.netIncome > UI_TOLERANCE
-      ? Math.round((surplus / snapshotTotals.netIncome) * 100)
-      : 0;
-    insights.push({
-      id: 'T3',
-      text: `${formatCurrencyFull(surplus)} per month remains unallocated, representing ${surplusPct}% of income.`,
-      salience: {
-        magnitude: surplus,
-        dominance: surplusPct,
-        temporal: 0,
-        isSnapshot: true,
-      },
-    });
-  }
-
-  // T4 — Asset Composition
-  if (snapshotTotals.assets > UI_TOLERANCE) {
-    // Find SYSTEM_CASH balance
-    const systemCashAsset = assets.find(a => a.id === SYSTEM_CASH_ID);
-    const cashBalance = systemCashAsset?.balance ?? 0;
-    const cashPct = Math.round((cashBalance / snapshotTotals.assets) * 100);
-    insights.push({
-      id: 'T4',
-      text: `Cash represents ${cashPct}% of total assets, with the remainder held in long-term assets.`,
-      salience: {
-        magnitude: cashBalance,
-        dominance: cashPct,
-        temporal: 0,
-        isSnapshot: true,
-      },
-    });
-  }
-
-  // T5 — Liability Payoff
-  if (snapshotTotals.liabilities > UI_TOLERANCE && baselineSeries.length > 0) {
-    // Find first point where liabilities <= tolerance (fully repaid)
-    const payoffPoint = baselineSeries.find(p => p.liabilities <= UI_TOLERANCE);
-    if (payoffPoint) {
-      const payoffAge = Math.round(payoffPoint.age);
-      insights.push({
-        id: 'T5',
-        text: `Liabilities decline over time and are fully repaid by age ${payoffAge}.`,
-        salience: {
-          magnitude: snapshotTotals.liabilities,
-          dominance: 0,
-          temporal: payoffAge, // Earlier payoff = higher temporal salience (inverted)
-          isSnapshot: false,
-        },
-      });
-    }
-  }
-
-  // T6 — Projection Stability
-  if (baselineSeries.length > 0) {
-    const netWorthNeverNegative = baselineSeries.every(p => p.netWorth >= -UI_TOLERANCE);
-    if (netWorthNeverNegative) {
-      const years = endAge - currentAge;
-      insights.push({
-        id: 'T6',
-        text: `Net worth remains positive across the entire ${years}-year projection horizon.`,
-        salience: {
-          magnitude: baselineSummary.endNetWorth,
-          dominance: 0,
-          temporal: endAge,
-          isSnapshot: false,
-        },
-      });
-    }
-  }
-
-  // Rank insights by structural salience
-  // 1. Magnitude (absolute £ values)
-  // 2. Dominance (% of total)
-  // 3. Temporal significance (earlier age/year milestones)
-  // Tie-breaker: Prefer Snapshot-based insights over Projection-based ones
-  insights.sort((a, b) => {
-    // Primary: Magnitude
-    if (Math.abs(a.salience.magnitude - b.salience.magnitude) > UI_TOLERANCE) {
-      return b.salience.magnitude - a.salience.magnitude;
-    }
-    // Secondary: Dominance
-    if (Math.abs(a.salience.dominance - b.salience.dominance) > 0.1) {
-      return b.salience.dominance - a.salience.dominance;
-    }
-    // Tertiary: Temporal (earlier = higher salience, so invert)
-    if (a.salience.temporal > 0 && b.salience.temporal > 0) {
-      return a.salience.temporal - b.salience.temporal; // Earlier age = higher rank
-    }
-    // Tie-breaker: Snapshot over Projection
-    if (a.salience.isSnapshot !== b.salience.isSnapshot) {
-      return a.salience.isSnapshot ? -1 : 1;
-    }
-    return 0;
-  });
-
-  // Select at most 3 insights
-  const selectedInsights = insights.slice(0, 3);
-
-  // If no insights qualify, render nothing
-  if (selectedInsights.length === 0) {
-    return null;
-  }
-
-  return (
-    <SectionCard style={style}>
-      <SectionHeader title="Financial Health Summary" />
-      <View style={styles.insightsList}>
-        {selectedInsights.map(insight => (
-          <Text key={insight.id} style={styles.bodyText}>
-            • {insight.text}
-          </Text>
-        ))}
-      </View>
-    </SectionCard>
-  );
-}
 
 function AttributionCard({ title, subtitle, education, rows, showScenario, showDelta }: { title: string; subtitle?: string; education: string; rows: Row[]; showScenario: boolean; showDelta: boolean }) {
   const { theme } = useTheme();
@@ -1194,7 +1004,7 @@ export default function ProjectionResultsScreen() {
   const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
-  const { state, setProjection, isSwitching } = useSnapshot();
+  const { state, setProjection, isSwitching, profilesState } = useSnapshot();
 
   // Helper to prevent modal open taps from immediately closing via backdrop press
   const openLater = (fn: () => void) => {
@@ -1206,6 +1016,9 @@ export default function ProjectionResultsScreen() {
   const [selectedAge, setSelectedAge] = useState<number>(state.projection.endAge);
   const [ageSelectorOpen, setAgeSelectorOpen] = useState(false);
   const [showDeltaColumn, setShowDeltaColumn] = useState(false);
+  // Phase 10.7/10.8: Collapsible sections (collapsed by default)
+  const [cashflowExpanded, setCashflowExpanded] = useState(false);
+  const [attributionExpanded, setAttributionExpanded] = useState(false);
   // Dev-only: Debug flag for reconciliation overlay
   const [showReconciliationOverlay, setShowReconciliationOverlay] = useState(false);
 
@@ -1224,30 +1037,12 @@ export default function ProjectionResultsScreen() {
   const [activeScenarioOverride, setActiveScenarioOverride] = useState<Scenario | undefined>(undefined);
   const [scenarioSelectorOpen, setScenarioSelectorOpen] = useState(false);
 
-  // V1 Affordability: Get available cash from Snapshot (monthly surplus after all allocations)
-  const availableToAllocate = useMemo(() => {
-    return selectMonthlySurplus(state);
-  }, [state]);
-
   // Gate: Check if baseline surplus is negative (over-allocation)
   const baselineSurplus = selectMonthlySurplus(state);
   const isSurplusNegative = baselineSurplus < -UI_TOLERANCE;
 
-  // V1 Affordability: Track pending input for validation (what user is typing, not yet committed)
-  const [pendingScenarioInput, setPendingScenarioInput] = useState<{ assetId: string | null; monthlyAmount: number } | null>(null);
-
-  // Toolbar state
-  const [quickWhatIfExpanded, setQuickWhatIfExpanded] = useState(false);
-  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
-  const [mortgagePickerOpen, setMortgagePickerOpen] = useState(false);
-  const [localAmountInput, setLocalAmountInput] = useState<string>('');
-  const [localSelectedAsset, setLocalSelectedAsset] = useState<string | null>(null);
-  const [localSelectedLiability, setLocalSelectedLiability] = useState<string | null>(null);
-  const [scenarioTypeToggle, setScenarioTypeToggle] = useState<'FLOW_INVESTING' | 'FLOW_DEBT_PAYDOWN'>('FLOW_INVESTING');
-  
   // Refs for scrolling
   const scrollViewRef = useRef<ScrollView>(null);
-  const quickWhatIfRef = useRef<View>(null);
   const stickyHeaderRef = useRef<View>(null);
   const stickyHeaderHeight = useRef<number>(0);
 
@@ -1294,11 +1089,6 @@ export default function ProjectionResultsScreen() {
             liabilityId: null,
             monthlyAmount: 0,
           });
-          setQuickWhatIfExpanded(false);
-          setLocalAmountInput('');
-          setLocalSelectedAsset(null);
-          setLocalSelectedLiability(null);
-          setPendingScenarioInput(null);
         }
       }
       loadScenarioState();
@@ -1367,13 +1157,8 @@ export default function ProjectionResultsScreen() {
         liabilityId: null,
         monthlyAmount: 0,
       });
-      setQuickWhatIfExpanded(false);
-      setLocalAmountInput('');
-      setLocalSelectedAsset(null);
-      setLocalSelectedLiability(null);
-      setPendingScenarioInput(null);
     }
-    
+
     // Then activate persisted scenario (ensures visual reset happens first)
     setActiveScenarioIdState(normalizedId); // Immediate local state update
 
@@ -1391,239 +1176,6 @@ export default function ProjectionResultsScreen() {
     // NEVER persist undefined - always use BASELINE_SCENARIO_ID
     await persistActiveScenarioId(normalizedId);
   };
-
-  const handleQuickWhatIfToggle = () => {
-    // Gate: Block Quick What-If if surplus is negative
-    if (isSurplusNegative) {
-      return;
-    }
-
-    const newExpanded = !quickWhatIfExpanded;
-    setQuickWhatIfExpanded(newExpanded);
-    if (newExpanded) {
-      // Sync toggle with scenario type
-      const currentType = scenario.type || scenarioTypeToggle || 'FLOW_INVESTING';
-      setScenarioTypeToggle(currentType);
-      
-      // CRITICAL FIX: If starting from Baseline (scenario.isActive === false),
-      // immediately activate an ephemeral Quick What-If scenario with defaults.
-      // This prevents baseline mutation attempts when user starts typing.
-      if (!scenario.isActive) {
-        setScenario({
-          isActive: true,
-          type: currentType,
-          assetId: null,
-          liabilityId: null,
-          monthlyAmount: 0,
-        });
-      }
-      
-      // Sync local state from scenario (only if scenario is already active)
-      if (scenario.isActive) {
-        if (currentType === 'FLOW_INVESTING' && !localSelectedAsset && scenario.assetId) {
-          setLocalSelectedAsset(scenario.assetId);
-          setLocalAmountInput(scenario.monthlyAmount > 0 ? String(scenario.monthlyAmount) : '');
-        } else if (currentType === 'FLOW_DEBT_PAYDOWN' && !localSelectedLiability && scenario.liabilityId) {
-          setLocalSelectedLiability(scenario.liabilityId);
-          setLocalAmountInput(scenario.monthlyAmount > 0 ? String(scenario.monthlyAmount) : '');
-        } else if (scenario.monthlyAmount > 0) {
-          setLocalAmountInput(String(scenario.monthlyAmount));
-        }
-      }
-    }
-  };
-
-  const handleSelectAsset = (assetId: string) => {
-    const amount = parseFloat(localAmountInput) || 0;
-    setLocalSelectedAsset(assetId);
-    setLocalSelectedLiability(null); // Clear liability selection
-    setAssetPickerOpen(false);
-    
-    // Update pending input for validation
-    setPendingScenarioInput(assetId && amount > 0 ? { assetId, monthlyAmount: amount } : null);
-    
-    // Affordability validation: Use selectMonthlySurplus as single source of truth
-    const monthlySurplus = selectMonthlySurplus(state);
-    if (amount > monthlySurplus) {
-      return;
-    }
-    
-    // Enforce mutual exclusivity: Clear persisted scenario FIRST (synchronous visual reset)
-    // Exclude BASELINE_SCENARIO_ID from truthy check - baseline is not a "real" scenario to clear
-    if (activeScenarioId && activeScenarioId !== BASELINE_SCENARIO_ID) {
-      setActiveScenarioIdState(BASELINE_SCENARIO_ID); // Immediate local state update (use BASELINE_SCENARIO_ID, not undefined)
-      setActiveScenarioOverride(undefined); // Immediate override clear
-      persistActiveScenarioId(BASELINE_SCENARIO_ID); // Async persistence (use BASELINE_SCENARIO_ID, not undefined)
-    }
-    
-    // Then activate Quick What-If (ensures visual reset happens first)
-    setScenario({
-      isActive: assetId !== null && amount > 0,
-      type: 'FLOW_INVESTING',
-      assetId,
-      liabilityId: null,
-      monthlyAmount: amount,
-    });
-    setPendingScenarioInput(null);
-  };
-
-  const handleSelectLiability = (liabilityId: string) => {
-    const amount = parseFloat(localAmountInput) || 0;
-    setLocalSelectedLiability(liabilityId);
-    setLocalSelectedAsset(null); // Clear asset selection
-    setMortgagePickerOpen(false);
-    
-    // Enforce mutual exclusivity: Clear persisted scenario FIRST (synchronous visual reset)
-    // Exclude BASELINE_SCENARIO_ID from truthy check - baseline is not a "real" scenario to clear
-    if (activeScenarioId && activeScenarioId !== BASELINE_SCENARIO_ID) {
-      setActiveScenarioIdState(BASELINE_SCENARIO_ID); // Immediate local state update (use BASELINE_SCENARIO_ID, not undefined)
-      setActiveScenarioOverride(undefined); // Immediate override clear
-      persistActiveScenarioId(BASELINE_SCENARIO_ID); // Async persistence (use BASELINE_SCENARIO_ID, not undefined)
-    }
-    
-    // Then activate Quick What-If (ensures visual reset happens first)
-    // No affordability validation for debt paydown scenarios
-    setScenario({
-      isActive: liabilityId !== null && amount > 0,
-      type: 'FLOW_DEBT_PAYDOWN',
-      assetId: null,
-      liabilityId,
-      monthlyAmount: amount,
-    });
-  };
-
-  const handleAmountChange = (text: string) => {
-    setLocalAmountInput(text);
-    const numValue = parseFloat(text) || 0;
-    const currentType = scenarioTypeToggle;
-    
-    if (currentType === 'FLOW_INVESTING') {
-    const assetId = localSelectedAsset || scenario.assetId;
-    
-    // Update pending input for validation
-    setPendingScenarioInput(assetId && numValue > 0 ? { assetId, monthlyAmount: numValue } : null);
-    
-    // Affordability validation: Use selectMonthlySurplus as single source of truth
-    const monthlySurplus = selectMonthlySurplus(state);
-    if (numValue > monthlySurplus) {
-      return;
-    }
-    
-    // Enforce mutual exclusivity: Clear persisted scenario FIRST (synchronous visual reset)
-    // Exclude BASELINE_SCENARIO_ID from truthy check - baseline is not a "real" scenario to clear
-    if (activeScenarioId && activeScenarioId !== BASELINE_SCENARIO_ID && assetId !== null && numValue > 0) {
-      setActiveScenarioIdState(BASELINE_SCENARIO_ID); // Immediate local state update (use BASELINE_SCENARIO_ID, not undefined)
-      setActiveScenarioOverride(undefined); // Immediate override clear
-      persistActiveScenarioId(BASELINE_SCENARIO_ID); // Async persistence (use BASELINE_SCENARIO_ID, not undefined)
-    }
-    
-    // Then activate Quick What-If (ensures visual reset happens first)
-    setScenario({
-      isActive: assetId !== null && numValue > 0,
-      type: 'FLOW_INVESTING',
-      assetId,
-        liabilityId: null,
-      monthlyAmount: numValue,
-    });
-    setPendingScenarioInput(null);
-    } else {
-      // FLOW_DEBT_PAYDOWN
-      const liabilityId = localSelectedLiability || scenario.liabilityId;
-      
-      // Enforce mutual exclusivity: Clear persisted scenario FIRST (synchronous visual reset)
-      // Exclude BASELINE_SCENARIO_ID from truthy check - baseline is not a "real" scenario to clear
-      if (activeScenarioId && activeScenarioId !== BASELINE_SCENARIO_ID && liabilityId !== null && numValue > 0) {
-        setActiveScenarioIdState(BASELINE_SCENARIO_ID); // Immediate local state update (use BASELINE_SCENARIO_ID, not undefined)
-        setActiveScenarioOverride(undefined); // Immediate override clear
-        persistActiveScenarioId(BASELINE_SCENARIO_ID); // Async persistence (use BASELINE_SCENARIO_ID, not undefined)
-      }
-      
-      // Then activate Quick What-If (ensures visual reset happens first)
-      // No affordability validation for debt paydown scenarios
-      setScenario({
-        isActive: liabilityId !== null && numValue > 0,
-        type: 'FLOW_DEBT_PAYDOWN',
-        assetId: null,
-        liabilityId,
-        monthlyAmount: numValue,
-      });
-    }
-  };
-
-  const handleClearScenario = () => {
-    setQuickWhatIfExpanded(false);
-    setLocalAmountInput('');
-    setLocalSelectedAsset(null);
-    setLocalSelectedLiability(null);
-    setScenarioTypeToggle('FLOW_INVESTING');
-    setPendingScenarioInput(null);
-    setScenario({
-      isActive: false,
-      type: 'FLOW_INVESTING',
-      assetId: null,
-      liabilityId: null,
-      monthlyAmount: 0,
-    });
-    setShowDeltaColumn(false);
-  };
-
-  const scenarioValidationError = (() => {
-    // Validate affordability for both FLOW_INVESTING and FLOW_DEBT_PAYDOWN scenarios
-    // Use selectMonthlySurplus as single source of truth (no local recomputation)
-    const monthlySurplus = selectMonthlySurplus(state);
-    
-    if (scenario.type === 'FLOW_INVESTING') {
-      const inputToValidate = pendingScenarioInput || (scenario.isActive && scenario.assetId && scenario.monthlyAmount > 0
-        ? { assetId: scenario.assetId, monthlyAmount: scenario.monthlyAmount }
-        : null);
-      
-      if (!inputToValidate) return null;
-      
-      if (inputToValidate.monthlyAmount > monthlySurplus) {
-        return "This change isn't affordable with your current cash flow.";
-      }
-      return null;
-    } else if (scenario.type === 'FLOW_DEBT_PAYDOWN') {
-      // Validate FLOW_DEBT_PAYDOWN affordability (matches FLOW_INVESTING UX behavior)
-      const inputToValidate = scenario.isActive && scenario.liabilityId && scenario.monthlyAmount > 0
-        ? { liabilityId: scenario.liabilityId, monthlyAmount: scenario.monthlyAmount }
-        : null;
-      
-      if (!inputToValidate) return null;
-      
-      if (inputToValidate.monthlyAmount > monthlySurplus) {
-        return "This change isn't affordable with your current cash flow.";
-      }
-      return null;
-    }
-    
-    return null;
-  })();
-
-  const amountInput = localAmountInput !== '' ? localAmountInput : (scenario.isActive && scenario.monthlyAmount > 0 ? String(scenario.monthlyAmount) : '');
-  const selectedAsset = localSelectedAsset || scenario.assetId;
-  const selectedLiability = localSelectedLiability || scenario.liabilityId;
-  
-  // Filter available loans for mortgage selector
-  const availableLoans = state.liabilities.filter(l => 
-    l.kind === 'loan' && 
-    typeof l.remainingTermYears === 'number' && 
-    Number.isFinite(l.remainingTermYears) && 
-    l.remainingTermYears >= 1
-  );
-
-  const rotateAnim = React.useRef(new Animated.Value(0)).current;
-  React.useEffect(() => {
-    Animated.timing(rotateAnim, {
-      toValue: quickWhatIfExpanded ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [quickWhatIfExpanded, rotateAnim]);
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '90deg'],
-  });
 
   // Sync selectedAge when endAge changes
   useEffect(() => {
@@ -2878,31 +2430,23 @@ export default function ProjectionResultsScreen() {
     return computeLiquidAssetsSeries(inputsToUse, state.assets);
   }, [persistedScenarioProjectionInputs, scenarioProjectionInputs, activeScenario, effectiveScenarioActive, state.assets]);
 
-  // Phase 5.4: Detect key moments from baseline series only
-  // Detection uses the same data as the visible chart (liquid vs full assets)
-  const keyMoments = useMemo(() => {
-    return detectKeyMoments(
+  // Phase 10.1: Interpretation engine (absorbs Phase 5.4/5.5 key moment detection)
+  const interpretation = useMemo(() => {
+    const goals = profilesState?.profiles[profilesState.activeProfileId]?.goalState?.goals ?? [];
+    return interpretProjection(
       baselineSeries,
-      showLiquidOnly ? liquidAssetsSeries : undefined
+      baselineSummary ?? {
+        endAssets: 0, endLiabilities: 0, endNetWorth: 0,
+        totalContributions: 0, totalPrincipalRepaid: 0,
+        totalScheduledMortgagePayment: 0, totalMortgageOverpayments: 0,
+      },
+      selectExpenses(state),
+      state.projection.currentAge,
+      state.projection.endAge,
+      goals,
+      showLiquidOnly ? liquidAssetsSeries : undefined,
     );
-  }, [baselineSeries, liquidAssetsSeries, showLiquidOnly]);
-
-  // Phase 5.5: Generate insights from key moments (filtered by selectedAge, max 2)
-  const insightsToShow = useMemo(() => {
-    // Filter: only show insights for moments that have occurred by selectedAge
-    const visibleMoments = keyMoments.filter(moment => moment.age <= selectedAge);
-    
-    // Sort chronologically (earliest first) and limit to MAX 2
-    const sorted = visibleMoments.sort((a, b) => a.age - b.age);
-    const limited = sorted.slice(0, 2);
-    
-    // Generate text for each insight
-    return limited.map(moment => ({
-      id: moment.id,
-      text: generateInsightText(moment),
-      age: moment.age,
-    }));
-  }, [keyMoments, selectedAge]);
+  }, [baselineSeries, baselineSummary, state, profilesState, showLiquidOnly, liquidAssetsSeries]);
 
   const chartData = useMemo(() => {
     // Phase 5.3: Structural chart series with stable semantic identifiers
@@ -3495,19 +3039,6 @@ export default function ProjectionResultsScreen() {
                 active: activeScenarioSource === 'persisted',
                 disabled: isSurplusNegative,
               },
-              {
-                type: 'pill',
-                title: 'Quick what-if',
-                icon: 'zap',
-                onPress: () => {
-                  if (!isSurplusNegative) {
-                    handleQuickWhatIfToggle();
-                    // Scrolling is handled by onLayout in the expanded section
-                  }
-                },
-                active: activeScenarioSource === 'quick',
-                disabled: isSurplusNegative,
-              },
             ]}
             rightItems={[
               {
@@ -3525,176 +3056,17 @@ export default function ProjectionResultsScreen() {
             ]}
           />
         </View>
-        {/* Quick What If Expanded Content */}
-        {quickWhatIfExpanded ? (
-          <View 
-            ref={quickWhatIfRef} 
-            style={[styles.quickWhatIfContainer, { backgroundColor: theme.colors.bg.subtle }]}
-            onLayout={(event) => {
-              // Scroll to this section when it's laid out, accounting for sticky header
-              const { y } = event.nativeEvent.layout;
-              if (scrollViewRef.current && y > 0) {
-                setTimeout(() => {
-                  // Use measured sticky header height + some padding to ensure full visibility
-                  const headerHeight = stickyHeaderHeight.current || 124;
-                  scrollViewRef.current?.scrollTo({ y: Math.max(0, y - headerHeight - 8), animated: true });
-                }, 200);
-              }
-            }}
-          >
-            {/* Helper Hint */}
-            {availableToAllocate !== undefined && scenarioTypeToggle === 'FLOW_INVESTING' && (
-              <Text style={[styles.quickWhatIfHint, { color: theme.colors.text.muted }]}>
-                Available to invest: <Text style={[styles.quickWhatIfHintAmount, { color: theme.colors.brand.primary }]}>{formatCurrencyFull(availableToAllocate)}</Text> / month
-              </Text>
-            )}
-
-            {/* Scenario Type Toggle */}
-            <View style={styles.quickRow}>
-              <View style={{ flexDirection: 'row', gap: spacing.sm, flex: 1 }}>
-                <Button
-                  variant={scenarioTypeToggle === 'FLOW_INVESTING' ? 'primary' : 'secondary'}
-                  size="md"
-                  onPress={() => {
-                    const currentAmount = parseFloat(localAmountInput) || 0;
-                    setScenarioTypeToggle('FLOW_INVESTING');
-                    setLocalSelectedLiability(null);
-                    setLocalSelectedAsset(null);
-                    setScenario({
-                      isActive: quickWhatIfExpanded, // Preserve active state when Quick What-If is expanded
-                      type: 'FLOW_INVESTING',
-                      assetId: null,
-                      liabilityId: null,
-                      monthlyAmount: 0,
-                    });
-                    // Preserve amount input when switching types
-                  }}
-                  style={{ flex: 1 }}
-                >
-                  Invest more
-                </Button>
-                <Button
-                  variant={scenarioTypeToggle === 'FLOW_DEBT_PAYDOWN' ? 'primary' : 'secondary'}
-                  size="md"
-                  onPress={() => {
-                    const currentAmount = parseFloat(localAmountInput) || 0;
-                    setScenarioTypeToggle('FLOW_DEBT_PAYDOWN');
-                    setLocalSelectedAsset(null);
-                    setLocalSelectedLiability(null);
-                    setScenario({
-                      isActive: quickWhatIfExpanded, // Preserve active state when Quick What-If is expanded
-                      type: 'FLOW_DEBT_PAYDOWN',
-                      assetId: null,
-                      liabilityId: null,
-                      monthlyAmount: 0,
-                    });
-                    // Preserve amount input when switching types
-                  }}
-                  style={{ flex: 1 }}
-                >
-                  Pay down debt
-                </Button>
-              </View>
-            </View>
-
-            {/* Apply to Row - Conditional based on scenario type */}
-            {scenarioTypeToggle === 'FLOW_INVESTING' ? (
-            <View style={styles.quickRow}>
-              <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Apply to</Text>
-              <Pressable
-                onPress={() => openLater(() => setAssetPickerOpen(true))}
-                style={({ pressed }) => [
-                  styles.quickWhatIfSelector,
-                  { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, borderColor: theme.colors.border.subtle, flex: 1 }
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Select asset"
-              >
-                <View style={styles.quickWhatIfSelectorRow}>
-                  <Text
-                    style={[
-                      styles.quickWhatIfSelectorValue,
-                      { color: selectedAsset ? theme.colors.text.primary : theme.colors.text.secondary }
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {selectedAsset ? getAssetName(selectedAsset) : 'Select asset'}
-                  </Text>
-                  <Icon name="chevron-down" size="base" />
-                </View>
-              </Pressable>
-            </View>
-            ) : (
-              <View style={styles.quickRow}>
-                <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Apply to</Text>
-                <Pressable
-                  onPress={() => openLater(() => setMortgagePickerOpen(true))}
-                  style={({ pressed }) => [
-                  styles.quickWhatIfSelector,
-                  { backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card, borderColor: theme.colors.border.subtle, flex: 1 }
-                ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Select mortgage"
-                >
-                  <View style={styles.quickWhatIfSelectorRow}>
-                    <Text
-                      style={[
-                        styles.quickWhatIfSelectorValue,
-                        { color: selectedLiability ? theme.colors.text.primary : theme.colors.text.secondary }
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {selectedLiability ? getLiabilityName(selectedLiability) : 'Select mortgage'}
-                    </Text>
-                    <Icon name="chevron-down" size="base" />
-                  </View>
-                </Pressable>
-              </View>
-            )}
-
-            {/* Extra Amount Row */}
-            <View style={styles.quickRow}>
-              <Text style={[styles.quickLabel, { color: theme.colors.text.secondary }]}>Extra / month</Text>
-              <TextInput
-                style={[
-                  styles.quickWhatIfAmountInput,
-                  { color: theme.colors.text.primary, borderColor: theme.colors.border.subtle },
-                  scenarioValidationError ? [styles.quickWhatIfAmountInputError, { borderColor: theme.colors.semantic.error }] : null,
-                  { flex: 1 }
-                ]}
-                value={amountInput}
-                onChangeText={handleAmountChange}
-                placeholder="0"
-                keyboardType="numeric"
-                returnKeyType="done"
-              />
-            </View>
-            {scenarioValidationError ? (
-              <Text style={[styles.quickWhatIfError, { color: theme.colors.semantic.error }]}>{scenarioValidationError}</Text>
-            ) : null}
-
-            {/* Clear Scenario */}
-            <Button
-              variant="text"
-              size="sm"
-              onPress={handleClearScenario}
-              style={{ marginTop: spacing.sm, alignSelf: 'flex-start' }}
-            >
-              Clear scenario
-            </Button>
-          </View>
-        ) : null}
 
         <View style={styles.innerContent}>
-          {/* Phase 5.1: Financial Health Summary */}
-          <FinancialHealthSummary
-            snapshotTotals={selectSnapshotTotals(state)}
-            baselineSummary={baselineSummary}
-            baselineSeries={baselineSeries}
-            currentAge={state.projection.currentAge}
-            endAge={state.projection.endAge}
-            assets={state.assets}
+          {/* Phase 10.4: Interpretation Card (replaces Financial Health Summary) */}
+          <InterpretationCard
+            interpretation={interpretation}
+            hasLiabilities={state.liabilities.filter(l => l.isActive !== false).some(l => l.balance > UI_TOLERANCE)}
             style={{ marginTop: layout.sectionGap }}
+          />
+          <GoalsSection
+            goals={interpretation.goals}
+            onEditPress={() => navigation.navigate('GoalEditor')}
           />
 
           <SectionCard style={{ marginBottom: spacing.xs }}>
@@ -3768,14 +3140,17 @@ export default function ProjectionResultsScreen() {
                       }}
                     />
                   ))}
-                {/* Phase 5.4: Render key moment dots on baseline series only */}
-                {keyMoments
+                {/* Phase 10.5: Render key moment dots (from interpretation engine) on baseline series */}
+                {interpretation.keyMoments
                   .map((moment) => {
                     const parentSeries = chartData.series.find(s => s.seriesId === moment.seriesId);
                     if (!parentSeries || !parentSeries.shouldRender) return null;
+                    // Milestone dots slightly smaller than crossing dots
+                    const dotSize = moment.type.startsWith('NET_WORTH_') &&
+                      moment.type !== 'NET_WORTH_POSITIVE' ? 3 : 4;
                     return (
                       <VictoryScatter
-                        key={moment.id}
+                        key={moment.type}
                         data={[{ x: moment.age, y: moment.value }]}
                         style={{
                           data: {
@@ -3783,7 +3158,7 @@ export default function ProjectionResultsScreen() {
                             opacity: parentSeries.style.opacity,
                           },
                         }}
-                        size={4}
+                        size={dotSize}
                       />
                     );
                   })
@@ -4038,17 +3413,20 @@ export default function ProjectionResultsScreen() {
             </SectionCard>
           ) : null}
 
-          {/* Projected Cash Flow Section */}
-          {/* Phase 9.4 — Currency Formatting Strategy
-               Projection cashflow intentionally uses compact currency formatting
-               (formatCurrencyCompact / formatCurrencyCompactSigned) to improve
-               readability for future-oriented, large-scale values.
-               Snapshot cashflow uses full currency for precise present-state values. */}
+          {/* Projected Cash Flow Section (Phase 10.7: collapsed by default) */}
           <SectionCard>
-            <SectionHeader title="Projected Cash Flow" subtitle={`Age ${selectedAge}`} />
-
-            {/* Helper: Compute scenario text and delta with equal-value handling */}
-            {(() => {
+            <Pressable
+              onPress={() => setCashflowExpanded(v => !v)}
+              style={styles.sectionHeaderRow}
+              accessibilityRole="button"
+              accessibilityLabel={cashflowExpanded ? 'Hide projected cash flow' : 'Show projected cash flow'}
+            >
+              <SectionHeader title="Projected Cash Flow" subtitle={`Age ${selectedAge}`} />
+              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                {cashflowExpanded ? 'Hide' : 'Show details'}
+              </Text>
+            </Pressable>
+            {cashflowExpanded && (() => {
               const getScenarioProps = (baselineValue: number, scenarioValue: number | undefined) => {
                 if (!effectiveScenarioActive || scenarioValue === undefined) {
                   return { scenarioValueText: undefined, deltaValueText: undefined };
@@ -4219,97 +3597,51 @@ export default function ProjectionResultsScreen() {
             })()}
           </SectionCard>
 
-          {/* Projected Balance Sheet Section */}
+          {/* Projected Balance Sheet Section (Phase 10.9: simplified to 3 numbers) */}
           <SectionCard>
             <SectionHeader title="Projected Balance Sheet" subtitle={`Age ${selectedAge}`} />
-
-            <View style={styles.column}>
-              <View style={styles.projectedBalanceSheetRow}>
-                {/* Assets */}
-                <BalanceSheetCard
-                  title="Assets"
-                  description="Value at age 75"
-                  baselineValue={valuesAtAge.assets}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.assets : undefined}
-                  baselineAgeDelta={valuesAtAge.assets - valuesAtAge.startingAssets}
-                  scenarioAgeDelta={effectiveScenarioActive && scenarioValuesAtAge 
-                    ? scenarioValuesAtAge.assets - scenarioValuesAtAge.startingAssets
-                    : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge 
-                    ? scenarioValuesAtAge.assets - valuesAtAge.assets
-                    : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                  startingValue={valuesAtAge.startingAssets}
-                  startingValueForScenario={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.startingAssets : undefined}
-                />
-
-                <Text style={styles.projectedBalanceSheetOperator}>−</Text>
-
-                {/* Liabilities */}
-                <BalanceSheetCard
-                  title="Liabilities"
-                  description="Outstanding at age 75"
-                  baselineValue={valuesAtAge.liabilities}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.liabilities : undefined}
-                  baselineAgeDelta={valuesAtAge.liabilities - (series[0]?.liabilities ?? 0)}
-                  scenarioAgeDelta={effectiveScenarioActive && scenarioValuesAtAge
-                    ? scenarioValuesAtAge.liabilities - (series[0]?.liabilities ?? 0)
-                    : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge
-                    ? scenarioValuesAtAge.liabilities - valuesAtAge.liabilities
-                    : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                  startingValue={series[0]?.liabilities ?? 0}
-                />
-
-                <Text style={styles.projectedBalanceSheetOperator}>=</Text>
-
-                {/* Net Worth */}
-                <BalanceSheetCard
-                  title="Net Worth"
-                  description="Assets minus liabilities"
-                  baselineValue={valuesAtAge.netWorth}
-                  scenarioValue={effectiveScenarioActive && scenarioValuesAtAge ? scenarioValuesAtAge.netWorth : undefined}
-                  baselineAgeDelta={valuesAtAge.netWorth - baselineA3Attribution.startingNetWorth}
-                  scenarioAgeDelta={effectiveScenarioActive && scenarioValuesAtAge
-                    ? scenarioValuesAtAge.netWorth - baselineA3Attribution.startingNetWorth
-                    : undefined}
-                  scenarioDelta={isScenarioActive && scenarioValuesAtAge
-                    ? scenarioValuesAtAge.netWorth - valuesAtAge.netWorth
-                    : undefined}
-                  showScenario={effectiveScenarioActive && scenarioValuesAtAge !== null}
-                  isOutcome={true}
-                  startingValue={baselineA3Attribution.startingNetWorth}
-                />
+            <View style={styles.projectedBalanceSheetRow}>
+              {/* Assets */}
+              <View style={styles.simpleBalanceItem}>
+                <Text style={[styles.simpleBalanceValue, { color: theme.colors.domain.asset }]}>
+                  {formatCurrencyCompact(valuesAtAge.assets)}
+                </Text>
+                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Assets</Text>
+              </View>
+              <Text style={[styles.projectedBalanceSheetOperator, { color: theme.colors.text.muted }]}>−</Text>
+              {/* Liabilities */}
+              <View style={styles.simpleBalanceItem}>
+                <Text style={[styles.simpleBalanceValue, { color: theme.colors.domain.liability }]}>
+                  {formatCurrencyCompact(valuesAtAge.liabilities)}
+                </Text>
+                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
+              </View>
+              <Text style={[styles.projectedBalanceSheetOperator, { color: theme.colors.text.muted }]}>=</Text>
+              {/* Net Worth */}
+              <View style={styles.simpleBalanceItem}>
+                <Text style={[styles.simpleBalanceValue, { color: theme.colors.text.primary }]}>
+                  {formatCurrencyCompact(valuesAtAge.netWorth)}
+                </Text>
+                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Net Worth</Text>
               </View>
             </View>
           </SectionCard>
 
+          {/* Net Worth Breakdown (Phase 10.8: collapsed by default) */}
           <SectionCard>
-            {/* Section Header with Toggle */}
-            <View style={styles.sectionHeaderRow}>
+            <Pressable
+              onPress={() => setAttributionExpanded(v => !v)}
+              style={styles.sectionHeaderRow}
+              accessibilityRole="button"
+              accessibilityLabel={attributionExpanded ? 'Hide net worth breakdown' : 'Show net worth breakdown'}
+            >
               <SectionHeader title="Net Worth Breakdown" subtitle={`Age ${selectedAge}`} />
-              {effectiveScenarioActive && scenarioValuesAtAge !== null ? (
-                <Pressable
-                  style={[
-                    styles.chartMiniToggle,
-                    { backgroundColor: theme.colors.bg.subtle },
-                    showDeltaColumn && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
-                  ]}
-                  onPress={() => setShowDeltaColumn(v => !v)}
-                >
-                  <Text
-                      style={[
-                        styles.chartMiniToggleText,
-                        showDeltaColumn && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
-                      ]}
-                  >
-                    Show Deltas
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-
+              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                {attributionExpanded ? 'Hide' : 'Show details'}
+              </Text>
+            </Pressable>
+            {attributionExpanded && (
+            <>
             {/* Dev-only: Math reconciliation overlay (hidden by default, toggleable) */}
             {__DEV__ && effectiveScenarioActive && scenarioValuesAtAge && scenarioDeltas ? (
               <View style={styles.reconciliationOverlayContainer}>
@@ -4364,105 +3696,13 @@ export default function ProjectionResultsScreen() {
                 showDelta={showDeltaColumn}
               />
             </View>
+            </>
+            )}
           </SectionCard>
 
         </View>
       </ScrollView>
 
-
-      {/* Asset Picker Modal */}
-      <Modal
-        transparent={true}
-        visible={assetPickerOpen}
-        animationType="slide"
-        onRequestClose={() => setAssetPickerOpen(false)}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable style={[styles.modalBackdropFlex, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setAssetPickerOpen(false)} />
-          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
-            <Text style={styles.modalTitle}>Select asset</Text>
-            <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-              {state.assets.map(asset => {
-                const metadata = (() => {
-                  const parts: string[] = [];
-                  if (typeof asset.annualGrowthRatePct === 'number' && Number.isFinite(asset.annualGrowthRatePct)) {
-                    parts.push(`${asset.annualGrowthRatePct.toLocaleString('en-GB', { maximumFractionDigits: 2 })}%`);
-                  }
-                  const avail = asset.availability ?? { type: 'immediate' };
-                  const liquidityLabel = avail.type === 'immediate' ? 'Liquid' : avail.type === 'locked' ? 'Locked' : 'Illiquid';
-                  parts.push(liquidityLabel);
-                  return parts.length > 0 ? parts.join(' • ') : null;
-                })();
-                return (
-                  <Row
-                    key={asset.id}
-                    onPress={() => handleSelectAsset(asset.id)}
-                    showBottomDivider={true}
-                    style={{ paddingVertical: spacing.base }}
-                  >
-                    <View style={styles.modalOptionContent}>
-                      <Text style={styles.modalOptionText}>{asset.name}</Text>
-                      {metadata ? (
-                        <Text style={styles.modalOptionMetadata}>{metadata}</Text>
-                      ) : null}
-                    </View>
-                  </Row>
-                );
-              })}
-              {state.assets.length === 0 ? (
-                <Text style={styles.modalEmptyText}>No assets available</Text>
-              ) : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Mortgage picker modal */}
-      <Modal
-        transparent={true}
-        visible={mortgagePickerOpen}
-        animationType="slide"
-        onRequestClose={() => setMortgagePickerOpen(false)}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable style={styles.modalBackdropFlex} onPress={() => setMortgagePickerOpen(false)} />
-          <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
-            <Text style={styles.modalTitle}>Select mortgage</Text>
-            <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-              {availableLoans.map(loan => {
-                const metadata = (() => {
-                  const parts: string[] = [];
-                  if (typeof loan.annualInterestRatePct === 'number' && Number.isFinite(loan.annualInterestRatePct)) {
-                    parts.push(`${loan.annualInterestRatePct.toLocaleString('en-GB', { maximumFractionDigits: 2 })}%`);
-                  }
-                  if (typeof loan.remainingTermYears === 'number' && Number.isFinite(loan.remainingTermYears)) {
-                    parts.push(`${loan.remainingTermYears} years`);
-                  }
-                  return parts.length > 0 ? parts.join(' • ') : null;
-                })();
-                return (
-                  <Row
-                    key={loan.id}
-                    onPress={() => handleSelectLiability(loan.id)}
-                    showBottomDivider={true}
-                    style={{ paddingVertical: spacing.base }}
-                  >
-                    <View style={styles.modalOptionContent}>
-                      <Text style={styles.modalOptionText}>{loan.name}</Text>
-                      {metadata ? (
-                        <Text style={styles.modalOptionMetadata}>{metadata}</Text>
-                      ) : null}
-                    </View>
-                  </Row>
-                );
-              })}
-              {availableLoans.length === 0 ? (
-                <Text style={styles.modalEmptyText}>No mortgages available</Text>
-              ) : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* Age selector modal */}
       <Modal transparent={true} visible={ageSelectorOpen} animationType="slide" onRequestClose={() => setAgeSelectorOpen(false)}>
@@ -5523,6 +4763,18 @@ function makeStyles(theme: Theme) {
       justifyContent: 'space-between',
       gap: spacing.xs,
       flexWrap: 'wrap',
+      marginTop: spacing.sm,
+    },
+    simpleBalanceItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    simpleBalanceValue: {
+      ...theme.typography.value,
+    },
+    simpleBalanceLabel: {
+      ...theme.typography.caption,
+      marginTop: spacing.tiny,
     },
     projectedBalanceSheetCard: {
       flex: 1,
