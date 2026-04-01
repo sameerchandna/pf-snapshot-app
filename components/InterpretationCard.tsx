@@ -10,7 +10,8 @@
 
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Pencil, CheckCircle, CircleIcon, Warning } from 'phosphor-react-native';
+import { Pencil, CheckCircle, CircleIcon, Warning, CaretRight } from 'phosphor-react-native';
+import type { DetectedProblem } from '../projection/detectProblems';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
@@ -29,15 +30,29 @@ interface InterpretationCardProps {
   onSaveKpis: (ids: KpiId[]) => void;
   /** Whether liabilities exist (used to contextualise headline) */
   hasLiabilities: boolean;
+  /** Detected problems from Phase 13 back-solve engine; enables tappable warnings */
+  detectedProblems?: DetectedProblem[];
+  /** Called when the user taps a solvable warning */
+  onSolveProblem?: (problem: DetectedProblem) => void;
   style?: object;
 }
 
 // ─── Warning Row ─────────────────────────────────────────────────────────────
 
-function WarningRow({ message, level }: { message: string; level: 'error' | 'warning' }) {
+function WarningRow({
+  message,
+  level,
+  onPress,
+}: {
+  message: string;
+  level: 'error' | 'warning';
+  onPress?: () => void;
+}) {
   const { theme } = useTheme();
   const isError = level === 'error';
-  return (
+  const textColor = isError ? theme.colors.semantic.errorText : theme.colors.semantic.warningText;
+
+  const inner = (
     <View
       style={[
         styles.warningRow,
@@ -52,16 +67,24 @@ function WarningRow({ message, level }: { message: string; level: 'error' | 'war
         color={isError ? theme.colors.semantic.error : theme.colors.semantic.warning}
         weight="fill"
       />
-      <Text
-        style={[
-          styles.warningText,
-          { color: isError ? theme.colors.semantic.errorText : theme.colors.semantic.warningText },
-        ]}
-      >
-        {message}
-      </Text>
+      <Text style={[styles.warningText, { color: textColor }]}>{message}</Text>
+      {onPress != null && <CaretRight size={12} color={textColor} weight="bold" />}
     </View>
   );
+
+  if (onPress != null) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        accessibilityRole="button"
+        accessibilityLabel="Fix this problem"
+      >
+        {inner}
+      </Pressable>
+    );
+  }
+  return inner;
 }
 
 // ─── KPI Tile ─────────────────────────────────────────────────────────────────
@@ -242,6 +265,8 @@ export default function InterpretationCard({
   kpiData,
   selectedKpiIds,
   onSaveKpis,
+  detectedProblems,
+  onSolveProblem,
   style,
 }: InterpretationCardProps) {
   const { theme } = useTheme();
@@ -249,8 +274,9 @@ export default function InterpretationCard({
 
   const { interpretation, monthlySurplus, endAge, bridgeGap } = kpiData;
 
-  // Build ordered warning list: errors first, then warnings
-  const warnings: Array<{ message: string; level: 'error' | 'warning' }> = [];
+  // Build ordered warning list: errors first, then warnings.
+  // Warnings that map to a DetectedProblem get an onPress handler.
+  const warnings: Array<{ message: string; level: 'error' | 'warning'; problem?: DetectedProblem }> = [];
 
   if (monthlySurplus < 0) {
     warnings.push({
@@ -264,6 +290,7 @@ export default function InterpretationCard({
     warnings.push({
       level: 'error',
       message: `Savings run out at age ${Math.round(interpretation.depletionAge)}. Your plan runs to ${Math.round(endAge)} — a ${gap}-year gap.`,
+      problem: detectedProblems?.find(p => p.kind === 'LONGEVITY_GAP'),
     });
   }
 
@@ -272,6 +299,7 @@ export default function InterpretationCard({
     warnings.push({
       level: 'warning',
       message: `Savings run out at age ${Math.round(bridgeGap.fromAge)} before ${bridgeGap.assetName} unlocks at ${Math.round(bridgeGap.toAge)} — a ${gapYears}-year gap.`,
+      problem: detectedProblems?.find(p => p.kind === 'BRIDGE_GAP'),
     });
   }
 
@@ -329,11 +357,20 @@ export default function InterpretationCard({
           ))}
         </View>
 
-        {/* Actionable warnings */}
+        {/* Actionable warnings — tappable when a DetectedProblem is attached */}
         {warnings.length > 0 ? (
           <View style={styles.warningsContainer}>
             {warnings.map((w, i) => (
-              <WarningRow key={i} message={w.message} level={w.level} />
+              <WarningRow
+                key={i}
+                message={w.message}
+                level={w.level}
+                onPress={
+                  w.problem != null && onSolveProblem != null
+                    ? () => onSolveProblem(w.problem!)
+                    : undefined
+                }
+              />
             ))}
           </View>
         ) : null}

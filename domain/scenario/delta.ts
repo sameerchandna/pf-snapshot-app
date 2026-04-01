@@ -7,12 +7,26 @@
 // - Scenarios redirect from "available cash" (remaining cash after baseline allocations)
 // - Future: explicit source modeling (income increase, expense reduction, etc.)
 
-import type { Scenario, FlowToAssetScenario, FlowToDebtScenario } from './types';
+import type {
+  Scenario,
+  FlowToAssetScenario,
+  FlowToDebtScenario,
+  ChangeRetirementAgeScenario,
+  ReduceExpensesScenario,
+  ChangeAssetGrowthRateScenario,
+  SavingsWhatIfScenario,
+} from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
 export type ProjectionInputDelta = {
   assetContributionsDelta?: Array<{ assetId: string; amountMonthly: number }>;
   liabilityOverpaymentsDelta?: Array<{ liabilityId: string; amountMonthly: number }>;
+  // CHANGE_RETIREMENT_AGE: override (not additive) — replaces retirementAge in ProjectionEngineInputs
+  retirementAgeOverride?: number;
+  // REDUCE_EXPENSES: additive delta applied to monthlyExpensesReal (negative = spending less)
+  monthlyExpensesRealDelta?: number;
+  // CHANGE_ASSET_GROWTH_RATE: per-asset override of annualGrowthRatePct
+  assetGrowthRateOverrides?: Array<{ assetId: string; annualGrowthRatePct: number }>;
 };
 
 export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
@@ -40,6 +54,51 @@ export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
         {
           liabilityId: flowToDebt.liabilityId,
           amountMonthly: flowToDebt.amountMonthly,
+        },
+      ],
+    };
+  }
+
+  if (s.kind === 'CHANGE_RETIREMENT_AGE') {
+    const changeAge = s as ChangeRetirementAgeScenario;
+    return {
+      retirementAgeOverride: changeAge.retirementAge,
+    };
+  }
+
+  if (s.kind === 'REDUCE_EXPENSES') {
+    const reduceExpenses = s as ReduceExpensesScenario;
+    // reductionMonthly > 0 means spending less, so delta is negative
+    return {
+      monthlyExpensesRealDelta: -reduceExpenses.reductionMonthly,
+    };
+  }
+
+  if (s.kind === 'CHANGE_ASSET_GROWTH_RATE') {
+    const changeGrowth = s as ChangeAssetGrowthRateScenario;
+    return {
+      assetGrowthRateOverrides: [
+        {
+          assetId: changeGrowth.assetId,
+          annualGrowthRatePct: changeGrowth.newAnnualGrowthRatePct,
+        },
+      ],
+    };
+  }
+
+  if (s.kind === 'SAVINGS_WHAT_IF') {
+    const compound = s as SavingsWhatIfScenario;
+    return {
+      assetContributionsDelta: [
+        {
+          assetId: compound.assetId,
+          amountMonthly: compound.contributionMonthly,
+        },
+      ],
+      assetGrowthRateOverrides: [
+        {
+          assetId: compound.assetId,
+          annualGrowthRatePct: compound.newAnnualGrowthRatePct,
         },
       ],
     };

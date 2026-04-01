@@ -190,6 +190,23 @@ export function applyScenarioToProjectionInputs(
     return baseline;
   }
 
+  // CHANGE_RETIREMENT_AGE, REDUCE_EXPENSES, CHANGE_ASSET_GROWTH_RATE: no affordability check needed
+  // (these don't redirect cashflow, so surplus is unaffected)
+
+  // SAVINGS_WHAT_IF: affordability check on the contribution component
+  if (scenario.kind === 'SAVINGS_WHAT_IF' && snapshotState) {
+    const baselineSurplus = selectMonthlySurplus(snapshotState);
+    const surplusAfter = baselineSurplus - scenario.contributionMonthly;
+    if (surplusAfter < -UI_TOLERANCE) {
+      console.warn(
+        `[SAVINGS_WHAT_IF Affordability] Scenario ${scenario.id} is unaffordable. ` +
+        `Baseline surplus: ${baselineSurplus}, contribution: ${scenario.contributionMonthly}, ` +
+        `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+      );
+      return baseline;
+    }
+  }
+
   // Phase 2.1: Affordability validation for FLOW_TO_ASSET scenarios
   // A FLOW_TO_ASSET scenario is unaffordable if applying it would make monthly surplus negative beyond tolerance.
   if (scenario.kind === 'FLOW_TO_ASSET' && snapshotState) {
@@ -298,11 +315,33 @@ export function applyScenarioToProjectionInputs(
     });
   }
 
+  // Apply CHANGE_RETIREMENT_AGE override
+  const mergedRetirementAge =
+    delta.retirementAgeOverride !== undefined ? delta.retirementAgeOverride : baseline.retirementAge;
+
+  // Apply REDUCE_EXPENSES delta (clamp to 0 — expenses cannot go negative)
+  const mergedMonthlyExpensesReal =
+    delta.monthlyExpensesRealDelta !== undefined
+      ? Math.max(0, (baseline.monthlyExpensesReal ?? 0) + delta.monthlyExpensesRealDelta)
+      : baseline.monthlyExpensesReal;
+
+  // Apply CHANGE_ASSET_GROWTH_RATE overrides — only mutate matching assets
+  const mergedAssetsToday =
+    delta.assetGrowthRateOverrides && delta.assetGrowthRateOverrides.length > 0
+      ? baseline.assetsToday.map(asset => {
+          const override = delta.assetGrowthRateOverrides!.find(o => o.assetId === asset.id);
+          return override ? { ...asset, annualGrowthRatePct: override.annualGrowthRatePct } : asset;
+        })
+      : baseline.assetsToday;
+
   // Construct scenario inputs with merged values
   const scenarioInputs: ProjectionEngineInputs = {
     ...baseline,
+    assetsToday: mergedAssetsToday,
     assetContributionsMonthly: mergedAssetContributions,
     liabilityOverpaymentsMonthly: mergedLiabilityOverpayments,
+    retirementAge: mergedRetirementAge,
+    monthlyExpensesReal: mergedMonthlyExpensesReal,
     // scenarioTransfers is not set (undefined) for FLOW scenarios
     // currentAge and endAge are preserved from baseline via spread operator
   };
@@ -310,6 +349,8 @@ export function applyScenarioToProjectionInputs(
   // Phase 2.3: Reconciliation assertions (__DEV__ only)
   // Verify that scenario application matches scenario deltas within tolerance.
   // On mismatch, log diagnostics and fall back to baseline (safe).
+  // CHANGE_RETIREMENT_AGE, REDUCE_EXPENSES, CHANGE_ASSET_GROWTH_RATE are overrides —
+  // no delta reconciliation needed (no cashflow redirection occurs).
   if (__DEV__) {
     let reconciliationFailed = false;
     const warnings: string[] = [];
@@ -373,13 +414,40 @@ export function applyScenarioToProjectionInputs(
           `Unexpected changes in other liabilities: ${unexpectedChanges.map(c => `${c.id}: ${c.before} → ${c.after} (diff: ${c.diff})`).join(', ')}`
         );
       }
+    } else if (scenario.kind === 'SAVINGS_WHAT_IF') {
+      // SAVINGS_WHAT_IF: Assert contribution delta matches
+      const beforeMap = arrayToMap(baseline.assetContributionsMonthly, 'assetId');
+      const afterMap = arrayToMap(scenarioInputs.assetContributionsMonthly, 'assetId');
+
+      const targetAssetId = scenario.assetId;
+      const before = beforeMap.get(targetAssetId) ?? 0;
+      const after = afterMap.get(targetAssetId) ?? 0;
+      const actualDelta = after - before;
+      const expectedDelta = scenario.contributionMonthly;
+      const deltaDiff = Math.abs(actualDelta - expectedDelta);
+
+      if (deltaDiff > UI_TOLERANCE) {
+        reconciliationFailed = true;
+        warnings.push(
+          `Target asset ${targetAssetId}: expected contribution delta ${expectedDelta}, actual ${actualDelta}, diff ${deltaDiff}`
+        );
+      }
+
+      // Assert growth rate override was applied
+      const targetAsset = scenarioInputs.assetsToday.find(a => a.id === targetAssetId);
+      if (targetAsset && targetAsset.annualGrowthRatePct !== undefined && Math.abs(targetAsset.annualGrowthRatePct - scenario.newAnnualGrowthRatePct) > UI_TOLERANCE) {
+        reconciliationFailed = true;
+        warnings.push(
+          `Target asset ${targetAssetId}: expected growth rate ${scenario.newAnnualGrowthRatePct}%, got ${targetAsset.annualGrowthRatePct}%`
+        );
+      }
     }
 
     // On reconciliation failure, log and fall back to baseline
     if (reconciliationFailed) {
       console.warn(
         `[Scenario Reconciliation] Scenario ${scenario.id} (${scenario.kind}) reconciliation failed:\n` +
-        `  Expected delta: ${scenario.amountMonthly}\n` +
+        `  ${warnings.join('\n  ')}\n` +
         `  ${warnings.join('\n  ')}\n` +
         `  Falling back to baseline.`
       );

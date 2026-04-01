@@ -7,14 +7,16 @@ import {
   HouseSimple,
   Clock,
   Baby,
-  Umbrella,
+  Hourglass,
+  PiggyBank,
+  ChartLineUp,
   CaretRight,
 } from 'phosphor-react-native';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import { SCENARIO_TEMPLATES } from '../domain/scenario/templates';
-import type { ScenarioTemplate } from '../domain/scenario/templates';
+import type { ScenarioCategory, ScenarioTemplate } from '../domain/scenario/templates';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
@@ -24,9 +26,11 @@ function TemplateIcon({ name, color, size }: { name: string; color: string; size
   switch (name) {
     case 'TrendUp': return <TrendUp size={size} color={color} weight="regular" />;
     case 'HouseSimple': return <HouseSimple size={size} color={color} weight="regular" />;
+    case 'Hourglass': return <Hourglass size={size} color={color} weight="regular" />;
+    case 'PiggyBank': return <PiggyBank size={size} color={color} weight="regular" />;
+    case 'ChartLineUp': return <ChartLineUp size={size} color={color} weight="regular" />;
     case 'Clock': return <Clock size={size} color={color} weight="regular" />;
     case 'Baby': return <Baby size={size} color={color} weight="regular" />;
-    case 'Umbrella': return <Umbrella size={size} color={color} weight="regular" />;
     default: return <TrendUp size={size} color={color} weight="regular" />;
   }
 }
@@ -35,7 +39,19 @@ export default function WhatIfPickerScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
 
-  const enabledTemplates = SCENARIO_TEMPLATES.filter(t => t.enabled);
+  const categoryOrder: { key: ScenarioCategory; label: string }[] = [
+    { key: 'assets', label: 'Assets' },
+    { key: 'liabilities', label: 'Liabilities' },
+    { key: 'events', label: 'Events' },
+  ];
+
+  const enabledByCategory = categoryOrder
+    .map(({ key, label }) => ({
+      label,
+      templates: SCENARIO_TEMPLATES.filter(t => t.enabled && t.category === key),
+    }))
+    .filter(g => g.templates.length > 0);
+
   const disabledTemplates = SCENARIO_TEMPLATES.filter(t => !t.enabled);
 
   const handleTemplatePress = (template: ScenarioTemplate) => {
@@ -96,12 +112,14 @@ export default function WhatIfPickerScreen() {
       <ScreenHeader title="What If" subtitle="Explore your financial scenarios" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <SectionCard>
-          <SectionHeader title="Explore" />
-          <View style={styles.cardList}>
-            {enabledTemplates.map(renderCard)}
-          </View>
-        </SectionCard>
+        {enabledByCategory.map(group => (
+          <SectionCard key={group.label}>
+            <SectionHeader title={group.label} />
+            <View style={styles.cardList}>
+              {group.templates.map(renderCard)}
+            </View>
+          </SectionCard>
+        ))}
 
         {disabledTemplates.length > 0 ? (
           <SectionCard>

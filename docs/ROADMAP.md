@@ -87,7 +87,7 @@ Only unchecked items may be worked on.
 - [x] 11.3: WhatIfPickerScreen — template cards, coming-soon badges, replaces Accounts tab
 - [x] 11.4: ScenarioExplorerScreen — slider explorer + target picker + live mini-chart
 - [x] 11.5: Comparison panel: baseline vs scenario outcome delta (net worth / assets / liabilities)
-- [ ] 11.6: Savings what-if: contribution and rate sliders (deferred to sub-phase)
+- [x] 11.6: Savings what-if: contribution and rate sliders (merged into single SAVINGS_WHAT_IF template)
 - [ ] 11.7: Mortgage what-if: overpayment, term, rate sensitivity (deferred to sub-phase)
 - [x] 11.8: Save / discard semantics (saves scenario, activates it, navigates back)
 - [x] 11.9: Guardrails — no advice framing, no optimisation bias, affordability clamp
@@ -104,18 +104,26 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 13 — Scenario Experiments & Financial Levers
-- [ ] 13.1: Experiment runner: flow delta → comparison projection → outcome difference
-- [ ] 13.2: Pre-built experiments: "Invest £200 more/month", "Cut expenses by £150"
-- [ ] 13.3: Lever ranking: which change has most impact?
-- [ ] 13.4: Results as outcome delta cards
+## Phase 13 — Problem Solver System (contextual gap solving)
+
+### Domain foundations
+- [x] 13.1: New ScenarioKinds: `CHANGE_RETIREMENT_AGE`, `REDUCE_EXPENSES`, `CHANGE_ASSET_GROWTH_RATE` — update `types.ts`, `delta.ts`, `validation.ts`, `applyScenarioToInputs.ts`
+
+### Projection helpers + back-solve engine
+- [x] 13.2: Extract `computeLiquidAssetsSeries` + `computeLockedAssetsSeries` from ProjectionResultsScreen → `projection/computeLiquidAssets.ts`; new `projection/detectProblems.ts`; new `projection/backSolve.ts` (binary-search back-solve for all 4 levers)
+
+### UI: tappable warnings + ProblemSolverScreen
+- [x] 13.3: `InterpretationCard` warnings become tappable (bridge gap, longevity gap); new `components/ProblemSolverModal.tsx` (modal lever UI with back-solved targets + live sliders); new `components/CustomSlider.tsx` (extracted)
+
+### WhatIf tab expansion
+- [x] 13.4: 3 new enabled templates (retire-at-age, spend-less, grow-faster); `ScenarioExplorerScreen` handles new kinds; `WhatIfPickerScreen` icon map updated; `docs/CODEBASE_MAP.md` synced
 
 ---
 
-## Phase 14 — Navigation Redesign
-- [ ] 14.1: Implement 4-tab structure: Snapshot (Where am I?) / Projection (Where am I going?) / What If (What changes it?) / Settings
-- [ ] 14.2: Migrate scenario/experiment screens into What If tab
-- [ ] 14.3: Clean up navigation stack
+## Phase 14 — Navigation Redesign (complete — implemented in Phase 11)
+- [x] 14.1: 4-tab structure: Snapshot / What If / Projection / Settings (implemented Phase 11)
+- [x] 14.2: Scenario/explorer screens in What If tab (implemented Phase 11)
+- [x] 14.3: Navigation stack cleanup (implemented Phase 11)
 
 ---
 

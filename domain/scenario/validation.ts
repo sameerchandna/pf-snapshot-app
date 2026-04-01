@@ -12,11 +12,27 @@
 //
 // Does NOT check whether assetId/liabilityId exists in state (that comes later).
 
-import type { Scenario, ScenarioKind, FlowToAssetScenario, FlowToDebtScenario } from './types';
+import type {
+  Scenario,
+  ScenarioKind,
+  FlowToAssetScenario,
+  FlowToDebtScenario,
+  ChangeRetirementAgeScenario,
+  ReduceExpensesScenario,
+  ChangeAssetGrowthRateScenario,
+  SavingsWhatIfScenario,
+} from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
 export function isScenarioKind(x: unknown): x is ScenarioKind {
-  return x === 'FLOW_TO_ASSET' || x === 'FLOW_TO_DEBT';
+  return (
+    x === 'FLOW_TO_ASSET' ||
+    x === 'FLOW_TO_DEBT' ||
+    x === 'CHANGE_RETIREMENT_AGE' ||
+    x === 'REDUCE_EXPENSES' ||
+    x === 'CHANGE_ASSET_GROWTH_RATE' ||
+    x === 'SAVINGS_WHAT_IF'
+  );
 }
 
 export function isScenario(x: unknown): x is Scenario {
@@ -59,6 +75,43 @@ export function isScenario(x: unknown): x is Scenario {
       return false;
     }
     if (typeof obj.amountMonthly !== 'number' || !Number.isFinite(obj.amountMonthly)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'CHANGE_RETIREMENT_AGE') {
+    if (typeof obj.retirementAge !== 'number' || !Number.isFinite(obj.retirementAge)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'REDUCE_EXPENSES') {
+    if (typeof obj.reductionMonthly !== 'number' || !Number.isFinite(obj.reductionMonthly)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'CHANGE_ASSET_GROWTH_RATE') {
+    if (typeof obj.assetId !== 'string' || obj.assetId.trim() === '') {
+      return false;
+    }
+    if (typeof obj.newAnnualGrowthRatePct !== 'number' || !Number.isFinite(obj.newAnnualGrowthRatePct)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'SAVINGS_WHAT_IF') {
+    if (typeof obj.assetId !== 'string' || obj.assetId.trim() === '') {
+      return false;
+    }
+    if (typeof obj.contributionMonthly !== 'number' || !Number.isFinite(obj.contributionMonthly)) {
+      return false;
+    }
+    if (typeof obj.newAnnualGrowthRatePct !== 'number' || !Number.isFinite(obj.newAnnualGrowthRatePct)) {
       return false;
     }
     return true;
@@ -110,6 +163,49 @@ export function validateScenario(s: Scenario): { ok: true } | { ok: false; error
         errors.push('FlowToDebtScenario amountMonthly must be > 0');
       }
     }
+
+    if (s.kind === 'CHANGE_RETIREMENT_AGE') {
+      const changeAge = s as ChangeRetirementAgeScenario;
+      if (typeof changeAge.retirementAge !== 'number' || !Number.isFinite(changeAge.retirementAge)) {
+        errors.push('ChangeRetirementAgeScenario retirementAge must be a finite number');
+      } else if (!Number.isInteger(changeAge.retirementAge) || changeAge.retirementAge < 1) {
+        errors.push('ChangeRetirementAgeScenario retirementAge must be a positive integer');
+      }
+    }
+
+    if (s.kind === 'REDUCE_EXPENSES') {
+      const reduceExpenses = s as ReduceExpensesScenario;
+      if (typeof reduceExpenses.reductionMonthly !== 'number' || !Number.isFinite(reduceExpenses.reductionMonthly)) {
+        errors.push('ReduceExpensesScenario reductionMonthly must be a finite number');
+      } else if (reduceExpenses.reductionMonthly <= 0) {
+        errors.push('ReduceExpensesScenario reductionMonthly must be > 0');
+      }
+    }
+
+    if (s.kind === 'CHANGE_ASSET_GROWTH_RATE') {
+      const changeGrowth = s as ChangeAssetGrowthRateScenario;
+      if (typeof changeGrowth.assetId !== 'string' || changeGrowth.assetId.trim() === '') {
+        errors.push('ChangeAssetGrowthRateScenario assetId must be a non-empty string');
+      }
+      if (typeof changeGrowth.newAnnualGrowthRatePct !== 'number' || !Number.isFinite(changeGrowth.newAnnualGrowthRatePct)) {
+        errors.push('ChangeAssetGrowthRateScenario newAnnualGrowthRatePct must be a finite number');
+      }
+    }
+
+    if (s.kind === 'SAVINGS_WHAT_IF') {
+      const compound = s as SavingsWhatIfScenario;
+      if (typeof compound.assetId !== 'string' || compound.assetId.trim() === '') {
+        errors.push('SavingsWhatIfScenario assetId must be a non-empty string');
+      }
+      if (typeof compound.contributionMonthly !== 'number' || !Number.isFinite(compound.contributionMonthly)) {
+        errors.push('SavingsWhatIfScenario contributionMonthly must be a finite number');
+      } else if (compound.contributionMonthly <= 0) {
+        errors.push('SavingsWhatIfScenario contributionMonthly must be > 0');
+      }
+      if (typeof compound.newAnnualGrowthRatePct !== 'number' || !Number.isFinite(compound.newAnnualGrowthRatePct)) {
+        errors.push('SavingsWhatIfScenario newAnnualGrowthRatePct must be a finite number');
+      }
+    }
   }
 
   if (errors.length > 0) {
@@ -148,6 +244,21 @@ export function isScenarioTargetValid(
   if (scenario.kind === 'FLOW_TO_DEBT') {
     const flowToDebt = scenario as FlowToDebtScenario;
     return liabilities.some(l => l.id === flowToDebt.liabilityId);
+  }
+
+  // CHANGE_RETIREMENT_AGE and REDUCE_EXPENSES have no asset/liability target
+  if (scenario.kind === 'CHANGE_RETIREMENT_AGE' || scenario.kind === 'REDUCE_EXPENSES') {
+    return true;
+  }
+
+  if (scenario.kind === 'CHANGE_ASSET_GROWTH_RATE') {
+    const changeGrowth = scenario as ChangeAssetGrowthRateScenario;
+    return assets.some(a => a.id === changeGrowth.assetId);
+  }
+
+  if (scenario.kind === 'SAVINGS_WHAT_IF') {
+    const compound = scenario as SavingsWhatIfScenario;
+    return assets.some(a => a.id === compound.assetId);
   }
 
   return false;

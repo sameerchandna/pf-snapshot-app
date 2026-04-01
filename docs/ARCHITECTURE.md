@@ -202,6 +202,17 @@ View-configuration layer that lets users choose which 3 metrics to display as ti
 
 `liquidAssets` in `KpiData` includes immediate assets plus locked assets whose `unlockAge` has already passed at `currentAge` — not immediate-only.
 
+### Problem Solver (`projection/detectProblems.ts`, `projection/backSolve.ts`, `components/ProblemSolverModal.tsx`)
+
+Contextual gap-solving layer. Detects financial problems from projection results (longevity gap, bridge gap) and back-solves lever targets that would close each gap.
+
+- **`projection/detectProblems.ts`** — `detectProblems()`: identifies gaps from projection series and summary
+- **`projection/backSolve.ts`** — binary-search back-solve: for each lever (retire later, spend less, grow faster, invest more), finds the value that eliminates the detected gap
+- **`projection/computeLiquidAssets.ts`** — `computeLiquidAssetsSeries()`, `computeLockedAssetsSeries()`: extracted from ProjectionResultsScreen for reuse by detection and back-solve
+- **`components/ProblemSolverModal.tsx`** — modal UI with back-solved targets and live sliders; launched from tappable warnings on `InterpretationCard`
+
+Problem Solver is observational — it suggests lever values but never mutates Snapshot or Projection state. Users act on suggestions by creating scenarios through the existing scenario system.
+
 ---
 
 ## Extension Boundaries

@@ -110,6 +110,9 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 | 3. Run simulation | `engines/projectionEngine.ts` | `computeProjectionSeries()` / `computeProjectionSummary()` |
 | 4. Interpret results | `insights/interpretProjection.ts` | `interpretProjection()` |
 | 5. Chart explanation | `projection/generateChartExplanation.ts` | `generateChartExplanation()` |
+| 6. Liquid assets | `projection/computeLiquidAssets.ts` | `computeLiquidAssetsSeries()`, `computeLockedAssetsSeries()` |
+| 7. Detect problems | `projection/detectProblems.ts` | `detectProblems()` |
+| 8. Back-solve | `projection/backSolve.ts` | Binary-search back-solve for gap-closing levers |
 
 ---
 
@@ -161,10 +164,10 @@ View-configuration layer for the "Your Projection" dashboard card. Persisted ind
 ## Scenario System
 
 ### Domain (`domain/scenario/`)
-- **types.ts:** `ScenarioKind` = `'FLOW_TO_ASSET'` | `'FLOW_TO_DEBT'`, `Scenario` union type, `BASELINE_SCENARIO_ID`
+- **types.ts:** `ScenarioKind` = `'FLOW_TO_ASSET'` | `'FLOW_TO_DEBT'` | `'CHANGE_RETIREMENT_AGE'` | `'REDUCE_EXPENSES'` | `'CHANGE_ASSET_GROWTH_RATE'`, `Scenario` union type, `BASELINE_SCENARIO_ID`
 - **delta.ts:** `scenarioToDelta()` → `ProjectionInputDelta`
 - **validation.ts:** `validateScenario()`, `isScenarioTargetValid()`
-- **templates.ts (Phase 11):** `ScenarioTemplate` type, `SCENARIO_TEMPLATES[]` (5 presets), `getTemplateById()`
+- **templates.ts (Phase 11 + 13.4):** `ScenarioCategory` (`'assets'` | `'liabilities'` | `'events'`), `ScenarioTemplate` type, `SCENARIO_TEMPLATES[]` (7 templates: 5 enabled, 2 coming-soon; grouped by category), `getTemplateById()`
 
 ### State (`scenarioState/`)
 - **scenarioStore.ts** — high-level API: `getScenarios()`, `saveScenario()`, `deleteScenario()`, `getActiveScenarioId()`, `setActiveScenarioId()`
@@ -202,6 +205,8 @@ View-configuration layer for the "Your Projection" dashboard card. Persisted ind
 | `CollectionRowWithActions` | Row with swipe edit/delete | `components/rows/CollectionRowWithActions.tsx` |
 | `ItemEditor` | Modal/inline item editing | `components/ItemEditor.tsx` |
 | `InterpretationCard` | Projection headline card with KPI tiles, actionable warnings, and picker modal | `components/InterpretationCard.tsx` |
+| `ProblemSolverModal` | Gap-solving modal with back-solved lever targets and live sliders | `components/ProblemSolverModal.tsx` |
+| `CustomSlider` | Extracted reusable slider component | `components/CustomSlider.tsx` |
 | `GoalsSection` | Goal assessment display | `components/GoalsSection.tsx` |
 | `ControlBar` | Pill/icon filter controls | `components/ControlBar.tsx` |
 | `Button` | Standard button | `components/Button.tsx` |

@@ -15,7 +15,13 @@ export type ScenarioId = string;
  */
 export const BASELINE_SCENARIO_ID: ScenarioId = '__BASELINE__';
 
-export type ScenarioKind = 'FLOW_TO_ASSET' | 'FLOW_TO_DEBT';
+export type ScenarioKind =
+  | 'FLOW_TO_ASSET'
+  | 'FLOW_TO_DEBT'
+  | 'CHANGE_RETIREMENT_AGE'
+  | 'REDUCE_EXPENSES'
+  | 'CHANGE_ASSET_GROWTH_RATE'
+  | 'SAVINGS_WHAT_IF';
 
 export interface ScenarioBase {
   id: ScenarioId;
@@ -36,7 +42,36 @@ export interface FlowToDebtScenario extends ScenarioBase {
   amountMonthly: number;
 }
 
-export type Scenario = FlowToAssetScenario | FlowToDebtScenario;
+export interface ChangeRetirementAgeScenario extends ScenarioBase {
+  kind: 'CHANGE_RETIREMENT_AGE';
+  retirementAge: number; // new retirement age (integer, >= 1)
+}
+
+export interface ReduceExpensesScenario extends ScenarioBase {
+  kind: 'REDUCE_EXPENSES';
+  reductionMonthly: number; // monthly expense reduction in today's money (> 0 means spending less)
+}
+
+export interface ChangeAssetGrowthRateScenario extends ScenarioBase {
+  kind: 'CHANGE_ASSET_GROWTH_RATE';
+  assetId: string;
+  newAnnualGrowthRatePct: number; // new growth rate in percent (e.g. 7.0 = 7%); must be finite
+}
+
+export interface SavingsWhatIfScenario extends ScenarioBase {
+  kind: 'SAVINGS_WHAT_IF';
+  assetId: string;
+  contributionMonthly: number; // extra monthly contribution (> 0)
+  newAnnualGrowthRatePct: number; // growth rate override in percent (e.g. 7.0 = 7%)
+}
+
+export type Scenario =
+  | FlowToAssetScenario
+  | FlowToDebtScenario
+  | ChangeRetirementAgeScenario
+  | ReduceExpensesScenario
+  | ChangeAssetGrowthRateScenario
+  | SavingsWhatIfScenario;
 
 /**
  * Creates the baseline scenario object.

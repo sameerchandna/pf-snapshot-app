@@ -6,8 +6,6 @@ import {
   Text,
   View,
   Platform,
-  PanResponder,
-  LayoutChangeEvent,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +16,7 @@ import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
 import { getTemplateById } from '../domain/scenario/templates';
+import type { SliderConfig } from '../domain/scenario/templates';
 import type { Scenario } from '../domain/scenario/types';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
@@ -29,106 +28,39 @@ import { formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/format
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
-
-// Simple custom slider using PanResponder (no external package needed)
-type SliderProps = {
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onValueChange: (value: number) => void;
-  trackColor: string;
-  thumbColor: string;
-  trackBgColor: string;
-};
-
-function CustomSlider({ min, max, step, value, onValueChange, trackColor, thumbColor, trackBgColor }: SliderProps) {
-  const trackWidthRef = useRef<number>(0);
-
-  const clampAndSnap = (rawValue: number): number => {
-    const snapped = Math.round((rawValue - min) / step) * step + min;
-    return Math.max(min, Math.min(max, snapped));
-  };
-
-  const positionFromValue = (v: number): number => {
-    if (trackWidthRef.current === 0) return 0;
-    return ((v - min) / (max - min)) * trackWidthRef.current;
-  };
-
-  const thumbPos = positionFromValue(value);
-  const fillPct = max > min ? ((value - min) / (max - min)) * 100 : 0;
-
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt) => {
-      const x = evt.nativeEvent.locationX;
-      const rawValue = min + (x / trackWidthRef.current) * (max - min);
-      onValueChange(clampAndSnap(rawValue));
-    },
-    onPanResponderMove: (_, gestureState) => {
-      if (trackWidthRef.current === 0) return;
-      // Use accumulated dx relative to start position
-      const startValue = value;
-      const dx = gestureState.dx;
-      const rawValue = startValue + (dx / trackWidthRef.current) * (max - min);
-      onValueChange(clampAndSnap(rawValue));
-    },
-  }), [min, max, step, value, onValueChange]);
-
-  const handleTrackLayout = (e: LayoutChangeEvent) => {
-    trackWidthRef.current = e.nativeEvent.layout.width;
-  };
-
-  return (
-    <View style={sliderStyles.container} {...panResponder.panHandlers}>
-      <View style={[sliderStyles.track, { backgroundColor: trackBgColor }]} onLayout={handleTrackLayout}>
-        <View style={[sliderStyles.fill, { width: `${fillPct}%` as any, backgroundColor: trackColor }]} />
-        <View
-          style={[
-            sliderStyles.thumb,
-            { left: thumbPos - 11, backgroundColor: thumbColor, borderColor: trackColor },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
-const sliderStyles = StyleSheet.create({
-  container: {
-    height: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 11, // half of thumb width for edge alignment
-  },
-  track: {
-    height: 4,
-    borderRadius: 2,
-    position: 'relative',
-  },
-  fill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  thumb: {
-    position: 'absolute',
-    top: -9,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-});
+import CustomSlider from '../components/CustomSlider';
 
 type RouteParams = {
   templateId: string;
   scenarioId?: string;
+  /** Pre-fill slider with a specific value (e.g. from Problem Solver back-solve) */
+  initialValue?: number;
+  /** Pre-fill growth rate slider (SAVINGS_WHAT_IF) */
+  initialGrowthRate?: number;
+  /** Pre-select a specific target asset/loan */
+  initialTargetId?: string;
+  /** When navigated from another tab, back/discard returns here instead of goBack */
+  returnToTab?: string;
 };
+
+function formatSliderValue(scenarioKind: string | null, value: number): string {
+  if (scenarioKind === 'CHANGE_RETIREMENT_AGE') return `Age ${Math.round(value)}`;
+  if (scenarioKind === 'CHANGE_ASSET_GROWTH_RATE') return `${value}%`;
+  return `${formatCurrencyCompact(value)}/mo`;
+}
+
+function formatSliderConfigValue(format: SliderConfig['format'], value: number): string {
+  if (format === 'age') return `Age ${Math.round(value)}`;
+  if (format === 'percent') return `${value}%`;
+  return `${formatCurrencyCompact(value)}/mo`;
+}
+
+function getSliderSectionTitle(scenarioKind: string | null): string {
+  if (scenarioKind === 'CHANGE_RETIREMENT_AGE') return 'Retire at age';
+  if (scenarioKind === 'CHANGE_ASSET_GROWTH_RATE') return 'Annual growth rate';
+  if (scenarioKind === 'REDUCE_EXPENSES') return 'Monthly reduction';
+  return 'Monthly amount';
+}
 
 type TargetItem = {
   id: string;
@@ -143,7 +75,7 @@ export default function ScenarioExplorerScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute();
-  const { templateId } = route.params as RouteParams;
+  const { templateId, initialValue, initialGrowthRate, initialTargetId, returnToTab } = route.params as RouteParams;
   const { state } = useSnapshot();
 
   const template = getTemplateById(templateId);
@@ -169,7 +101,7 @@ export default function ScenarioExplorerScreen() {
     return [];
   }, [template, state]);
 
-  const [selectedTargetId, setSelectedTargetId] = useState<string>(() => targets[0]?.id ?? '');
+  const [selectedTargetId, setSelectedTargetId] = useState<string>(() => initialTargetId ?? targets[0]?.id ?? '');
 
   // Auto-select first target when targets load
   useEffect(() => {
@@ -178,17 +110,75 @@ export default function ScenarioExplorerScreen() {
     }
   }, [targets]);
 
+  // Sync target when navigated with a new initialTargetId (screen may not remount)
+  useEffect(() => {
+    if (initialTargetId) {
+      setSelectedTargetId(initialTargetId);
+    }
+  }, [initialTargetId]);
+
   // --- Slider ---
   const defaults = template?.defaults;
-  const [sliderValue, setSliderValue] = useState<number>(defaults?.amountMonthly ?? 100);
+  const isMultiSlider = !!(template?.sliders && template.sliders.length > 0);
 
-  // Affordability clamp: slider max is min(template.max, monthly surplus)
+  // Single-slider state (legacy templates)
+  const [sliderValue, setSliderValue] = useState<number>(initialValue ?? defaults?.amountMonthly ?? 100);
+
+  // Multi-slider state (keyed by slider id)
+  const [sliderValues, setSliderValues] = useState<Record<string, number>>(() => {
+    if (!template?.sliders) return {};
+    const init: Record<string, number> = {};
+    for (const sc of template.sliders) {
+      if (sc.id === 'contribution' && initialValue !== undefined) {
+        init[sc.id] = initialValue;
+      } else if (sc.id === 'growthRate' && initialGrowthRate !== undefined) {
+        init[sc.id] = initialGrowthRate;
+      } else {
+        init[sc.id] = sc.defaultValue;
+      }
+    }
+    return init;
+  });
+
+  // Sync slider when navigated with a new initialValue (screen may not remount)
+  useEffect(() => {
+    if (initialValue !== undefined) {
+      setSliderValue(initialValue);
+      if (isMultiSlider) {
+        setSliderValues(prev => ({ ...prev, contribution: initialValue }));
+      }
+    }
+  }, [initialValue]);
+
+  useEffect(() => {
+    if (initialGrowthRate !== undefined && isMultiSlider) {
+      setSliderValues(prev => ({ ...prev, growthRate: initialGrowthRate }));
+    }
+  }, [initialGrowthRate]);
+
+  // Affordability clamp: only for flow-type scenarios (FLOW_TO_ASSET / FLOW_TO_DEBT / SAVINGS_WHAT_IF contribution)
+  const needsAffordabilityClamp = template?.scenarioKind === 'FLOW_TO_ASSET' || template?.scenarioKind === 'FLOW_TO_DEBT';
   const monthlySurplus = useMemo(() => selectMonthlySurplus(state), [state]);
   const effectiveMax = useMemo(() => {
     if (!defaults) return 1000;
+    if (!needsAffordabilityClamp) return defaults.max;
     return Math.max(defaults.min, Math.min(defaults.max, Math.floor(monthlySurplus / (defaults.step)) * defaults.step));
-  }, [defaults, monthlySurplus]);
-  const isClamped = defaults ? effectiveMax < defaults.max : false;
+  }, [defaults, monthlySurplus, needsAffordabilityClamp]);
+  const isClamped = needsAffordabilityClamp && defaults ? effectiveMax < defaults.max : false;
+
+  // Per-slider effective max (for multi-slider affordability clamping)
+  const sliderEffectiveMax = useMemo(() => {
+    if (!template?.sliders) return {};
+    const result: Record<string, number> = {};
+    for (const sc of template.sliders) {
+      if (sc.affordabilityClamped) {
+        result[sc.id] = Math.max(sc.min, Math.min(sc.max, Math.floor(monthlySurplus / sc.step) * sc.step));
+      } else {
+        result[sc.id] = sc.max;
+      }
+    }
+    return result;
+  }, [template?.sliders, monthlySurplus]);
 
   // --- Scenario projection (debounced) ---
   const [scenarioSeries, setScenarioSeries] = useState<ProjectionSeriesPoint[]>([]);
@@ -196,13 +186,42 @@ export default function ScenarioExplorerScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const recomputeScenario = useCallback(
-    (amount: number, targetId: string) => {
-      if (!template || !targetId) return;
+    (amount: number, targetId: string, multiValues?: Record<string, number>) => {
+      if (!template) return;
 
-      const scenario: Scenario =
-        template.scenarioKind === 'FLOW_TO_ASSET'
-          ? { id: '__preview__', name: 'Preview', kind: 'FLOW_TO_ASSET', assetId: targetId, amountMonthly: amount }
-          : { id: '__preview__', name: 'Preview', kind: 'FLOW_TO_DEBT', liabilityId: targetId, amountMonthly: amount };
+      let scenario: Scenario;
+      switch (template.scenarioKind) {
+        case 'FLOW_TO_ASSET':
+          if (!targetId) return;
+          scenario = { id: '__preview__', name: 'Preview', kind: 'FLOW_TO_ASSET', assetId: targetId, amountMonthly: amount };
+          break;
+        case 'FLOW_TO_DEBT':
+          if (!targetId) return;
+          scenario = { id: '__preview__', name: 'Preview', kind: 'FLOW_TO_DEBT', liabilityId: targetId, amountMonthly: amount };
+          break;
+        case 'CHANGE_RETIREMENT_AGE':
+          scenario = { id: '__preview__', name: 'Preview', kind: 'CHANGE_RETIREMENT_AGE', retirementAge: Math.round(amount) };
+          break;
+        case 'REDUCE_EXPENSES':
+          scenario = { id: '__preview__', name: 'Preview', kind: 'REDUCE_EXPENSES', reductionMonthly: amount };
+          break;
+        case 'CHANGE_ASSET_GROWTH_RATE':
+          if (!targetId) return;
+          scenario = { id: '__preview__', name: 'Preview', kind: 'CHANGE_ASSET_GROWTH_RATE', assetId: targetId, newAnnualGrowthRatePct: amount };
+          break;
+        case 'SAVINGS_WHAT_IF': {
+          if (!targetId || !multiValues) return;
+          scenario = {
+            id: '__preview__', name: 'Preview', kind: 'SAVINGS_WHAT_IF',
+            assetId: targetId,
+            contributionMonthly: multiValues.contribution ?? 100,
+            newAnnualGrowthRatePct: multiValues.growthRate ?? 8,
+          };
+          break;
+        }
+        default:
+          return;
+      }
 
       const scenarioInputs = applyScenarioToProjectionInputs(baselineInputs, scenario, state);
       setScenarioSeries(computeProjectionSeries(scenarioInputs));
@@ -211,10 +230,11 @@ export default function ScenarioExplorerScreen() {
     [template, baselineInputs, state]
   );
 
-  // Trigger on mount
+  // Trigger on mount / target change
   useEffect(() => {
-    if (selectedTargetId) {
-      recomputeScenario(sliderValue, selectedTargetId);
+    const needsTarget = template?.targetSelector !== null;
+    if (!needsTarget || selectedTargetId) {
+      recomputeScenario(sliderValue, selectedTargetId, isMultiSlider ? sliderValues : undefined);
     }
   }, [selectedTargetId]);
 
@@ -228,38 +248,80 @@ export default function ScenarioExplorerScreen() {
     }, 300);
   };
 
+  const handleMultiSliderChange = (sliderId: string, value: number, step: number) => {
+    const snapped = Math.round(value / step) * step;
+    const updated = { ...sliderValues, [sliderId]: snapped };
+    setSliderValues(updated);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      recomputeScenario(0, selectedTargetId, updated);
+    }, 300);
+  };
+
   // --- Chart data ---
-  const chartWidth = 320;
-  const chartHeight = 160;
+  const chartWidth = 380;
+  const chartHeight = 210;
 
   // --- Save ---
   const handleSave = async () => {
-    if (!template || !selectedTargetId) return;
+    if (!template) return;
 
-    const newScenario: Scenario =
-      template.scenarioKind === 'FLOW_TO_ASSET'
-        ? {
-            id: generateId(),
-            name: `${formatCurrencyCompact(sliderValue)}/mo to ${targets.find(t => t.id === selectedTargetId)?.name ?? 'asset'}`,
-            kind: 'FLOW_TO_ASSET',
-            assetId: selectedTargetId,
-            amountMonthly: sliderValue,
-          }
-        : {
-            id: generateId(),
-            name: `${formatCurrencyCompact(sliderValue)}/mo off ${targets.find(t => t.id === selectedTargetId)?.name ?? 'loan'}`,
-            kind: 'FLOW_TO_DEBT',
-            liabilityId: selectedTargetId,
-            amountMonthly: sliderValue,
-          };
+    const targetName = targets.find(t => t.id === selectedTargetId)?.name ?? '';
+    let newScenario: Scenario;
+
+    switch (template.scenarioKind) {
+      case 'FLOW_TO_ASSET':
+        if (!selectedTargetId) return;
+        newScenario = { id: generateId(), name: `${formatCurrencyCompact(sliderValue)}/mo to ${targetName}`, kind: 'FLOW_TO_ASSET', assetId: selectedTargetId, amountMonthly: sliderValue };
+        break;
+      case 'FLOW_TO_DEBT':
+        if (!selectedTargetId) return;
+        newScenario = { id: generateId(), name: `${formatCurrencyCompact(sliderValue)}/mo off ${targetName}`, kind: 'FLOW_TO_DEBT', liabilityId: selectedTargetId, amountMonthly: sliderValue };
+        break;
+      case 'CHANGE_RETIREMENT_AGE':
+        newScenario = { id: generateId(), name: `Retire at ${Math.round(sliderValue)}`, kind: 'CHANGE_RETIREMENT_AGE', retirementAge: Math.round(sliderValue) };
+        break;
+      case 'REDUCE_EXPENSES':
+        newScenario = { id: generateId(), name: `Spend ${formatCurrencyCompact(sliderValue)}/mo less`, kind: 'REDUCE_EXPENSES', reductionMonthly: sliderValue };
+        break;
+      case 'CHANGE_ASSET_GROWTH_RATE':
+        if (!selectedTargetId) return;
+        newScenario = { id: generateId(), name: `${targetName} at ${sliderValue}%`, kind: 'CHANGE_ASSET_GROWTH_RATE', assetId: selectedTargetId, newAnnualGrowthRatePct: sliderValue };
+        break;
+      case 'SAVINGS_WHAT_IF': {
+        if (!selectedTargetId) return;
+        const contrib = sliderValues.contribution ?? 100;
+        const rate = sliderValues.growthRate ?? 8;
+        newScenario = {
+          id: generateId(),
+          name: `${formatCurrencyCompact(contrib)}/mo to ${targetName} at ${rate}%`,
+          kind: 'SAVINGS_WHAT_IF',
+          assetId: selectedTargetId,
+          contributionMonthly: contrib,
+          newAnnualGrowthRatePct: rate,
+        };
+        break;
+      }
+      default:
+        return;
+    }
 
     await saveScenario(newScenario);
     await setActiveScenarioId(newScenario.id);
-    navigation.goBack();
+    if (returnToTab) {
+      navigation.navigate(returnToTab);
+    } else {
+      navigation.goBack();
+    }
   };
 
   const handleDiscard = () => {
-    navigation.goBack();
+    if (returnToTab) {
+      navigation.navigate(returnToTab);
+    } else {
+      navigation.goBack();
+    }
   };
 
   if (!template) {
@@ -370,63 +432,127 @@ export default function ScenarioExplorerScreen() {
           </SectionCard>
         ) : null}
 
-        {/* Slider */}
-        {!hasNoTargets ? (
+        {/* Slider(s) */}
+        {!hasNoTargets && !isMultiSlider ? (
           <SectionCard>
-          <SectionHeader title="Monthly amount" />
-
-          <View style={styles.sliderValueRow}>
-            <Text style={[theme.typography.valueLarge, { color: theme.colors.brand.primary }]}>
-              {formatCurrencyCompact(sliderValue)}/mo
-            </Text>
-            {selectedTargetName ? (
+            <View style={styles.sliderLabelRow}>
               <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
-                → {selectedTargetName}
+                {getSliderSectionTitle(template.scenarioKind)}
+                {selectedTargetName ? ` → ${selectedTargetName}` : ''}
+              </Text>
+              <Text style={[theme.typography.value, { color: theme.colors.brand.primary }]}>
+                {formatSliderValue(template.scenarioKind, sliderValue)}
+              </Text>
+            </View>
+
+            <CustomSlider
+              min={defaults?.min ?? 50}
+              max={effectiveMax}
+              step={defaults?.step ?? 50}
+              value={sliderValue}
+              onValueChange={handleSliderChange}
+              trackColor={theme.colors.brand.primary}
+              thumbColor={theme.colors.bg.card}
+              trackBgColor={theme.colors.border.default}
+              showSteppers
+              stepperColor={theme.colors.brand.primary}
+            />
+
+            <View style={styles.sliderRangeRow}>
+              <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
+                {formatSliderValue(template.scenarioKind, defaults?.min ?? 50)}
+              </Text>
+              <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
+                {formatSliderValue(template.scenarioKind, effectiveMax)}
+              </Text>
+            </View>
+
+            {isClamped ? (
+              <Text style={[styles.clampWarning, theme.typography.caption, { color: theme.colors.semantic.warning }]}>
+                Limited by your available surplus of {formatCurrencyCompact(monthlySurplus)}/month
               </Text>
             ) : null}
-          </View>
+          </SectionCard>
+        ) : null}
 
-          <CustomSlider
-            min={defaults?.min ?? 50}
-            max={effectiveMax}
-            step={defaults?.step ?? 50}
-            value={sliderValue}
-            onValueChange={handleSliderChange}
-            trackColor={theme.colors.brand.primary}
-            thumbColor={theme.colors.bg.card}
-            trackBgColor={theme.colors.border.default}
-          />
+        {/* Multi-slider mode */}
+        {!hasNoTargets && isMultiSlider ? (
+          <SectionCard>
+            {template.sliders!.map((sc, index) => {
+              const val = sliderValues[sc.id] ?? sc.defaultValue;
+              const max = sliderEffectiveMax[sc.id] ?? sc.max;
+              const isSliderClamped = sc.affordabilityClamped && max < sc.max;
+              return (
+                <View key={sc.id}>
+                  {index > 0 && (
+                    <View style={[styles.sliderDivider, { backgroundColor: theme.colors.border.subtle }]} />
+                  )}
+                  <View style={styles.sliderLabelRow}>
+                    <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
+                      {sc.label}
+                      {selectedTargetName ? ` → ${selectedTargetName}` : ''}
+                    </Text>
+                    <Text style={[theme.typography.value, { color: theme.colors.brand.primary }]}>
+                      {formatSliderConfigValue(sc.format, val)}
+                    </Text>
+                  </View>
 
-          <View style={styles.sliderRangeRow}>
-            <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-              {formatCurrencyCompact(defaults?.min ?? 50)}
-            </Text>
-            <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-              {formatCurrencyCompact(effectiveMax)}
-            </Text>
-          </View>
+                  <CustomSlider
+                    min={sc.min}
+                    max={max}
+                    step={sc.step}
+                    value={val}
+                    onValueChange={(v: number) => handleMultiSliderChange(sc.id, v, sc.step)}
+                    trackColor={theme.colors.brand.primary}
+                    thumbColor={theme.colors.bg.card}
+                    trackBgColor={theme.colors.border.default}
+                    showSteppers
+                    stepperColor={theme.colors.brand.primary}
+                  />
 
-          {isClamped ? (
-            <Text style={[styles.clampWarning, theme.typography.caption, { color: theme.colors.semantic.warning }]}>
-              Limited by your available surplus of {formatCurrencyCompact(monthlySurplus)}/month
-            </Text>
-          ) : null}
-        </SectionCard>
+                  <View style={styles.sliderRangeRow}>
+                    <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
+                      {formatSliderConfigValue(sc.format, sc.min)}
+                    </Text>
+                    <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
+                      {formatSliderConfigValue(sc.format, max)}
+                    </Text>
+                  </View>
+
+                  {isSliderClamped ? (
+                    <Text style={[styles.clampWarning, theme.typography.caption, { color: theme.colors.semantic.warning }]}>
+                      Limited by your available surplus of {formatCurrencyCompact(monthlySurplus)}/month
+                    </Text>
+                  ) : null}
+                </View>
+              );
+            })}
+          </SectionCard>
         ) : null}
 
         {/* Mini projection chart */}
         {scenarioSeries.length > 0 ? (
           <SectionCard>
-            <SectionHeader title="Projected net worth" />
-            <Text style={[styles.chartSubtext, theme.typography.caption, { color: theme.colors.text.muted }]}>
-              Baseline vs this scenario — in today's money
-            </Text>
+            <View style={styles.chartHeaderRow}>
+              <SectionHeader title="Projected net worth" />
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendLine, { backgroundColor: theme.colors.text.disabled }]} />
+                  <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>Baseline</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendLine, { backgroundColor: theme.colors.brand.primary }]} />
+                  <Text style={[theme.typography.caption, { color: theme.colors.text.secondary }]}>Scenario</Text>
+                </View>
+              </View>
+            </View>
 
             <View style={styles.chartContainer}>
               <VictoryChart
                 width={chartWidth}
                 height={chartHeight}
                 padding={layout.chartInsetPadding}
+                domainPadding={{ y: [0, 40] }}
               >
                 <VictoryAxis
                   tickFormat={(age: number) => `${age}`}
@@ -456,18 +582,6 @@ export default function ScenarioExplorerScreen() {
                   style={{ data: { stroke: theme.colors.brand.primary, strokeWidth: 2 } }}
                 />
               </VictoryChart>
-            </View>
-
-            {/* Chart legend */}
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendLine, { backgroundColor: theme.colors.text.disabled }]} />
-                <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>Baseline</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendLine, { backgroundColor: theme.colors.brand.primary }]} />
-                <Text style={[theme.typography.caption, { color: theme.colors.text.secondary }]}>This scenario</Text>
-              </View>
             </View>
           </SectionCard>
         ) : null}
@@ -552,7 +666,7 @@ export default function ScenarioExplorerScreen() {
           variant="primary"
           size="md"
           onPress={handleSave}
-          disabled={!selectedTargetId || sliderValue <= 0}
+          disabled={(template?.targetSelector !== null && !selectedTargetId) || (isMultiSlider ? (sliderValues.contribution ?? 0) <= 0 : sliderValue <= 0)}
           style={styles.actionButton}
         >
           Save scenario
@@ -597,10 +711,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderWidth: 1.5,
   },
-  sliderValueRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.base,
-    gap: spacing.xs,
+  sliderDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.base,
+  },
+  sliderLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
   sliderRangeRow: {
     flexDirection: 'row',
@@ -611,19 +730,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'center',
   },
-  chartSubtext: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
+  chartHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   chartContainer: {
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.base,
+    marginHorizontal: -spacing.xl,
+    marginBottom: -spacing.xl,
   },
   legendRow: {
     flexDirection: 'row',
-    gap: spacing.xl,
-    marginTop: spacing.sm,
-    justifyContent: 'center',
+    gap: spacing.base,
   },
   legendItem: {
     flexDirection: 'row',
