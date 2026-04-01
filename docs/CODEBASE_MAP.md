@@ -8,16 +8,18 @@ Concrete implementation reference. For concepts see ARCHITECTURE.md, for rules s
 
 ```
 ├── components/          UI components (reusable primitives)
-│   ├── cashflow/        CashflowCardStack, PrimaryCard, SubCard, HeroValue
+│   ├── cashflow/        CashflowCardStack, CashflowCardWrapper, CashflowPrimaryCard, CashflowSubCard, CashflowHeroValue
 │   ├── list/            List, Row, AddEntry, GroupedList, GroupedListSection
 │   └── rows/            CollectionRowWithActions, SemanticRow, SwipeRowContainer, RowVisual
 ├── context/             SnapshotContext (central state provider)
 ├── domain/              Domain logic
+│   ├── kpi/             KPI metric definitions and selection persistence
 │   └── scenario/        Scenario types, delta mapping, validation
 ├── engines/             Core computation (projection, loan, attribution, selectors)
+├── fixtures/            Shared test/debug profile fixtures
 ├── insights/            Interpretation engine (Phase 10)
 ├── persistence/         Storage, profile migration, export/import
-├── projection/          Projection input building & scenario application
+├── projection/          Projection input building, scenario application, chart explanation
 ├── scenarioState/       Scenario persistence & profile-aware store
 ├── screens/             All app screens
 ├── ui/                  Theme, formatters, layout, spacing
@@ -107,6 +109,7 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 | 2. Apply scenario | `projection/applyScenarioToInputs.ts` | `applyScenarioToProjectionInputs()` |
 | 3. Run simulation | `engines/projectionEngine.ts` | `computeProjectionSeries()` / `computeProjectionSummary()` |
 | 4. Interpret results | `insights/interpretProjection.ts` | `interpretProjection()` |
+| 5. Chart explanation | `projection/generateChartExplanation.ts` | `generateChartExplanation()` |
 
 ---
 
@@ -116,6 +119,42 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 - **Output:** `InterpretationResult` — headline, subline, trajectory, fiNumber, fiProgress, keyMoments[], goals[], retirementAge, depletionAge?, portfolioLastsYears?
 - **Key Moments:** DEBT_FREE, NET_WORTH_POSITIVE, ASSETS_EXCEED_LIABILITIES, NET_WORTH_100K/250K/500K/1M, RETIREMENT_START, PORTFOLIO_DEPLETED
 - **Goal Assessment:** status (`on_track` | `off_track` | `achieved`), achievedAge, gap
+
+## Chart Explanation Layer (`projection/generateChartExplanation.ts`)
+
+Separate from `interpretProjection` — generates plain-English narrative paragraphs describing each phase of the projection chart. No UI logic; rendering handled by caller.
+
+- **Input:** `ProjectionEngineInputs`, `ProjectionSummary`, `netMonthlyIncome`, `totalMonthlyExpenses`, `ProjectionSeriesPoint[]`
+- **Output:** `ExplanationParagraph[]` — `{ heading, body, kind?: 'warning' }`
+- **Phases covered:** Pre-retirement growth, retirement switch, per-asset breakdown, depletion risk warning, locked asset unlock, mortgage payoff, surplus-not-tracked notice
+
+---
+
+## KPI System (`domain/kpi/`)
+
+View-configuration layer for the "Your Projection" dashboard card. Persisted independently of SnapshotContext via AsyncStorage (key: `kpi_selection_v1`).
+
+- **`kpiDefinitions.ts`** — `KpiId`, `KpiData`, `KpiDefinition`, `ALL_KPI_DEFINITIONS` (10 metrics), `DEFAULT_KPI_IDS` (3 defaults)
+- **`kpiStorage.ts`** — `loadSelectedKpiIds()`, `saveSelectedKpiIds(ids)` — returns exactly 3 valid IDs, falling back to defaults if saved IDs reference removed metrics
+
+### KpiData fields
+
+`KpiData` bundles: `interpretation`, `projectionSummary`, `currentNetWorth`, `monthlySurplus`, `monthlyExpenses`, `liquidAssets` (immediate + unlocked locked assets at current age), `currentAge`, `endAge`, `bridgeGap?` (post-retirement gap between liquid depletion and next locked-asset unlock).
+
+### KPI Metrics
+
+| ID | Label | Description |
+|----|-------|-------------|
+| `end_net_worth` | End net worth | Total assets minus liabilities at end of projection |
+| `fi_progress` | FI progress | Current net worth as % of FI number (expenses × 25) |
+| `debt_free_age` | Debt-free | Age when all liabilities reach zero |
+| `nw_at_retirement` | At retirement | Net worth at target retirement age |
+| `asset_liab_crossover` | Breakeven age | Age when assets first exceed liabilities |
+| `monthly_surplus` | Monthly surplus | Free cash after expenses, contributions, debt payments |
+| `liquid_coverage` | Savings last | How long accessible savings (liquid + unlocked) cover current costs; shown as "X yrs · till age Y" |
+| `wealth_multiplier` | Wealth × | Net worth multiplier from now to end of projection |
+| `total_contributions` | You contribute | Total contributions over full projection period |
+| `annual_expenses` | Annual expenses | Current monthly expenses scaled to yearly |
 
 ---
 
@@ -143,6 +182,7 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 `useSnapshot()` provides:
 - `state` — current SnapshotState
 - `profilesState` — all profiles
+- `isProfileSwitching` — boolean, true during async profile switch (used to gate renders)
 - Setters for all snapshot items (income, expenses, assets, liabilities, contributions, etc.)
 - `setGoals()` — goal state mutation
 - Profile management (create, switch, rename, delete, reset)
@@ -161,7 +201,7 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 | `SectionCard` | Card wrapper for sections | `components/SectionCard.tsx` |
 | `CollectionRowWithActions` | Row with swipe edit/delete | `components/rows/CollectionRowWithActions.tsx` |
 | `ItemEditor` | Modal/inline item editing | `components/ItemEditor.tsx` |
-| `InterpretationCard` | Projection headline card | `components/InterpretationCard.tsx` |
+| `InterpretationCard` | Projection headline card with KPI tiles, actionable warnings, and picker modal | `components/InterpretationCard.tsx` |
 | `GoalsSection` | Goal assessment display | `components/GoalsSection.tsx` |
 | `ControlBar` | Pill/icon filter controls | `components/ControlBar.tsx` |
 | `Button` | Standard button | `components/Button.tsx` |
@@ -176,6 +216,14 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 - **persistenceModel.ts** — storage schema
 - **profileMigration.ts** — data migration across versions
 - **exportImport.ts** — export/import infrastructure
+
+KPI selection is persisted separately from the profile via `domain/kpi/kpiStorage.ts` (AsyncStorage key: `kpi_selection_v1`). It is not part of `ProfileState` and survives profile switches.
+
+## Fixtures (`fixtures/`)
+
+Shared test/debug profile fixtures used for in-app testing via "Load Test Profile" in Settings.
+
+- **testProfile.ts** — exports `testProfile: ProfilesState` — Age 43, retiring at 50, with mortgage (£536k @ 2.79%, 31yr), ISA (£185k), Stocks Fund (£30k), Pension (£450k, unlocks 57), net income £8,200/mo, living expenses £3,000/mo
 
 ---
 

@@ -163,15 +163,57 @@ Baseline states always exist and are restored if missing.
 
 ---
 
+## Interpretation & Explanation
+
+Two distinct post-simulation layers produce human-readable output from projection results. Neither mutates any state.
+
+### Interpretation (`insights/interpretProjection.ts`)
+
+Produces structured metrics and goal assessments from the projection series:
+- Headline / subline / trajectory descriptor
+- FI number and FI progress
+- Key moments (debt-free age, net worth milestones, retirement start, portfolio depletion)
+- Goal status (on_track / off_track / achieved) with achievedAge and gap
+
+Output type: `InterpretationResult`. Used by `InterpretationCard` and the KPI system.
+
+### Chart Explanation (`projection/generateChartExplanation.ts`)
+
+Produces plain-English narrative paragraphs describing each phase of the projection chart:
+- Pre-retirement growth phase
+- Retirement switch (income stops, withdrawals begin)
+- Per-asset breakdown of what's available at retirement
+- Depletion risk warnings (with pension gap detection)
+- Locked asset unlock events
+- Mortgage payoff
+- Untracked surplus notice
+
+Output type: `ExplanationParagraph[]` — `{ heading, body, kind?: 'warning' }`. Rendered by `ProjectionResultsScreen`.
+
+### KPI System (`domain/kpi/`)
+
+View-configuration layer that lets users choose which 3 metrics to display as tiles on `InterpretationCard`. Selection is persisted independently via AsyncStorage (not part of `ProfileState`). KPI compute functions are pure — they derive formatted strings from `KpiData` (a bundle of `InterpretationResult`, `ProjectionSummary`, snapshot-derived values, `currentAge`, `endAge`, and an optional `bridgeGap` for the post-retirement accessibility gap).
+
+`KpiData` also drives the actionable warnings section rendered below the KPI tiles:
+- **Longevity gap** (error): total assets deplete before `endAge`
+- **Bridge gap** (warning): accessible savings run out post-retirement before the next locked asset unlocks
+- **Spending > income** (error): negative monthly surplus
+- **Unallocated surplus** (warning): > £100/mo free cash not being deployed
+
+`liquidAssets` in `KpiData` includes immediate assets plus locked assets whose `unlockAge` has already passed at `currentAge` — not immediate-only.
+
+---
+
 ## Extension Boundaries
 
 The architecture explicitly separates:
 - Truth (Snapshot)
 - Simulation (Projection)
 - Modification (Scenarios)
-- Explanation (Attribution)
+- Explanation (Attribution, Interpretation, Chart Explanation)
+- View Configuration (KPI selection)
 
-This separation allows future extension (e.g. stock-based scenarios, guided insights) without violating core ownership or mutation rules.
+This separation allows future extension without violating core ownership or mutation rules.
 
 ---
 

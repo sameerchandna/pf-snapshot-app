@@ -1,15 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, Text, View, ScrollView, Pressable, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, Dimensions } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown } from 'phosphor-react-native';
+import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown, CaretRight } from 'phosphor-react-native';
 import { useSnapshot } from '../context/SnapshotContext';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
-import Icon from '../components/Icon';
-import IconButton from '../components/IconButton';
 import { selectSnapshotTotals, selectMonthlySurplusWithScenario } from '../engines/selectors';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
@@ -45,26 +43,6 @@ export default function SnapshotScreen() {
       loadActiveScenario();
     }, [])
   );
-
-  const handlePress = (itemName: string) => {
-    console.log(`${itemName} pressed`);
-  };
-
-  // Helper to determine if a card is editable (should show ➕ icon)
-  const isEditableCard = (screenName: string): boolean => {
-    const editableScreens = [
-      'GrossIncomeDetail',
-      'PensionDetail',
-      'NetIncomeDetail',
-      'ExpensesDetail',
-      'AssetContributionDetail',
-      'LiabilityReductionDetail',
-      'AssetsDetail',
-      'LiabilitiesDetail',
-    ];
-    return editableScreens.includes(screenName);
-  };
-
 
   const screenWidth = Dimensions.get('window').width;
   const useHorizontalLayout = screenWidth > 350;
@@ -168,10 +146,7 @@ export default function SnapshotScreen() {
 
           <CashflowCardStack>
             {/* Gross Income */}
-            <CashflowCardWrapper
-              showAddIcon={isEditableCard('GrossIncomeDetail')}
-              onAddPress={() => navigation.navigate('GrossIncomeDetail')}
-            >
+            <CashflowCardWrapper>
               <CashflowPrimaryCard
                 title="Gross Income"
                 description="Income before deductions"
@@ -179,14 +154,12 @@ export default function SnapshotScreen() {
                 icon={Coins}
                 iconColor={theme.colors.text.secondary}
                 valueColor={theme.colors.text.primary}
+                onPress={() => navigation.navigate('GrossIncomeDetail')}
               />
             </CashflowCardWrapper>
 
             {/* Pension */}
-            <CashflowCardWrapper
-              showAddIcon={isEditableCard('PensionDetail')}
-              onAddPress={() => navigation.navigate('PensionDetail')}
-            >
+            <CashflowCardWrapper>
               <CashflowSubCard
                 title="Pension"
                 description="Pre-tax savings"
@@ -195,6 +168,7 @@ export default function SnapshotScreen() {
                 iconColor={theme.colors.domain.asset}
                 borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
                 valueColor={Math.abs(totals.pension) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                onPress={() => navigation.navigate('PensionDetail')}
               />
             </CashflowCardWrapper>
 
@@ -212,11 +186,7 @@ export default function SnapshotScreen() {
             </CashflowCardWrapper>
 
             {/* Net Income */}
-            <CashflowCardWrapper
-              marginTop={spacing.base}
-              showAddIcon={isEditableCard('NetIncomeDetail')}
-              onAddPress={() => navigation.navigate('NetIncomeDetail')}
-            >
+            <CashflowCardWrapper marginTop={spacing.base}>
               <CashflowPrimaryCard
                 title="Net Income"
                 description="Take-home pay"
@@ -224,14 +194,12 @@ export default function SnapshotScreen() {
                 icon={Coin}
                 iconColor={theme.colors.text.secondary}
                 valueColor={theme.colors.text.primary}
+                onPress={() => navigation.navigate('NetIncomeDetail')}
               />
             </CashflowCardWrapper>
 
             {/* Expenses */}
-            <CashflowCardWrapper
-              showAddIcon={isEditableCard('ExpensesDetail')}
-              onAddPress={() => navigation.navigate('ExpensesDetail')}
-            >
+            <CashflowCardWrapper>
               <CashflowSubCard
                 title="Expenses"
                 description="Monthly spending"
@@ -240,6 +208,7 @@ export default function SnapshotScreen() {
                 iconColor={theme.colors.semantic.error}
                 borderColor={getMutedBorderColor(theme.colors.semantic.errorBorder, theme)}
                 valueColor={Math.abs(totals.expenses) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                onPress={() => navigation.navigate('ExpensesDetail')}
               />
             </CashflowCardWrapper>
 
@@ -257,10 +226,7 @@ export default function SnapshotScreen() {
             </CashflowCardWrapper>
 
             {/* Asset Contribution */}
-            <CashflowCardWrapper
-              showAddIcon={isEditableCard('AssetContributionDetail')}
-              onAddPress={() => navigation.navigate('AssetContributionDetail')}
-            >
+            <CashflowCardWrapper>
               <CashflowSubCard
                 title="Asset Contribution"
                 description="Saved or invested"
@@ -269,14 +235,12 @@ export default function SnapshotScreen() {
                 iconColor={theme.colors.semantic.success}
                 borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
                 valueColor={Math.abs(totals.assetContributions) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                onPress={() => navigation.navigate('AssetContributionDetail')}
               />
             </CashflowCardWrapper>
 
             {/* Liability Reduction */}
-            <CashflowCardWrapper
-              showAddIcon={isEditableCard('LiabilityReductionDetail')}
-              onAddPress={() => navigation.navigate('LiabilityReductionDetail')}
-            >
+            <CashflowCardWrapper>
               <CashflowSubCard
                 title="Liability Reduction"
                 description="Debt repayments"
@@ -285,6 +249,7 @@ export default function SnapshotScreen() {
                 iconColor={theme.colors.semantic.success}
                 borderColor={getMutedBorderColor(theme.colors.semantic.successBorder, theme)}
                 valueColor={Math.abs(totals.liabilityReduction) < UI_TOLERANCE ? theme.colors.text.muted : theme.colors.text.secondary}
+                onPress={() => navigation.navigate('LiabilityReductionDetail')}
               />
             </CashflowCardWrapper>
 
@@ -320,7 +285,10 @@ export default function SnapshotScreen() {
           {/* Assets and Liabilities Cards */}
           <View style={styles.balanceSheetCardsRow}>
             <View style={styles.balanceSheetCardWrapper}>
-              <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+              <Pressable
+                onPress={() => navigation.navigate('AssetsDetail')}
+                style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
+              >
                 <View style={styles.balanceSheetRow}>
                   <View style={styles.balanceSheetIconColumn}>
                     <TrendUp size={20} color={theme.colors.domain.asset} weight="regular" />
@@ -331,22 +299,17 @@ export default function SnapshotScreen() {
                     <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you own</Text>
                   </View>
                   <View style={styles.balanceSheetActionColumn}>
-                    {isEditableCard('AssetsDetail') ? (
-                      <IconButton
-                        icon="plus"
-                        size="md"
-                        variant="default"
-                        onPress={() => navigation.navigate('AssetsDetail')}
-                        accessibilityLabel="Add asset"
-                      />
-                    ) : null}
+                    <CaretRight size={14} color={theme.colors.text.secondary} weight="bold" />
                   </View>
                 </View>
-              </View>
+              </Pressable>
             </View>
 
             <View style={styles.balanceSheetCardWrapper}>
-              <View style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}>
+              <Pressable
+                onPress={() => navigation.navigate('LiabilitiesDetail')}
+                style={[styles.balanceSheetCard, { backgroundColor: theme.colors.bg.card, borderColor: theme.colors.border.subtle }]}
+              >
                 <View style={styles.balanceSheetRow}>
                   <View style={styles.balanceSheetIconColumn}>
                     <TrendDown size={20} color={theme.colors.domain.liability} weight="regular" />
@@ -357,18 +320,10 @@ export default function SnapshotScreen() {
                     <Text style={[styles.subtext, styles.cashflowTextCentered, theme.typography.body, { color: theme.colors.text.muted }]}>What you owe</Text>
                   </View>
                   <View style={styles.balanceSheetActionColumn}>
-                    {isEditableCard('LiabilitiesDetail') ? (
-                      <IconButton
-                        icon="plus"
-                        size="md"
-                        variant="default"
-                        onPress={() => navigation.navigate('LiabilitiesDetail')}
-                        accessibilityLabel="Add liability"
-                      />
-                    ) : null}
+                    <CaretRight size={14} color={theme.colors.text.secondary} weight="bold" />
                   </View>
                 </View>
-              </View>
+              </Pressable>
             </View>
           </View>
         </SectionCard>

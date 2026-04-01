@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { IconWeight } from 'phosphor-react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { IconWeight, CaretRight } from 'phosphor-react-native';
 import { useTheme } from '../../ui/theme/useTheme';
 import { spacing } from '../../ui/spacing';
 import { layout } from '../../ui/layout';
@@ -17,6 +17,7 @@ interface CashflowSubCardProps {
   scenarioValueText?: string;
   deltaValueText?: string;
   iconOpacity?: number;
+  onPress?: () => void;
 }
 
 export default function CashflowSubCard({
@@ -30,12 +31,14 @@ export default function CashflowSubCard({
   scenarioValueText,
   deltaValueText,
   iconOpacity = 0.9,
+  onPress,
 }: CashflowSubCardProps) {
   const { theme } = useTheme();
   const hasScenario = scenarioValueText !== undefined;
 
   return (
-    <View
+    <Pressable
+      onPress={onPress}
       style={[
         styles.cashflowRowContainer,
         styles.cashflowCard,
@@ -113,8 +116,9 @@ export default function CashflowSubCard({
             </Text>
           )}
         </View>
+        <CaretRight size={14} color={onPress ? theme.colors.text.secondary : theme.colors.bg.card} weight="bold" style={{ marginLeft: spacing.xs }} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 

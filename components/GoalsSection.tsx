@@ -104,7 +104,6 @@ export default function GoalsSection({ goals, onEditPress, style }: GoalsSection
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: spacing.xs,
   },
   headerRow: {
     flexDirection: 'row',

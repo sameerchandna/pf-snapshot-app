@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter } from 'victory-native';
 import * as Clipboard from 'expo-clipboard';
-import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown } from 'phosphor-react-native';
+import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown, Warning } from 'phosphor-react-native';
 
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
@@ -42,6 +42,7 @@ import { useSnapshot } from '../context/SnapshotContext';
 import { computeProjectionSeries, computeProjectionSummary, annualPctToMonthlyRate, deflateToTodaysMoney, type ProjectionEngineInputs } from '../engines/projectionEngine';
 import { computeA3Attribution, type A3Attribution } from '../engines/computeA3Attribution';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
+import { generateChartExplanation } from '../projection/generateChartExplanation';
 import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/formatters';
 import { useWindowDimensions } from 'react-native';
@@ -56,6 +57,10 @@ import { getScenarios, getActiveScenarioId, setActiveScenarioId as persistActive
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
 import type { Theme } from '../ui/theme/theme';
+import type { KpiId } from '../domain/kpi/kpiDefinitions';
+import { DEFAULT_KPI_IDS } from '../domain/kpi/kpiDefinitions';
+import type { KpiData } from '../domain/kpi/kpiDefinitions';
+import { loadSelectedKpiIds, saveSelectedKpiIds } from '../domain/kpi/kpiStorage';
 
 // Phase 3.3: Removed local computeMonthlySurplus() - use selectMonthlySurplus() or selectMonthlySurplusWithScenario() instead
 // Monthly surplus is now single-sourced from selectors (no manual computation, no clamping)
@@ -87,15 +92,24 @@ function getChartPalette(theme: Theme) {
   };
 }
 
+// Milestone moment types excluded from chart dot markers (shown as pills/warnings instead)
+const MILESTONE_MOMENT_TYPES = new Set([
+  'NET_WORTH_100K',
+  'NET_WORTH_250K',
+  'NET_WORTH_500K',
+  'NET_WORTH_1M',
+]);
+
 // Phase 5.3: Chart series structure with stable semantic identifiers
 type ChartSeries = {
-  seriesId: 'netWorth' | 'scenarioNetWorth' | 'assets' | 'liabilities';
+  seriesId: 'netWorth' | 'scenarioNetWorth' | 'assets' | 'liabilities' | 'lockedAssets';
   label: string;
   color: string;
   data: Array<{ x: number; y: number }>;
   style: {
     strokeWidth: number;
     opacity: number;
+    strokeDasharray?: string;
   };
   // Conditional rendering flags
   shouldRender: boolean;
@@ -262,75 +276,191 @@ function computeLiquidAssetsSeries(
   inputs: ProjectionEngineInputs,
   assetsWithAvailability: AssetItem[],
 ): number[] {
-  const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
+  const { currentAge, retirementAge, inflationRatePct } = inputs;
+  const horizonMonthsRaw = (inputs.endAge - currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
-  
-  // Create a map of assets by id for efficient lookup
+
+  // Map assets by id for availability lookup
   const assetMap = new Map<string, AssetItem>();
   for (const asset of assetsWithAvailability) {
     assetMap.set(asset.id, asset);
   }
-  
-  // Track individual asset balances (mirroring projectionEngine's assetStates)
-  const assetStates: Array<{ id: string; balance: number; monthlyGrowthRate: number }> = inputs.assetsToday.map(a => {
+
+  // Track individual asset balances with availability (mirrors projectionEngine assetStates)
+  const assetStates: Array<{
+    id: string;
+    balance: number;
+    monthlyGrowthRate: number;
+    availability: AssetItem['availability'];
+  }> = inputs.assetsToday.map(a => {
     const pct = typeof a.annualGrowthRatePct === 'number' && Number.isFinite(a.annualGrowthRatePct) ? a.annualGrowthRatePct : 0;
-    const monthlyGrowthRate = annualPctToMonthlyRate(pct);
     return {
       id: a.id,
       balance: Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0,
-      monthlyGrowthRate,
+      monthlyGrowthRate: annualPctToMonthlyRate(pct),
+      availability: assetMap.get(a.id)?.availability,
     };
   });
-  
-  // Start point: compute liquid assets at current age
+
+  // Pre-compute mortgage monthly payment (fixed P&I, mirrors projectionEngine step 4)
+  const loanLiability = inputs.liabilitiesToday.find(
+    l => l.kind === 'loan' && typeof l.remainingTermYears === 'number' && l.remainingTermYears >= 1,
+  );
+  const loanState = loanLiability
+    ? {
+        ...initLoan({
+          balance: loanLiability.balance,
+          annualInterestRatePct: loanLiability.annualInterestRatePct ?? 0,
+          remainingTermYears: loanLiability.remainingTermYears!,
+        }),
+        balance: loanLiability.balance,
+      }
+    : null;
+
+  // Start point: liquid assets at current age
   const startLiquidAssets = assetStates.reduce((sum, a) => {
     const asset = assetMap.get(a.id);
     if (!asset) return sum;
-    if (isAssetLiquidAtAge(asset, inputs.currentAge, inputs.currentAge)) {
-      return sum + a.balance;
-    }
-    return sum;
+    return isAssetLiquidAtAge(asset, currentAge, currentAge) ? sum + a.balance : sum;
   }, 0);
-  
-  const liquidSeries: number[] = [deflateToTodaysMoney(startLiquidAssets, inputs.inflationRatePct, 0)];
-  
+
+  const liquidSeries: number[] = [deflateToTodaysMoney(startLiquidAssets, inflationRatePct, 0)];
+
   if (horizonMonths <= 0) return liquidSeries;
-  
-  // Run monthly projection and sample liquid assets at yearly intervals
+
   for (let monthIndex = 1; monthIndex <= horizonMonths; monthIndex++) {
-    // 1) Apply per-asset growth
+    const ageAtMonth = currentAge + monthIndex / 12;
+    const isRetired = ageAtMonth >= retirementAge;
+
+    // 1) Contributions (pre-retirement only)
+    if (!isRetired) {
+      for (const c of inputs.assetContributionsMonthly) {
+        const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
+        if (amt <= 0) continue;
+        const idx = assetStates.findIndex(a => a.id === c.assetId);
+        if (idx >= 0) assetStates[idx].balance += amt;
+      }
+    }
+
+    // 2) Per-asset growth (entire balance compounds, matches projectionEngine step 2)
     for (const a of assetStates) {
       a.balance = a.balance * (1 + a.monthlyGrowthRate);
     }
-    
-    // 2) Apply linked asset contributions
-    for (const c of inputs.assetContributionsMonthly) {
-      const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
-      if (amt <= 0) continue;
-      const idx = assetStates.findIndex(a => a.id === c.assetId);
-      if (idx >= 0) {
-        assetStates[idx].balance += amt;
+
+    // 3) Mortgage amortisation — track balance to know when paid off
+    let scheduledMortgagePaymentThisMonth = 0;
+    if (loanState && loanState.balance > 0) {
+      const step = stepLoanMonth({ balance: loanState.balance, monthlyPayment: loanState.monthlyPayment, monthlyRate: loanState.monthlyRate });
+      scheduledMortgagePaymentThisMonth = step.interest + step.principal;
+      loanState.balance = step.newBalance;
+    }
+
+    // 4) Post-retirement withdrawal (mirrors projectionEngine step 6 exactly)
+    if (isRetired) {
+      const inflationFactor = Math.pow(1 + inflationRatePct / 100, monthIndex / 12);
+      const nominalLivingExpenses = (inputs.monthlyExpensesReal ?? 0) * inflationFactor;
+      const totalWithdrawal = nominalLivingExpenses + scheduledMortgagePaymentThisMonth;
+
+      if (totalWithdrawal > 0) {
+        const withdrawable = assetStates.filter(a => {
+          if (!a.availability || a.availability.type === 'immediate') return true;
+          if (a.availability.type === 'locked' && typeof a.availability.unlockAge === 'number') {
+            return ageAtMonth >= a.availability.unlockAge;
+          }
+          return false;
+        });
+        const totalWithdrawable = withdrawable.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
+        if (totalWithdrawable > 0) {
+          const capped = Math.min(totalWithdrawal, totalWithdrawable);
+          for (const a of withdrawable) {
+            if (a.balance <= 0) continue;
+            a.balance = Math.max(0, a.balance - capped * (a.balance / totalWithdrawable));
+          }
+        }
       }
     }
-    
-    // Sample yearly points only (every 12 months)
+
+    // Sample yearly points
     if (monthIndex % 12 === 0) {
-      const age = inputs.currentAge + monthIndex / 12;
+      const age = currentAge + monthIndex / 12;
       const liquidAssets = assetStates.reduce((sum, a) => {
         const asset = assetMap.get(a.id);
         if (!asset) return sum;
-        if (isAssetLiquidAtAge(asset, age, inputs.currentAge)) {
-          return sum + a.balance;
-        }
-        return sum;
+        return isAssetLiquidAtAge(asset, age, currentAge) ? sum + a.balance : sum;
       }, 0);
-      
-      const realLiquidAssets = deflateToTodaysMoney(liquidAssets, inputs.inflationRatePct, monthIndex);
-      liquidSeries.push(realLiquidAssets);
+      liquidSeries.push(deflateToTodaysMoney(liquidAssets, inflationRatePct, monthIndex));
     }
   }
-  
+
   return liquidSeries;
+}
+
+// Compute locked assets series — growth + contributions only, no withdrawals.
+// Shows the pension/locked pot growing in the background regardless of drawdown.
+function computeLockedAssetsSeries(
+  inputs: ProjectionEngineInputs,
+  assetsWithAvailability: AssetItem[],
+): number[] {
+  const { currentAge, retirementAge, endAge, inflationRatePct } = inputs;
+  // Stop at the earliest unlock age — once locked assets unlock they join the liquid pool,
+  // so further growth is already reflected in the main liquid line.
+  const unlockAges = assetsWithAvailability
+    .filter(a => a.availability?.type === 'locked' && typeof a.availability.unlockAge === 'number')
+    .map(a => a.availability!.unlockAge as number);
+  const stopAge = unlockAges.length > 0 ? Math.min(...unlockAges) : endAge;
+  const horizonMonthsRaw = (stopAge - currentAge) * 12;
+  const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
+
+  const assetMap = new Map<string, AssetItem>();
+  for (const asset of assetsWithAvailability) {
+    assetMap.set(asset.id, asset);
+  }
+
+  const lockedAssetStates = inputs.assetsToday
+    .filter(a => assetMap.get(a.id)?.availability?.type === 'locked')
+    .map(a => {
+      const pct = typeof a.annualGrowthRatePct === 'number' && Number.isFinite(a.annualGrowthRatePct) ? a.annualGrowthRatePct : 0;
+      return {
+        id: a.id,
+        balance: Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0,
+        monthlyGrowthRate: annualPctToMonthlyRate(pct),
+      };
+    });
+
+  if (lockedAssetStates.length === 0) return [];
+
+  const startLocked = lockedAssetStates.reduce((sum, a) => sum + a.balance, 0);
+  const lockedSeries: number[] = [deflateToTodaysMoney(startLocked, inflationRatePct, 0)];
+
+  if (horizonMonths <= 0) return lockedSeries;
+
+  for (let monthIndex = 1; monthIndex <= horizonMonths; monthIndex++) {
+    const ageAtMonth = currentAge + monthIndex / 12;
+    const isRetired = ageAtMonth >= retirementAge;
+
+    // Contributions (pre-retirement only)
+    if (!isRetired) {
+      for (const c of inputs.assetContributionsMonthly) {
+        const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
+        if (amt <= 0) continue;
+        const idx = lockedAssetStates.findIndex(a => a.id === c.assetId);
+        if (idx >= 0) lockedAssetStates[idx].balance += amt;
+      }
+    }
+
+    // Growth
+    for (const a of lockedAssetStates) {
+      a.balance = a.balance * (1 + a.monthlyGrowthRate);
+    }
+
+    // Sample yearly
+    if (monthIndex % 12 === 0) {
+      const total = lockedAssetStates.reduce((sum, a) => sum + a.balance, 0);
+      lockedSeries.push(deflateToTodaysMoney(total, inflationRatePct, monthIndex));
+    }
+  }
+
+  return lockedSeries;
 }
 
 function niceStep(range: number): number {
@@ -1019,8 +1149,15 @@ export default function ProjectionResultsScreen() {
   // Phase 10.7/10.8: Collapsible sections (collapsed by default)
   const [cashflowExpanded, setCashflowExpanded] = useState(false);
   const [attributionExpanded, setAttributionExpanded] = useState(false);
+  const [chartExplainExpanded, setChartExplainExpanded] = useState(false);
   // Dev-only: Debug flag for reconciliation overlay
   const [showReconciliationOverlay, setShowReconciliationOverlay] = useState(false);
+
+  // KPI selection for the Interpretation Card
+  const [selectedKpiIds, setSelectedKpiIds] = useState<KpiId[]>([...DEFAULT_KPI_IDS]);
+  useEffect(() => {
+    loadSelectedKpiIds().then(setSelectedKpiIds);
+  }, []);
 
   // Phase Two: Scenario state (ephemeral, in-memory only)
   const [scenario, setScenario] = useState<ScenarioState>({
@@ -1265,6 +1402,22 @@ export default function ProjectionResultsScreen() {
   const baselineProjectionInputs = baselineProjection.inputs;
   const baselineSeries = baselineProjection.series;
   const baselineSummary = baselineProjection.summary;
+
+  const chartExplanation = useMemo(() => {
+    const netMonthlyIncome = state.netIncomeItems.reduce(
+      (sum, it) => sum + (Number.isFinite(it.monthlyAmount) ? it.monthlyAmount : 0), 0,
+    );
+    const totalMonthlyExpenses = state.expenses
+      .filter(e => e.isActive !== false)
+      .reduce((sum, e) => sum + (Number.isFinite(e.monthlyAmount) ? e.monthlyAmount : 0), 0);
+    return generateChartExplanation(
+      baselineProjectionInputs,
+      baselineSummary,
+      netMonthlyIncome,
+      totalMonthlyExpenses,
+      baselineSeries,
+    );
+  }, [baselineProjectionInputs, baselineSummary, baselineSeries, state.netIncomeItems, state.expenses]);
 
   // Phase Two: Scenario-adjusted projection inputs (only when scenario is active)
   // CRITICAL: Projection horizon is preserved from baseline:
@@ -2430,6 +2583,11 @@ export default function ProjectionResultsScreen() {
     return computeLiquidAssetsSeries(inputsToUse, state.assets);
   }, [persistedScenarioProjectionInputs, scenarioProjectionInputs, activeScenario, effectiveScenarioActive, state.assets]);
 
+  // Locked assets series — for the dotted background line in liquid-only mode
+  const lockedAssetsSeries = useMemo(() => {
+    return computeLockedAssetsSeries(baselineProjectionInputs, state.assets);
+  }, [baselineProjectionInputs, state.assets]);
+
   // Phase 10.1: Interpretation engine (absorbs Phase 5.4/5.5 key moment detection)
   const interpretation = useMemo(() => {
     const goals = profilesState?.profiles[profilesState.activeProfileId]?.goalState?.goals ?? [];
@@ -2448,6 +2606,61 @@ export default function ProjectionResultsScreen() {
       state.projection.retirementAge,
     );
   }, [baselineSeries, baselineSummary, state, profilesState, showLiquidOnly, liquidAssetsSeries]);
+
+  const kpiData: KpiData = useMemo(() => {
+    const snapshotTotals = selectSnapshotTotals(state);
+    const currentAge = state.projection.currentAge;
+
+    // Accessible today = immediate + locked assets whose unlock age has already passed
+    const liquidAssets = state.assets
+      .filter(a => a.isActive !== false)
+      .filter(a => isAssetLiquidAtAge(a, currentAge, currentAge))
+      .reduce((sum, a) => sum + a.balance, 0);
+
+    // Bridge gap: find first post-retirement age where accessible assets hit zero,
+    // then find the next locked asset that unlocks after that point
+    const retAge = state.projection.retirementAge ?? 67;
+    let bridgeGap: KpiData['bridgeGap'];
+    let liquidDepletionAge: number | undefined;
+    for (let i = 0; i < baselineSeries.length && i < liquidAssetsSeries.length; i++) {
+      if (baselineSeries[i].age >= retAge && liquidAssetsSeries[i] <= UI_TOLERANCE) {
+        liquidDepletionAge = baselineSeries[i].age;
+        break;
+      }
+    }
+    if (liquidDepletionAge != null) {
+      const bridgeAsset = state.assets
+        .filter(a => a.isActive !== false && a.availability?.type === 'locked')
+        .filter(a => {
+          const u = a.availability?.unlockAge;
+          return typeof u === 'number' && u > liquidDepletionAge! && u <= state.projection.endAge;
+        })
+        .sort((a, b) => (a.availability!.unlockAge as number) - (b.availability!.unlockAge as number))[0];
+      if (bridgeAsset) {
+        bridgeGap = {
+          fromAge: liquidDepletionAge,
+          toAge: bridgeAsset.availability!.unlockAge as number,
+          assetName: bridgeAsset.name,
+        };
+      }
+    }
+
+    return {
+      interpretation,
+      projectionSummary: baselineSummary ?? {
+        endAssets: 0, endLiabilities: 0, endNetWorth: 0,
+        totalContributions: 0, totalPrincipalRepaid: 0,
+        totalScheduledMortgagePayment: 0, totalMortgageOverpayments: 0,
+      },
+      currentNetWorth: snapshotTotals.netWorth,
+      monthlySurplus: snapshotTotals.monthlySurplus,
+      monthlyExpenses: snapshotTotals.expenses,
+      liquidAssets,
+      currentAge,
+      endAge: state.projection.endAge,
+      bridgeGap,
+    };
+  }, [interpretation, baselineSummary, state, baselineSeries, liquidAssetsSeries]);
 
   const chartData = useMemo(() => {
     // Phase 5.3: Structural chart series with stable semantic identifiers
@@ -2488,17 +2701,34 @@ export default function ProjectionResultsScreen() {
           })
         : null;
 
+      // Locked assets data (dotted background line) — only up to unlock age, no points beyond
+      const lockedAssetsData = lockedAssetsSeries.length > 0
+        ? baselineSeries
+            .slice(0, lockedAssetsSeries.length)
+            .map((p, idx) => ({ x: p.age, y: lockedAssetsSeries[idx] }))
+        : [];
+
       // Compute Y-axis domain from ALL visible series (baseline + scenario)
       // Include both positive and negative values for accurate domain
-      const baselineValues = baselineSeries.map((p, idx) => {
-        // For liquid view, net worth = liquid assets - liabilities
+      const baselineLiquidNetWorthValues = baselineSeries.map((p, idx) => {
         const liquidVal = idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0;
         return liquidVal - p.liabilities;
       });
+      const baselineLiquidAssetValues = baselineSeries.map((p, idx) =>
+        idx < liquidAssetsSeries.length ? liquidAssetsSeries[idx] : 0
+      );
+      const baselineLiabilityValues = baselineSeries.map(p => p.liabilities);
+      const lockedAssetValues = lockedAssetsData.map(p => p.y);
       const scenarioValues = scenarioNetWorthLiquidData
         ? scenarioNetWorthLiquidData.map(p => p.y)
         : [];
-      const allYValues = [...baselineValues, ...scenarioValues];
+      const allYValues = [
+        ...baselineLiquidNetWorthValues,
+        ...baselineLiquidAssetValues,
+        ...baselineLiabilityValues,
+        ...lockedAssetValues,
+        ...scenarioValues,
+      ];
       
       // Compute true min/max across all values (no clamping)
       const rawMinY = allYValues.length > 0 ? Math.min(...allYValues) : 0;
@@ -2558,6 +2788,18 @@ export default function ProjectionResultsScreen() {
           },
           shouldRender: true,
         },
+        {
+          seriesId: 'lockedAssets',
+          label: 'Locked assets',
+          color: chartPalette.assetsLine,
+          data: lockedAssetsData,
+          style: {
+            strokeWidth: 1.4,
+            opacity: 0.55,
+            strokeDasharray: '5,4',
+          },
+          shouldRender: lockedAssetsData.length > 0,
+        },
       ];
 
       return { series, domainMin, domainMax, yTicks };
@@ -2573,12 +2815,13 @@ export default function ProjectionResultsScreen() {
         : null;
 
       // Compute Y-axis domain from ALL visible series (baseline + scenario)
-      // Include both positive and negative values for accurate domain
-      const baselineValues = baselineSeries.map(p => p.netWorth);
-      const scenarioValues = scenarioNetWorthData
-        ? scenarioNetWorthData.map(p => p.y)
-        : [];
-      const allYValues = [...baselineValues, ...scenarioValues];
+      // Include all rendered series (net worth, assets, liabilities) for accurate domain
+      const allYValues = [
+        ...baselineSeries.map(p => p.netWorth),
+        ...baselineSeries.map(p => p.assets),
+        ...baselineSeries.map(p => p.liabilities),
+        ...(scenarioNetWorthData ? scenarioNetWorthData.map(p => p.y) : []),
+      ];
       
       // Compute true min/max across all values (no clamping)
       const rawMinY = allYValues.length > 0 ? Math.min(...allYValues) : 0;
@@ -2642,13 +2885,13 @@ export default function ProjectionResultsScreen() {
 
       return { series, domainMin, domainMax, yTicks };
     }
-  }, [baselineSeries, effectiveScenarioSeries, effectiveScenarioActive, liquidAssetsSeries, scenarioLiquidAssetsSeries, showLiquidOnly, chartPalette, activeScenarioSource]);
+  }, [baselineSeries, effectiveScenarioSeries, effectiveScenarioActive, liquidAssetsSeries, scenarioLiquidAssetsSeries, lockedAssetsSeries, showLiquidOnly, chartPalette, activeScenarioSource]);
 
   const chartWidth: number = Math.max(320, windowWidth - 24);
   // Keep this visually dominant, but give enough vertical space for Victory's top/bounds + labels.
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
   // Explicit chart padding: left for £ tick labels, bottom for x-axis labels + legend, top keeps line off border
-  const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
+  const chartPadding = { top: 8, bottom: 36, left: 36, right: 16 } as const;
 
   // Phase 5.2a: Helper to map touch X coordinate to age
   // Returns null if mapping is invalid (e.g., invalid plottable width)
@@ -3061,7 +3304,9 @@ export default function ProjectionResultsScreen() {
         <View style={styles.innerContent}>
           {/* Phase 10.4: Interpretation Card (replaces Financial Health Summary) */}
           <InterpretationCard
-            interpretation={interpretation}
+            kpiData={kpiData}
+            selectedKpiIds={selectedKpiIds}
+            onSaveKpis={(ids) => { setSelectedKpiIds(ids); saveSelectedKpiIds(ids); }}
             hasLiabilities={state.liabilities.filter(l => l.isActive !== false).some(l => l.balance > UI_TOLERANCE)}
             style={{ marginTop: layout.sectionGap }}
           />
@@ -3070,7 +3315,7 @@ export default function ProjectionResultsScreen() {
             onEditPress={() => navigation.navigate('GoalEditor')}
           />
 
-          <SectionCard style={{ marginBottom: spacing.xs }}>
+          <SectionCard style={{ paddingBottom: spacing.sm, paddingHorizontal: spacing.sm }}>
             {/* Section Header with Toggle */}
             <View style={styles.sectionHeaderRow}>
               <SectionHeader title="Projected Net Worth" />
@@ -3092,6 +3337,30 @@ export default function ProjectionResultsScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            {/* Inline stats row: Net worth · Assets · Liabilities */}
+            {valuesAtAge && (() => {
+              const liquidIdx = (() => {
+                const i = baselineSeries.findIndex(p => Math.floor(p.age) >= selectedAge);
+                return i >= 0 ? i : liquidAssetsSeries.length - 1;
+              })();
+              const liquidAssetAtAge = liquidIdx < liquidAssetsSeries.length ? liquidAssetsSeries[liquidIdx] : 0;
+              const displayAssets = showLiquidOnly ? liquidAssetAtAge : valuesAtAge.assets;
+              const displayNetWorth = showLiquidOnly ? liquidAssetAtAge - valuesAtAge.liabilities : valuesAtAge.netWorth;
+              return (
+                <View style={styles.chartInlineStats}>
+                  <Text style={[styles.chartInlineStatText, { color: theme.colors.text.primary }]}>
+                    {effectiveScenarioActive ? 'Net worth (baseline)' : 'Net worth'}: {formatCurrencyCompact(displayNetWorth)}
+                  </Text>
+                  <Text style={[styles.chartInlineStatText, { color: theme.colors.domain.asset }]}>
+                    {showLiquidOnly ? 'Liquid assets' : 'Assets'}: {formatCurrencyCompact(displayAssets)}
+                  </Text>
+                  <Text style={[styles.chartInlineStatText, { color: theme.colors.domain.liability }]}>
+                    Liabilities: {formatCurrencyCompact(valuesAtAge.liabilities)}
+                  </Text>
+                </View>
+              );
+            })()}
 
             <View style={styles.chartCard}>
             {/* Phase 5.2a: Chart container with gesture overlay
@@ -3137,6 +3406,7 @@ export default function ProjectionResultsScreen() {
                           strokeWidth: series.style.strokeWidth,
                           opacity: series.style.opacity,
                           ...(series.seriesId === 'netWorth' ? { strokeLinecap: 'round' } : {}), // Phase 7.11: Rounded caps for baseline net worth only
+                          ...(series.style.strokeDasharray ? { strokeDasharray: series.style.strokeDasharray } : {}),
                         },
                       }}
                     />
@@ -3144,11 +3414,10 @@ export default function ProjectionResultsScreen() {
                 {/* Phase 10.5: Render key moment dots (from interpretation engine) on baseline series */}
                 {interpretation.keyMoments
                   .map((moment) => {
+                    if (MILESTONE_MOMENT_TYPES.has(moment.type)) return null;
                     const parentSeries = chartData.series.find(s => s.seriesId === moment.seriesId);
                     if (!parentSeries || !parentSeries.shouldRender) return null;
-                    // Milestone dots slightly smaller than crossing dots
-                    const dotSize = moment.type.startsWith('NET_WORTH_') &&
-                      moment.type !== 'NET_WORTH_POSITIVE' ? 3 : 4;
+                    const dotSize = 4;
                     return (
                       <VictoryScatter
                         key={moment.type}
@@ -3257,43 +3526,32 @@ export default function ProjectionResultsScreen() {
                 style={StyleSheet.absoluteFill}
                 {...chartPanResponder.panHandlers}
               />
-              
-              {/* Fixed values card inside chart (top-left) */}
-              {valuesAtAge && (
-                <View
-                  style={[
-                    styles.chartValuesCard,
-                    {
-                      backgroundColor: theme.colors.bg.card,
-                      opacity: 0.88, // Phase 7.11: Reduced opacity for less floating feel
-                      borderWidth: 0, // Phase 7.11: Remove border entirely
-                      top: chartPadding.top + 4,
-                      left: chartPadding.left + 4,
-                    },
-                  ]}
-                  pointerEvents="none" // Allow gestures to pass through
-                >
-                  {/* Net worth (primary, dominant) */}
-                  <View style={styles.chartValuesPrimary}>
-                    <Text style={[styles.chartValuesPrimaryLabel, { color: theme.colors.text.muted, opacity: 0.88 }]}>
-                      {effectiveScenarioActive ? 'Net worth (baseline)' : 'Net worth'}
-                    </Text>
-                    <Text style={[styles.chartValuesPrimaryValue, { color: theme.colors.text.primary }]}>
-                      {formatCurrencyCompact(valuesAtAge.netWorth)}
-                    </Text>
+
+              {/* Depletion age warning icon */}
+              {baselineSummary.depletionAge !== undefined && (() => {
+                const depAge = baselineSummary.depletionAge!;
+                const currentAge = baselineProjectionInputs.currentAge;
+                const endAge = baselineProjectionInputs.endAge;
+                const plottableWidth = chartWidth - chartPadding.left - chartPadding.right;
+                const effectiveDataWidth = plottableWidth - 2 * 12;
+                const depletionX = (chartPadding.left + 12) + ((depAge - currentAge) / (endAge - currentAge)) * effectiveDataWidth;
+                const iconSize = 14;
+                return (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      left: depletionX - iconSize / 2,
+                      top: chartHeight - chartPadding.bottom + 2,
+                      width: iconSize,
+                      height: iconSize,
+                    }}
+                  >
+                    <Warning size={iconSize} color={theme.colors.semantic.warning} weight="fill" />
                   </View>
-                  
-                  {/* Assets and liabilities (secondary, domain colors) */}
-                  <View style={styles.chartValuesSecondary}>
-                    <Text style={[styles.chartValuesSecondaryText, { color: theme.colors.domain.asset, opacity: 0.88 }]}>
-                      Assets {formatCurrencyCompact(valuesAtAge.assets)}
-                    </Text>
-                    <Text style={[styles.chartValuesSecondaryText, { color: theme.colors.domain.liability, opacity: 0.88 }]}>
-                      Liabilities {formatCurrencyCompact(valuesAtAge.liabilities)}
-                    </Text>
-                  </View>
-                </View>
-              )}
+                );
+              })()}
+
             </View>
 
             {/* Helper text when both liquid toggle and scenario are ON */}
@@ -3303,6 +3561,35 @@ export default function ProjectionResultsScreen() {
               </Text>
             ) : null}
           </View>
+          </SectionCard>
+
+          {/* Explain My Chart Section */}
+          <SectionCard>
+            <Pressable
+              onPress={() => setChartExplainExpanded(v => !v)}
+              style={styles.sectionHeaderRow}
+              accessibilityRole="button"
+              accessibilityLabel={chartExplainExpanded ? 'Hide chart explanation' : 'Show chart explanation'}
+            >
+              <SectionHeader title="Explain my chart" />
+              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                {chartExplainExpanded ? 'Hide' : 'Show'}
+              </Text>
+            </Pressable>
+            {chartExplainExpanded && (
+              <View style={{ gap: spacing.lg, marginTop: spacing.md }}>
+                {chartExplanation.map((para, i) => (
+                  <View key={i}>
+                    <Text style={[styles.explainHeading, { color: para.kind === 'warning' ? theme.colors.semantic.warning : theme.colors.text.secondary }]}>
+                      {para.heading}
+                    </Text>
+                    <Text style={[styles.explainBody, { color: para.kind === 'warning' ? theme.colors.semantic.warningText : theme.colors.text.muted }]}>
+                      {para.body}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </SectionCard>
 
           {/* Phase Four: Scenario Impact Section (only when scenario is active and deltas are valid) */}
@@ -3622,36 +3909,6 @@ export default function ProjectionResultsScreen() {
                 </CashflowCardStack>
               );
             })()}
-          </SectionCard>
-
-          {/* Projected Balance Sheet Section (Phase 10.9: simplified to 3 numbers) */}
-          <SectionCard>
-            <SectionHeader title="Projected Balance Sheet" subtitle={`Age ${selectedAge}`} />
-            <View style={styles.projectedBalanceSheetRow}>
-              {/* Assets */}
-              <View style={styles.simpleBalanceItem}>
-                <Text style={[styles.simpleBalanceValue, { color: theme.colors.domain.asset }]}>
-                  {formatCurrencyCompact(valuesAtAge.assets)}
-                </Text>
-                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Assets</Text>
-              </View>
-              <Text style={[styles.projectedBalanceSheetOperator, { color: theme.colors.text.muted }]}>−</Text>
-              {/* Liabilities */}
-              <View style={styles.simpleBalanceItem}>
-                <Text style={[styles.simpleBalanceValue, { color: theme.colors.domain.liability }]}>
-                  {formatCurrencyCompact(valuesAtAge.liabilities)}
-                </Text>
-                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Liabilities</Text>
-              </View>
-              <Text style={[styles.projectedBalanceSheetOperator, { color: theme.colors.text.muted }]}>=</Text>
-              {/* Net Worth */}
-              <View style={styles.simpleBalanceItem}>
-                <Text style={[styles.simpleBalanceValue, { color: theme.colors.text.primary }]}>
-                  {formatCurrencyCompact(valuesAtAge.netWorth)}
-                </Text>
-                <Text style={[styles.simpleBalanceLabel, { color: theme.colors.text.muted }]}>Net Worth</Text>
-              </View>
-            </View>
           </SectionCard>
 
           {/* Net Worth Breakdown (Phase 10.8: collapsed by default) */}
@@ -4186,31 +4443,16 @@ function makeStyles(theme: Theme) {
       textAlign: 'center',
       fontStyle: 'italic',
     },
-    chartValuesCard: {
-      position: 'absolute',
-      padding: spacing.sm,
-      borderRadius: theme.radius.base,
-      borderWidth: 1,
-      minWidth: 140,
-      zIndex: 10,
+    chartInlineStats: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.xl,
+      paddingHorizontal: spacing.sm,
+      paddingBottom: spacing.sm,
+      paddingTop: spacing.xs,
     },
-    chartValuesPrimary: {
-      marginBottom: spacing.xs,
-    },
-    chartValuesPrimaryLabel: {
-      ...theme.typography.caption,
-      fontWeight: '600',
-      marginBottom: layout.micro,
-    },
-    chartValuesPrimaryValue: {
-      ...theme.typography.sectionTitle,
-      fontWeight: '700',
-    },
-    chartValuesSecondary: {
-      gap: layout.micro,
-    },
-    chartValuesSecondaryText: {
-      ...theme.typography.bodySmall,
+    chartInlineStatText: {
+      ...theme.typography.bodyLarge,
     },
     outcomeSubtitle: {
       ...theme.typography.bodyLarge,
@@ -4784,25 +5026,6 @@ function makeStyles(theme: Theme) {
       ...theme.typography.caption,
       color: theme.colors.border.default,
     },
-    projectedBalanceSheetRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.xs,
-      flexWrap: 'wrap',
-      marginTop: spacing.sm,
-    },
-    simpleBalanceItem: {
-      flex: 1,
-      alignItems: 'center',
-    },
-    simpleBalanceValue: {
-      ...theme.typography.value,
-    },
-    simpleBalanceLabel: {
-      ...theme.typography.caption,
-      marginTop: spacing.tiny,
-    },
     projectedBalanceSheetCard: {
       flex: 1,
       minHeight: 80,
@@ -4811,11 +5034,6 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    projectedBalanceSheetOperator: {
-      ...theme.typography.bodyLarge,
-      color: theme.colors.text.disabled,
-      marginHorizontal: 2,
     },
     scenarioImpactBlocks: {
       gap: layout.md,
@@ -4883,6 +5101,14 @@ function makeStyles(theme: Theme) {
     bodyTextMuted: {
       color: theme.colors.text.muted,
       opacity: 0.7,
+    },
+    explainHeading: {
+      ...theme.typography.label,
+      marginBottom: spacing.xs,
+    },
+    explainBody: {
+      ...theme.typography.body,
+      lineHeight: 20,
     },
     snapshotCard: {
       paddingVertical: spacing.tiny,

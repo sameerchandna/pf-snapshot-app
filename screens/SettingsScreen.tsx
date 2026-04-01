@@ -13,6 +13,7 @@ import { radius, typography } from '../ui/theme/theme';
 import { useSnapshot } from '../context/SnapshotContext';
 import { exportData, importData } from '../persistence/exportImport';
 import { saveProfilesState } from '../persistence/profileStorage';
+import { testProfile } from '../fixtures/testProfile';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
@@ -53,6 +54,28 @@ export default function SettingsScreen() {
     );
   };
   
+  const handleLoadTestProfile = () => {
+    Alert.alert(
+      'Load Test Profile',
+      'This will replace all current data with the test profile. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Load',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await saveProfilesState(testProfile);
+              await reloadFromStorage();
+            } catch (e) {
+              Alert.alert('Load failed', String(e));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleThemeChange = (event: any) => {
     const index = event.nativeEvent.selectedSegmentIndex;
     const override: ThemeOverride = index === 0 ? 'light' : index === 1 ? 'dark' : 'system';
@@ -115,6 +138,23 @@ export default function SettingsScreen() {
             <View style={styles.rowLeft}>
               <Text style={[styles.rowTitle, { color: theme.colors.text.tertiary }]}>Import Profile Data</Text>
               <Text style={[styles.rowSubtitle, { color: theme.colors.text.muted }]}>Restore from a backup file (replaces current data)</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={handleLoadTestProfile}
+            style={({ pressed }) => [
+              styles.row,
+              {
+                backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.subtle,
+                borderColor: theme.colors.border.subtle,
+              }
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Load test profile"
+          >
+            <View style={styles.rowLeft}>
+              <Text style={[styles.rowTitle, { color: theme.colors.text.tertiary }]}>Load Test Profile</Text>
+              <Text style={[styles.rowSubtitle, { color: theme.colors.text.muted }]}>Replace all data with the shared fixture (for testing)</Text>
             </View>
           </Pressable>
         </View>
