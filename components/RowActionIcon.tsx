@@ -80,6 +80,7 @@ export default function RowActionIcon({
       case 'cancel':
         return pressed ? theme.colors.border.default : theme.colors.bg.subtle;
       case 'add':
+        return pressed ? theme.colors.bg.subtlePressed : 'transparent';
       case 'edit':
       case 'delete':
         return 'transparent';
@@ -134,8 +135,6 @@ export default function RowActionIcon({
           alignItems: 'center' as const,
           justifyContent: 'center' as const,
           backgroundColor: getBackgroundColor(pressed),
-          // Add variant uses opacity for pressed feedback (preserves original behavior)
-          opacity: variant === 'add' ? (pressed ? 0.6 : 1) : 1,
         };
         // If style prop provides backgroundColor, it will override baseStyle
         return [baseStyle, style];

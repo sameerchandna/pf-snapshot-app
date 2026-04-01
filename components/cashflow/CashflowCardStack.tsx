@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     paddingLeft: layout.inputPadding - 4, // 6px - shifted right
-    paddingRight: 0, // Eliminated to reclaim space and anchor cards to right edge
+    paddingRight: spacing.zero, // Eliminated to reclaim space and anchor cards to right edge
   },
   cashflowCardsWrapper: {
     position: 'relative',

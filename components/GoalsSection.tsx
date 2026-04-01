@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   statusDot: {
     width: 8,
     height: 8,
-    marginTop: 4, // Align with first line of text
+    marginTop: spacing.tiny, // Align with first line of text
   },
   goalContent: {
     flex: 1,

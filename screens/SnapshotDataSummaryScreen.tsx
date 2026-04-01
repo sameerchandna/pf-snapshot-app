@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontFamily: 'monospace',
     // color moved to inline style with theme.colors.text.tertiary
-    marginBottom: 2,
+    marginBottom: layout.componentGapTiny,
   },
   assetBlock: {
     marginBottom: spacing.base,

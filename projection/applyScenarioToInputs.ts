@@ -193,6 +193,20 @@ export function applyScenarioToProjectionInputs(
   // CHANGE_RETIREMENT_AGE, REDUCE_EXPENSES, CHANGE_ASSET_GROWTH_RATE: no affordability check needed
   // (these don't redirect cashflow, so surplus is unaffected)
 
+  // MORTGAGE_WHAT_IF: affordability check on overpayment component only
+  if (scenario.kind === 'MORTGAGE_WHAT_IF' && snapshotState && scenario.overpaymentMonthly > 0) {
+    const baselineSurplus = selectMonthlySurplus(snapshotState);
+    const surplusAfter = baselineSurplus - scenario.overpaymentMonthly;
+    if (surplusAfter < -UI_TOLERANCE) {
+      console.warn(
+        `[MORTGAGE_WHAT_IF Affordability] Scenario ${scenario.id} is unaffordable. ` +
+        `Baseline surplus: ${baselineSurplus}, overpayment: ${scenario.overpaymentMonthly}, ` +
+        `surplus after: ${surplusAfter} < -${UI_TOLERANCE}, falling back to baseline`
+      );
+      return baseline;
+    }
+  }
+
   // SAVINGS_WHAT_IF: affordability check on the contribution component
   if (scenario.kind === 'SAVINGS_WHAT_IF' && snapshotState) {
     const baselineSurplus = selectMonthlySurplus(snapshotState);
@@ -281,6 +295,30 @@ export function applyScenarioToProjectionInputs(
     }
   }
 
+  // Paid-off target guard for MORTGAGE_WHAT_IF scenarios
+  if (scenario.kind === 'MORTGAGE_WHAT_IF') {
+    const targetLiability = baseline.liabilitiesToday.find(
+      l => l.id === scenario.liabilityId
+    );
+    if (!targetLiability) {
+      if (__DEV__) {
+        console.warn(
+          `[MORTGAGE_WHAT_IF Paid-Off Guard] Target liability ${scenario.liabilityId} not found, falling back to baseline`
+        );
+      }
+      return baseline;
+    }
+    if (targetLiability.balance <= UI_TOLERANCE) {
+      if (__DEV__) {
+        console.warn(
+          `[MORTGAGE_WHAT_IF Paid-Off Guard] Scenario ${scenario.id} target liability ${scenario.liabilityId} ` +
+          `is already paid off (balance: ${targetLiability.balance} <= ${UI_TOLERANCE}), falling back to baseline`
+        );
+      }
+      return baseline;
+    }
+  }
+
   // Get delta from scenario domain
   const delta = scenarioToDelta(scenario);
 
@@ -334,10 +372,26 @@ export function applyScenarioToProjectionInputs(
         })
       : baseline.assetsToday;
 
+  // Apply MORTGAGE_WHAT_IF liability rate/term overrides — only mutate matching liabilities
+  let mergedLiabilitiesToday = baseline.liabilitiesToday;
+  if (delta.liabilityRateOverrides && delta.liabilityRateOverrides.length > 0) {
+    mergedLiabilitiesToday = mergedLiabilitiesToday.map(liability => {
+      const override = delta.liabilityRateOverrides!.find(o => o.liabilityId === liability.id);
+      return override ? { ...liability, annualInterestRatePct: override.annualInterestRatePct } : liability;
+    });
+  }
+  if (delta.liabilityTermOverrides && delta.liabilityTermOverrides.length > 0) {
+    mergedLiabilitiesToday = mergedLiabilitiesToday.map(liability => {
+      const override = delta.liabilityTermOverrides!.find(o => o.liabilityId === liability.id);
+      return override ? { ...liability, remainingTermYears: override.remainingTermYears } : liability;
+    });
+  }
+
   // Construct scenario inputs with merged values
   const scenarioInputs: ProjectionEngineInputs = {
     ...baseline,
     assetsToday: mergedAssetsToday,
+    liabilitiesToday: mergedLiabilitiesToday,
     assetContributionsMonthly: mergedAssetContributions,
     liabilityOverpaymentsMonthly: mergedLiabilityOverpayments,
     retirementAge: mergedRetirementAge,
@@ -440,6 +494,46 @@ export function applyScenarioToProjectionInputs(
         warnings.push(
           `Target asset ${targetAssetId}: expected growth rate ${scenario.newAnnualGrowthRatePct}%, got ${targetAsset.annualGrowthRatePct}%`
         );
+      }
+    } else if (scenario.kind === 'MORTGAGE_WHAT_IF') {
+      // MORTGAGE_WHAT_IF: Assert overpayment delta + rate/term overrides
+      const targetLiabilityId = scenario.liabilityId;
+
+      // Check overpayment delta (only when > 0)
+      if (scenario.overpaymentMonthly > 0) {
+        const beforeArray = baseline.liabilityOverpaymentsMonthly ?? [];
+        const afterArray = scenarioInputs.liabilityOverpaymentsMonthly ?? [];
+        const beforeMap = arrayToMap(beforeArray, 'liabilityId');
+        const afterMap = arrayToMap(afterArray, 'liabilityId');
+        const before = beforeMap.get(targetLiabilityId) ?? 0;
+        const after = afterMap.get(targetLiabilityId) ?? 0;
+        const actualDelta = after - before;
+        const deltaDiff = Math.abs(actualDelta - scenario.overpaymentMonthly);
+        if (deltaDiff > UI_TOLERANCE) {
+          reconciliationFailed = true;
+          warnings.push(
+            `Target liability ${targetLiabilityId}: expected overpayment delta ${scenario.overpaymentMonthly}, actual ${actualDelta}, diff ${deltaDiff}`
+          );
+        }
+      }
+
+      // Check rate override was applied
+      const targetLiability = scenarioInputs.liabilitiesToday.find(l => l.id === targetLiabilityId);
+      if (targetLiability) {
+        if (targetLiability.annualInterestRatePct !== undefined &&
+            Math.abs(targetLiability.annualInterestRatePct - scenario.newAnnualInterestRatePct) > UI_TOLERANCE) {
+          reconciliationFailed = true;
+          warnings.push(
+            `Target liability ${targetLiabilityId}: expected rate ${scenario.newAnnualInterestRatePct}%, got ${targetLiability.annualInterestRatePct}%`
+          );
+        }
+        if (targetLiability.remainingTermYears !== undefined &&
+            Math.abs(targetLiability.remainingTermYears - scenario.newRemainingTermYears) > UI_TOLERANCE) {
+          reconciliationFailed = true;
+          warnings.push(
+            `Target liability ${targetLiabilityId}: expected term ${scenario.newRemainingTermYears}yr, got ${targetLiability.remainingTermYears}yr`
+          );
+        }
       }
     }
 

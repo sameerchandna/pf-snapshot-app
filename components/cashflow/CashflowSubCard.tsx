@@ -179,11 +179,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   deltaValue: {
-    marginTop: 2,
+    marginTop: layout.componentGapTiny,
   },
   cardTitle: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   subCardTitle: {
     // Subtle cue on label only; values remain equally prominent.
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
   },
   primaryValue: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   cardDescription: {
     // Typography moved to inline style with theme token
-    marginTop: 1,
+    marginTop: layout.componentGapTiny,
   },
 });

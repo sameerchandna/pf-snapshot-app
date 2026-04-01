@@ -52,6 +52,7 @@ function formatSliderValue(scenarioKind: string | null, value: number): string {
 function formatSliderConfigValue(format: SliderConfig['format'], value: number): string {
   if (format === 'age') return `Age ${Math.round(value)}`;
   if (format === 'percent') return `${value}%`;
+  if (format === 'years') return `${Math.round(value)} yr`;
   return `${formatCurrencyCompact(value)}/mo`;
 }
 
@@ -156,6 +157,18 @@ export default function ScenarioExplorerScreen() {
     }
   }, [initialGrowthRate]);
 
+  // Dynamic defaults for MORTGAGE_WHAT_IF: sync rate/term sliders to selected liability
+  useEffect(() => {
+    if (template?.scenarioKind !== 'MORTGAGE_WHAT_IF' || !selectedTargetId) return;
+    const liability = state.liabilities.find(l => l.id === selectedTargetId);
+    if (!liability) return;
+    setSliderValues(prev => ({
+      ...prev,
+      interestRate: liability.annualInterestRatePct ?? prev.interestRate ?? 4.5,
+      remainingTerm: liability.remainingTermYears ?? prev.remainingTerm ?? 25,
+    }));
+  }, [selectedTargetId, template?.scenarioKind]);
+
   // Affordability clamp: only for flow-type scenarios (FLOW_TO_ASSET / FLOW_TO_DEBT / SAVINGS_WHAT_IF contribution)
   const needsAffordabilityClamp = template?.scenarioKind === 'FLOW_TO_ASSET' || template?.scenarioKind === 'FLOW_TO_DEBT';
   const monthlySurplus = useMemo(() => selectMonthlySurplus(state), [state]);
@@ -216,6 +229,17 @@ export default function ScenarioExplorerScreen() {
             assetId: targetId,
             contributionMonthly: multiValues.contribution ?? 100,
             newAnnualGrowthRatePct: multiValues.growthRate ?? 8,
+          };
+          break;
+        }
+        case 'MORTGAGE_WHAT_IF': {
+          if (!targetId || !multiValues) return;
+          scenario = {
+            id: '__preview__', name: 'Preview', kind: 'MORTGAGE_WHAT_IF',
+            liabilityId: targetId,
+            overpaymentMonthly: multiValues.overpayment ?? 0,
+            newAnnualInterestRatePct: multiValues.interestRate ?? 4.5,
+            newRemainingTermYears: Math.round(multiValues.remainingTerm ?? 25),
           };
           break;
         }
@@ -300,6 +324,26 @@ export default function ScenarioExplorerScreen() {
           assetId: selectedTargetId,
           contributionMonthly: contrib,
           newAnnualGrowthRatePct: rate,
+        };
+        break;
+      }
+      case 'MORTGAGE_WHAT_IF': {
+        if (!selectedTargetId) return;
+        const overpay = sliderValues.overpayment ?? 0;
+        const rate = sliderValues.interestRate ?? 4.5;
+        const term = Math.round(sliderValues.remainingTerm ?? 25);
+        const parts: string[] = [];
+        if (overpay > 0) parts.push(`${formatCurrencyCompact(overpay)}/mo`);
+        parts.push(`${rate}%`);
+        parts.push(`${term}yr`);
+        newScenario = {
+          id: generateId(),
+          name: `${targetName} ${parts.join(', ')}`,
+          kind: 'MORTGAGE_WHAT_IF',
+          liabilityId: selectedTargetId,
+          overpaymentMonthly: overpay,
+          newAnnualInterestRatePct: rate,
+          newRemainingTermYears: term,
         };
         break;
       }
@@ -666,7 +710,7 @@ export default function ScenarioExplorerScreen() {
           variant="primary"
           size="md"
           onPress={handleSave}
-          disabled={(template?.targetSelector !== null && !selectedTargetId) || (isMultiSlider ? (sliderValues.contribution ?? 0) <= 0 : sliderValue <= 0)}
+          disabled={(template?.targetSelector !== null && !selectedTargetId) || (isMultiSlider ? (template?.scenarioKind === 'MORTGAGE_WHAT_IF' ? false : (sliderValues.contribution ?? 0) <= 0) : sliderValue <= 0)}
           style={styles.actionButton}
         >
           Save scenario
@@ -708,7 +752,7 @@ const styles = StyleSheet.create({
   targetDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: 5, // geometric: width / 2
     borderWidth: 1.5,
   },
   sliderDivider: {
@@ -753,7 +797,7 @@ const styles = StyleSheet.create({
   legendLine: {
     width: 16,
     height: 2,
-    borderRadius: 1,
+    borderRadius: 1, // geometric: height / 2
   },
   comparisonSubtext: {
     marginTop: spacing.xs,
@@ -764,7 +808,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   comparisonTable: {
-    gap: 0,
+    gap: spacing.zero,
   },
   comparisonRow: {
     flexDirection: 'row',

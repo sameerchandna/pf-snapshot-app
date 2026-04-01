@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.base,
   },
   hintScrollContent: {
-    paddingBottom: 24,
+    paddingBottom: spacing.huge,
   },
   hintBullet: {
     marginBottom: spacing.xs,
@@ -1345,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   groupCard: {
     backgroundColor: 'transparent',
-    padding: 0,
+    padding: spacing.zero,
   },
   groupHeaderRow: {
     flexDirection: 'row',
@@ -1384,10 +1384,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.section,
   },
   deleteModalContent: {
-    padding: 20,
+    padding: spacing.section,
     width: '100%',
     maxWidth: 320,
   },
@@ -1403,8 +1403,8 @@ const styles = StyleSheet.create({
     gap: spacing.base,
   },
   deleteModalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: layout.buttonPaddingVertical,
+    paddingHorizontal: layout.buttonPaddingHorizontal,
     minWidth: 80,
     alignItems: 'center',
   },

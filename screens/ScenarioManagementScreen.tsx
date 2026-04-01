@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.componentGap,
   },
   list: {
-    gap: 0,
+    gap: spacing.zero,
   },
   row: {
     flexDirection: 'row',
@@ -527,11 +527,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.section,
   },
   deleteModalContent: {
     // borderRadius set inline with theme.radius.large
-    padding: 20,
+    padding: spacing.section,
     width: '100%',
     maxWidth: 320,
   },
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   },
   deleteModalButton: {
     paddingVertical: layout.inputPadding,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.section,
     // borderRadius set inline with theme.radius.medium
     minWidth: 80,
     alignItems: 'center',

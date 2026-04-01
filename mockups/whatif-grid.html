@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>What If — 2-Column Grid (Light + Dark)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111827;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 20px 60px;
+    gap: 32px;
+  }
+  h1 { color: #fff; font-size: 18px; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase; }
+
+  .pair {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mode-label {
+    color: #999;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  /* ── Phone frame ── */
+  .phone {
+    width: 375px;
+    height: 780px;
+    border-radius: 44px;
+    border: 10px solid #2a2a3e;
+    box-shadow: 0 0 0 2px #444, 0 30px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 600; }
+
+  /* ── Screen header ── */
+  .screen-header { padding: 4px 20px 14px; flex-shrink: 0; }
+  .screen-title  { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .screen-sub    { font-size: 13px; margin-top: 3px; }
+
+  /* ── Scroll area ── */
+  .scroll { flex: 1; overflow: hidden; padding: 0 16px 24px; }
+
+  /* ── Category label ── */
+  .cat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin: 14px 0 8px 2px;
+  }
+
+  /* ── Grid ── */
+  .grid-row { display: flex; gap: 10px; margin-bottom: 10px; }
+
+  /* ── Card ── */
+  .card {
+    flex: 1;
+    border-radius: 16px;
+    padding: 18px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.12s;
+  }
+  .card:hover { transform: translateY(-2px); }
+
+  .icon-wrap {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .card-text { display: flex; flex-direction: column; gap: 4px; }
+  .card-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
+  .card-desc  { font-size: 11px; line-height: 1.4; }
+  .caret {
+    position: absolute; top: 14px; right: 12px;
+    font-size: 13px; opacity: 0.35;
+  }
+  .soon-badge {
+    position: absolute; top: 10px; right: 10px;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    height: 72px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    display: flex; align-items: flex-start; justify-content: space-around;
+    padding: 10px 8px 0;
+    flex-shrink: 0;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; opacity: 0.35; }
+  .tab.active { opacity: 1; }
+  .tab-icon { font-size: 21px; }
+  .tab-lbl { font-size: 10px; font-weight: 600; }
+
+  /* ═══════════════════════════════════════════
+     LIGHT MODE TOKENS
+  ════════════════════════════════════════════ */
+  .light .phone         { background: #F5F6F8; }
+  .light .status-bar    { background: #F5F6F8; }
+  .light .status-time   { color: #111; }
+  .light .screen-header { background: #F5F6F8; }
+  .light .screen-title  { color: #111; }
+  .light .screen-sub    { color: #999; }
+  .light .scroll        { background: #F5F6F8; }
+  .light .cat-label     { color: #aaa; }
+
+  /* Assets — soft sage */
+  .light .c-asset       { background: #EDF5ED; }
+  .light .c-asset .icon-wrap { background: #CEEACE; }
+  .light .c-asset .card-title { color: #254A25; }
+  .light .c-asset .card-desc  { color: #4A7A4A; }
+  .light .c-asset .caret      { color: #4A7A4A; }
+
+  /* Liabilities — dusty rose */
+  .light .c-liability   { background: #F5EDEE; }
+  .light .c-liability .icon-wrap { background: #EDD0D2; }
+  .light .c-liability .card-title { color: #5E2830; }
+  .light .c-liability .card-desc  { color: #8A5058; }
+  .light .c-liability .caret      { color: #8A5058; }
+
+  /* Events blue — soft periwinkle */
+  .light .c-event-blue  { background: #EDF0FC; }
+  .light .c-event-blue .icon-wrap { background: #C8D4F4; }
+  .light .c-event-blue .card-title { color: #1A3478; }
+  .light .c-event-blue .card-desc  { color: #4060A8; }
+  .light .c-event-blue .caret      { color: #4060A8; }
+
+  /* Events purple — soft lavender */
+  .light .c-event-purple { background: #F1EDFC; }
+  .light .c-event-purple .icon-wrap { background: #D8CCF4; }
+  .light .c-event-purple .card-title { color: #321878; }
+  .light .c-event-purple .card-desc  { color: #6048A8; }
+  .light .c-event-purple .caret      { color: #6048A8; }
+
+  /* Disabled */
+  .light .c-disabled    { background: #F1F1F5; }
+  .light .c-disabled .icon-wrap { background: #E4E4EA; opacity: 0.6; }
+  .light .c-disabled .card-title { color: #BBBBCC; }
+  .light .c-disabled .card-desc  { color: #CCCCDD; }
+  .light .c-disabled .soon-badge { background: #E8E8EE; color: #AAAAAA; }
+
+  .light .tab-bar { background: #fff; border-top-color: #E8E8EE; }
+  .light .tab-lbl { color: #888; }
+  .light .tab.active .tab-lbl { color: #2F5BEA; }
+
+  /* ═══════════════════════════════════════════
+     DARK MODE TOKENS
+  ════════════════════════════════════════════ */
+  .dark .phone         { background: #000; }
+  .dark .status-bar    { background: #000; }
+  .dark .status-time   { color: #fff; }
+  .dark .screen-header { background: #000; }
+  .dark .screen-title  { color: #fff; }
+  .dark .screen-sub    { color: #666; }
+  .dark .scroll        { background: #000; }
+  .dark .cat-label     { color: #555; }
+
+  /* Assets dark — dark sage */
+  .dark .c-asset       { background: #192819; }
+  .dark .c-asset .icon-wrap { background: #2A4A2A; }
+  .dark .c-asset .card-title { color: #7EC47E; }
+  .dark .c-asset .card-desc  { color: #568A56; }
+  .dark .c-asset .caret      { color: #568A56; }
+
+  /* Liabilities dark — dark rose */
+  .dark .c-liability   { background: #2A1618; }
+  .dark .c-liability .icon-wrap { background: #4A2428; }
+  .dark .c-liability .card-title { color: #D47480; }
+  .dark .c-liability .card-desc  { color: #9A5058; }
+  .dark .c-liability .caret      { color: #9A5058; }
+
+  /* Events blue dark — deep navy tint */
+  .dark .c-event-blue  { background: #141824; }
+  .dark .c-event-blue .icon-wrap { background: #243060; }
+  .dark .c-event-blue .card-title { color: #7898EE; }
+  .dark .c-event-blue .card-desc  { color: #4A68B8; }
+  .dark .c-event-blue .caret      { color: #4A68B8; }
+
+  /* Events purple dark */
+  .dark .c-event-purple { background: #1A1428; }
+  .dark .c-event-purple .icon-wrap { background: #382460; }
+  .dark .c-event-purple .card-title { color: #9A80EE; }
+  .dark .c-event-purple .card-desc  { color: #6848B8; }
+  .dark .c-event-purple .caret      { color: #6848B8; }
+
+  /* Disabled dark */
+  .dark .c-disabled    { background: #1C1C1E; }
+  .dark .c-disabled .icon-wrap { background: #2A2A30; opacity: 0.7; }
+  .dark .c-disabled .card-title { color: #444; }
+  .dark .c-disabled .card-desc  { color: #383838; }
+  .dark .c-disabled .soon-badge { background: #2A2A30; color: #555; }
+
+  .dark .tab-bar { background: #1C1C1E; border-top-color: #2A2A30; }
+  .dark .tab-lbl { color: #555; }
+  .dark .tab.active .tab-lbl { color: #4C7DFF; }
+
+  /* ── Colour swatch legend ── */
+  .swatch-section { width: 100%; max-width: 830px; }
+  .swatch-title { color: #777; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; text-align: center; }
+  .swatches { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .swatch-group { display: flex; flex-direction: column; gap: 6px; align-items: center; min-width: 120px; }
+  .swatch-name { color: #888; font-size: 10px; letter-spacing: 0.5px; text-align: center; }
+  .swatch-pair { display: flex; gap: 4px; }
+  .swatch-chip { width: 48px; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); }
+  .swatch-chip-label { color: #555; font-size: 9px; text-align: center; margin-top: 2px; }
+</style>
+</head>
+<body>
+<h1>Option B — 2-Column Grid</h1>
+
+<div class="pair">
+  <!-- LIGHT -->
+  <div>
+    <div class="mode-label">Light Mode</div>
+    <div class="light">
+      <div class="phone">
+        <div class="status-bar"><span class="status-time">9:41</span><span style="font-size:12px;color:#111">● ● ●</span></div>
+        <div class="screen-header">
+          <div class="screen-title">What If</div>
+          <div class="screen-sub">Explore your financial scenarios</div>
+        </div>
+        <div class="scroll">
+          <div class="cat-label">Assets &amp; Liabilities</div>
+          <div class="grid-row">
+            <div class="card c-asset">
+              <div class="icon-wrap">📈</div>
+              <div class="card-text">
+                <div class="card-title">Save &amp; Grow</div>
+                <div class="card-desc">Extra monthly investing &amp; growth rate</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+            <div class="card c-liability">
+              <div class="icon-wrap">🏠</div>
+              <div class="card-text">
+                <div class="card-title">My Mortgage</div>
+                <div class="card-desc">Overpayments, rate &amp; term</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+          </div>
+          <div class="cat-label">Events</div>
+          <div class="grid-row">
+            <div class="card c-event-blue">
+              <div class="icon-wrap">⏳</div>
+              <div class="card-text">
+                <div class="card-title">Retire Age</div>
+                <div class="card-desc">Earlier or later retirement impact</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+            <div class="card c-event-purple">
+              <div class="icon-wrap">🐷</div>
+              <div class="card-text">
+                <div class="card-title">Spend Less</div>
+                <div class="card-desc">Reduce monthly expenses</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+          </div>
+          <div class="cat-label">Coming Soon</div>
+          <div class="grid-row">
+            <div class="card c-disabled" style="cursor:default">
+              <div class="icon-wrap">🕐</div>
+              <div class="card-text">
+                <div class="card-title">Part Time</div>
+                <div class="card-desc">Reduced income trajectory</div>
+              </div>
+              <span class="soon-badge">SOON</span>
+            </div>
+            <div class="card c-disabled" style="cursor:default">
+              <div class="icon-wrap">👶</div>
+              <div class="card-text">
+                <div class="card-title">Have a Baby</div>
+                <div class="card-desc">Leave &amp; childcare costs</div>
+              </div>
+              <span class="soon-badge">SOON</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab"><span class="tab-icon">📊</span><span class="tab-lbl">Snapshot</span></div>
+          <div class="tab active"><span class="tab-icon">✦</span><span class="tab-lbl" style="color:#2F5BEA">What If</span></div>
+          <div class="tab"><span class="tab-icon">📉</span><span class="tab-lbl">Projection</span></div>
+          <div class="tab"><span class="tab-icon">⚙️</span><span class="tab-lbl">Settings</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DARK -->
+  <div>
+    <div class="mode-label">Dark Mode</div>
+    <div class="dark">
+      <div class="phone">
+        <div class="status-bar"><span class="status-time">9:41</span><span style="font-size:12px;color:#fff">● ● ●</span></div>
+        <div class="screen-header">
+          <div class="screen-title">What If</div>
+          <div class="screen-sub">Explore your financial scenarios</div>
+        </div>
+        <div class="scroll">
+          <div class="cat-label">Assets &amp; Liabilities</div>
+          <div class="grid-row">
+            <div class="card c-asset">
+              <div class="icon-wrap">📈</div>
+              <div class="card-text">
+                <div class="card-title">Save &amp; Grow</div>
+                <div class="card-desc">Extra monthly investing &amp; growth rate</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+            <div class="card c-liability">
+              <div class="icon-wrap">🏠</div>
+              <div class="card-text">
+                <div class="card-title">My Mortgage</div>
+                <div class="card-desc">Overpayments, rate &amp; term</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+          </div>
+          <div class="cat-label">Events</div>
+          <div class="grid-row">
+            <div class="card c-event-blue">
+              <div class="icon-wrap">⏳</div>
+              <div class="card-text">
+                <div class="card-title">Retire Age</div>
+                <div class="card-desc">Earlier or later retirement impact</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+            <div class="card c-event-purple">
+              <div class="icon-wrap">🐷</div>
+              <div class="card-text">
+                <div class="card-title">Spend Less</div>
+                <div class="card-desc">Reduce monthly expenses</div>
+              </div>
+              <span class="caret">›</span>
+            </div>
+          </div>
+          <div class="cat-label">Coming Soon</div>
+          <div class="grid-row">
+            <div class="card c-disabled" style="cursor:default">
+              <div class="icon-wrap">🕐</div>
+              <div class="card-text">
+                <div class="card-title">Part Time</div>
+                <div class="card-desc">Reduced income trajectory</div>
+              </div>
+              <span class="soon-badge">SOON</span>
+            </div>
+            <div class="card c-disabled" style="cursor:default">
+              <div class="icon-wrap">👶</div>
+              <div class="card-text">
+                <div class="card-title">Have a Baby</div>
+                <div class="card-desc">Leave &amp; childcare costs</div>
+              </div>
+              <span class="soon-badge">SOON</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab"><span class="tab-icon">📊</span><span class="tab-lbl">Snapshot</span></div>
+          <div class="tab active"><span class="tab-icon">✦</span><span class="tab-lbl" style="color:#4C7DFF">What If</span></div>
+          <div class="tab"><span class="tab-icon">📉</span><span class="tab-lbl">Projection</span></div>
+          <div class="tab"><span class="tab-icon">⚙️</span><span class="tab-lbl">Settings</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Colour token reference -->
+<div class="swatch-section">
+  <div class="swatch-title">Colour tokens to be added to theme.ts → colors.whatif.*</div>
+  <div class="swatches">
+    <div class="swatch-group">
+      <div class="swatch-name">Save &amp; Grow<br>(asset / sage)</div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#EDF5ED"></div>
+          <div class="swatch-chip-label">card light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#192819"></div>
+          <div class="swatch-chip-label">card dark</div>
+        </div>
+      </div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#CEEACE"></div>
+          <div class="swatch-chip-label">icon light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#2A4A2A"></div>
+          <div class="swatch-chip-label">icon dark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-name">Mortgage<br>(liability / rose)</div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#F5EDEE"></div>
+          <div class="swatch-chip-label">card light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#2A1618"></div>
+          <div class="swatch-chip-label">card dark</div>
+        </div>
+      </div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#EDD0D2"></div>
+          <div class="swatch-chip-label">icon light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#4A2428"></div>
+          <div class="swatch-chip-label">icon dark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-name">Retire Age<br>(event / periwinkle)</div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#EDF0FC"></div>
+          <div class="swatch-chip-label">card light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#141824"></div>
+          <div class="swatch-chip-label">card dark</div>
+        </div>
+      </div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#C8D4F4"></div>
+          <div class="swatch-chip-label">icon light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#243060"></div>
+          <div class="swatch-chip-label">icon dark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-name">Spend Less<br>(event / lavender)</div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#F1EDFC"></div>
+          <div class="swatch-chip-label">card light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#1A1428"></div>
+          <div class="swatch-chip-label">card dark</div>
+        </div>
+      </div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#D8CCF4"></div>
+          <div class="swatch-chip-label">icon light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#382460"></div>
+          <div class="swatch-chip-label">icon dark</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-name">Coming Soon<br>(disabled / grey)</div>
+      <div class="swatch-pair">
+        <div>
+          <div class="swatch-chip" style="background:#F1F1F5"></div>
+          <div class="swatch-chip-label">card light</div>
+        </div>
+        <div>
+          <div class="swatch-chip" style="background:#1C1C1E"></div>
+          <div class="swatch-chip-label">card dark</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

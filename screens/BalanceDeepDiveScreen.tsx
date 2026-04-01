@@ -1326,7 +1326,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 0,
+    paddingTop: spacing.zero,
     paddingBottom: spacing.base,
   },
   innerContent: {
@@ -1378,8 +1378,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.modal,
     borderTopRightRadius: radius.modal,
     paddingHorizontal: layout.screenPadding,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingTop: layout.modalPaddingTop,
+    paddingBottom: layout.modalPaddingBottom,
     maxHeight: '80%',
   },
   modalOption: {
@@ -1465,7 +1465,7 @@ const styles = StyleSheet.create({
   insightsDivider: {
     borderTopWidth: 1,
     marginTop: spacing.xs,
-    paddingTop: 0,
+    paddingTop: spacing.zero,
   },
   insightsContainer: {
     flexDirection: 'row',
@@ -1473,7 +1473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: spacing.xs,
-    marginBottom: 0,
+    marginBottom: spacing.zero,
   },
   insightPressable: {
     // Inline style preserved - no visual change when not active

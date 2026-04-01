@@ -27,6 +27,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cashflowLastCard: {
-    marginBottom: 0,
+    marginBottom: spacing.zero,
   },
 });

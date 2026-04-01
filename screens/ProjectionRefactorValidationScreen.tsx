@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   errorCause: {
     // Typography moved to inline style with theme token (13px → 12px via theme.typography.body)
     // color moved to inline style
-    marginBottom: 2,
+    marginBottom: layout.componentGapTiny,
   },
   errorDetails: {
     // Typography moved to inline style with theme token

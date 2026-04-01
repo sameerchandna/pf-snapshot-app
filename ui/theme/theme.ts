@@ -65,18 +65,34 @@ export const lightTheme = {
     },
     overlay: {
       scrim25: 'rgba(0,0,0,0.25)',
+      scrim40: 'rgba(0,0,0,0.4)',
       scrim50: 'rgba(0,0,0,0.5)',
       heroNumberGlow: 'rgba(47, 91, 234, 0.12)', // Derived from brand.primary (#2F5BEA) at 12% opacity for subtle glow
+    },
+    shadow: {
+      color: '#000', // Canonical shadow color — use instead of hardcoding '#000' in shadow styles
     },
     actions: {
       edit: {
         bg: 'rgba(0,0,0,0.04)',
+        bgPressed: 'rgba(0,0,0,0.08)', // 2× alpha for pressed feedback
         icon: '#000', // Matches text.primary
       },
       delete: {
         bg: 'rgba(255,59,48,0.12)',
+        bgPressed: 'rgba(255,59,48,0.22)', // +0.1 alpha for pressed feedback
         icon: '#FF3B30',
       },
+    },
+    whatif: {
+      sage:       { cardBg: '#EDF5ED', cardBgPressed: '#DCF0DC', iconBg: '#CEEACE', title: '#254A25', body: '#4A7A4A' },
+      teal:       { cardBg: '#EDF5F5', cardBgPressed: '#D0EBEB', iconBg: '#C0E0E0', title: '#1A4A4A', body: '#3A7070' },
+      rose:       { cardBg: '#F5EDEE', cardBgPressed: '#EDD8DA', iconBg: '#EDD0D2', title: '#5E2830', body: '#8A5058' },
+      amber:      { cardBg: '#FBF5EC', cardBgPressed: '#F2E2C6', iconBg: '#F5DEBC', title: '#5A3800', body: '#8A6020' },
+      periwinkle: { cardBg: '#EDF0FC', cardBgPressed: '#D8DFF8', iconBg: '#C8D4F4', title: '#1A3478', body: '#4060A8' },
+      lavender:   { cardBg: '#F1EDFC', cardBgPressed: '#E0D4F5', iconBg: '#D8CCF4', title: '#321878', body: '#6048A8' },
+      mint:       { cardBg: '#EDFAF2', cardBgPressed: '#D0F0DE', iconBg: '#C0EDD4', title: '#1A4A30', body: '#3A7A50' },
+      grey:       { cardBg: '#F1F1F5', cardBgPressed: '#E4E4EC', iconBg: '#E4E4EA', title: '#BBBBCC', body: '#CCCCDD' },
     },
   },
   typography: {
@@ -243,18 +259,34 @@ export const darkTheme = {
     },
     overlay: {
       scrim25: 'rgba(0,0,0,0.5)',
+      scrim40: 'rgba(0,0,0,0.6)',
       scrim50: 'rgba(0,0,0,0.75)',
       heroNumberGlow: 'rgba(76, 125, 255, 0.18)', // Derived from brand.primary (#4C7DFF) at 18% opacity for subtle glow
+    },
+    shadow: {
+      color: '#000', // Canonical shadow color — same in both themes
     },
     actions: {
       edit: {
         bg: 'rgba(255,255,255,0.06)',
+        bgPressed: 'rgba(255,255,255,0.12)', // 2× alpha for pressed feedback
         icon: '#ffffff', // Matches text.primary
       },
       delete: {
         bg: 'rgba(255,59,48,0.18)',
+        bgPressed: 'rgba(255,59,48,0.28)', // +0.1 alpha for pressed feedback
         icon: '#FF453A',
       },
+    },
+    whatif: {
+      sage:       { cardBg: '#192819', cardBgPressed: '#223C22', iconBg: '#2A4A2A', title: '#7EC47E', body: '#568A56' },
+      teal:       { cardBg: '#142424', cardBgPressed: '#1E3A3A', iconBg: '#204040', title: '#70C4C4', body: '#408080' },
+      rose:       { cardBg: '#2A1618', cardBgPressed: '#3E2024', iconBg: '#4A2428', title: '#D47480', body: '#9A5058' },
+      amber:      { cardBg: '#281E10', cardBgPressed: '#3A2A18', iconBg: '#4A3418', title: '#D4A060', body: '#9A7030' },
+      periwinkle: { cardBg: '#141824', cardBgPressed: '#1E2438', iconBg: '#243060', title: '#7898EE', body: '#4A68B8' },
+      lavender:   { cardBg: '#1A1428', cardBgPressed: '#261E3C', iconBg: '#382460', title: '#9A80EE', body: '#6848B8' },
+      mint:       { cardBg: '#142820', cardBgPressed: '#1E3C2C', iconBg: '#204A34', title: '#70C490', body: '#408A58' },
+      grey:       { cardBg: '#1C1C1E', cardBgPressed: '#252528', iconBg: '#2A2A30', title: '#444444', body: '#383838' },
     },
   },
   typography: {

@@ -421,7 +421,7 @@ export default function LoanDetailScreen() {
             disabled={!canDone}
             style={({ pressed }) => [
               styles.doneButton,
-              { opacity: !canDone ? 0.35 : undefined, backgroundColor: !canDone ? undefined : (pressed ? theme.colors.bg.subtle : undefined) }
+              { backgroundColor: !canDone ? 'transparent' : (pressed ? theme.colors.bg.subtlePressed : 'transparent'), opacity: !canDone ? 0.35 : 1 }
             ]}
             accessibilityRole="button"
             accessibilityLabel="Save"

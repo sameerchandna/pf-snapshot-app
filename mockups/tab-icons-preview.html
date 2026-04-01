@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tab Icon Preview</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons/dist/ionicons/ionicons.js"></script>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
+      padding: 32px;
+    }
+    h2 { color: #aaa; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 32px 0 12px; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 14px 18px;
+      min-width: 90px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .tile:hover { border-color: #6c63ff; }
+    .tile.selected { border-color: #6c63ff; background: #1a1830; }
+    .tile span {
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+    }
+    ion-icon { font-size: 28px; color: #c0b8ff; }
+
+    /* Mock tab bar at bottom */
+    .tabbar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 18px;
+    }
+    .tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #555;
+      min-width: 60px;
+    }
+    .tab.active { color: #6c63ff; }
+    .tab.active ion-icon { color: #6c63ff; }
+    .tab ion-icon { font-size: 24px; color: #555; }
+  </style>
+</head>
+<body>
+
+<h2>Today</h2>
+<div class="row">
+  <div class="tile"><ion-icon name="wallet-outline"></ion-icon><span>wallet-outline</span></div>
+  <div class="tile"><ion-icon name="cash-outline"></ion-icon><span>cash-outline</span></div>
+  <div class="tile"><ion-icon name="card-outline"></ion-icon><span>card-outline</span></div>
+  <div class="tile"><ion-icon name="receipt-outline"></ion-icon><span>receipt-outline</span></div>
+  <div class="tile"><ion-icon name="pie-chart-outline"></ion-icon><span>pie-chart-outline</span></div>
+  <div class="tile"><ion-icon name="bar-chart-outline"></ion-icon><span>bar-chart-outline</span></div>
+  <div class="tile"><ion-icon name="stats-chart-outline"></ion-icon><span>stats-chart-outline</span></div>
+  <div class="tile"><ion-icon name="pulse-outline"></ion-icon><span>pulse-outline</span></div>
+  <div class="tile"><ion-icon name="layers-outline"></ion-icon><span>layers-outline</span></div>
+  <div class="tile"><ion-icon name="albums-outline"></ion-icon><span>albums-outline</span></div>
+  <div class="tile"><ion-icon name="grid-outline"></ion-icon><span>grid-outline</span></div>
+  <div class="tile"><ion-icon name="today-outline"></ion-icon><span>today-outline</span></div>
+</div>
+
+<h2>Forecast</h2>
+<div class="row">
+  <div class="tile"><ion-icon name="trending-up-outline"></ion-icon><span>trending-up-outline</span></div>
+  <div class="tile"><ion-icon name="stats-chart-outline"></ion-icon><span>stats-chart-outline</span></div>
+  <div class="tile"><ion-icon name="bar-chart-outline"></ion-icon><span>bar-chart-outline</span></div>
+  <div class="tile"><ion-icon name="analytics-outline"></ion-icon><span>analytics-outline</span></div>
+  <div class="tile"><ion-icon name="arrow-forward-circle-outline"></ion-icon><span>arrow-forward-circle-outline</span></div>
+  <div class="tile"><ion-icon name="telescope-outline"></ion-icon><span>telescope-outline</span></div>
+</div>
+
+<h2>Explore</h2>
+<div class="row">
+  <div class="tile"><ion-icon name="compass-outline"></ion-icon><span>compass-outline</span></div>
+  <div class="tile"><ion-icon name="flask-outline"></ion-icon><span>flask-outline</span></div>
+  <div class="tile"><ion-icon name="git-branch-outline"></ion-icon><span>git-branch-outline</span></div>
+  <div class="tile"><ion-icon name="color-wand-outline"></ion-icon><span>color-wand-outline</span></div>
+  <div class="tile"><ion-icon name="options-outline"></ion-icon><span>options-outline</span></div>
+  <div class="tile"><ion-icon name="shuffle-outline"></ion-icon><span>shuffle-outline</span></div>
+  <div class="tile"><ion-icon name="swap-horizontal-outline"></ion-icon><span>swap-horizontal-outline</span></div>
+</div>
+
+<h2>Settings</h2>
+<div class="row">
+  <div class="tile"><ion-icon name="settings-outline"></ion-icon><span>settings-outline</span></div>
+  <div class="tile"><ion-icon name="ellipsis-horizontal-circle-outline"></ion-icon><span>ellipsis-horizontal-circle-outline</span></div>
+  <div class="tile"><ion-icon name="person-outline"></ion-icon><span>person-outline</span></div>
+  <div class="tile"><ion-icon name="menu-outline"></ion-icon><span>menu-outline</span></div>
+</div>
+
+<div style="height: 100px"></div>
+
+<!-- Live tab bar preview -->
+<div class="tabbar">
+  <div class="tab active">
+    <ion-icon name="today-outline"></ion-icon>
+    Today
+  </div>
+  <div class="tab">
+    <ion-icon name="telescope-outline"></ion-icon>
+    Forecast
+  </div>
+  <div class="tab">
+    <ion-icon name="flask-outline"></ion-icon>
+    Explore
+  </div>
+  <div class="tab">
+    <ion-icon name="ellipsis-horizontal-circle-outline"></ion-icon>
+    Settings
+  </div>
+</div>
+
+</body>
+</html>

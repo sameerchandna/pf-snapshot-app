@@ -62,7 +62,7 @@ export default function Row({
     <Text
       style={[
         theme.typography.value,
-        { color: theme.colors.text.primary, fontWeight: '400', lineHeight: 19 },
+        { color: theme.colors.text.primary, fontWeight: '400' },
       ]}
     >
       {primary}

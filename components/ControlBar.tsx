@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
   itemButtonTitle: {
     ...typography.button,
-    marginBottom: 2,
+    marginBottom: layout.componentGapTiny,
   },
   itemButtonSubtitle: {
     ...typography.bodySmall,

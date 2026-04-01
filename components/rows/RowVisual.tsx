@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: ROW_HEIGHT, // Fixed layout invariant, not a theme token
-    paddingVertical: 0,
+    paddingVertical: spacing.zero,
     paddingHorizontal: layout.rowPaddingHorizontal,
   },
   leading: {
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   subtitle: {
-    marginTop: 2,
+    marginTop: layout.componentGapTiny,
   },
   separator: {
     position: 'absolute',

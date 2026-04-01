@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
+import { layout } from '../ui/layout';
 import { typography } from '../ui/theme/theme';
 type Props = {
   title: string;
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
   },
   subtitleFootnote: {
     ...typography.body,
-    marginTop: 2,
+    marginTop: layout.componentGapTiny,
   },
   headerTotal: {
     ...typography.valueLarge,

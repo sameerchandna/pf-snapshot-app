@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { IconWeight, CaretRight } from 'phosphor-react-native';
 import { useTheme } from '../../ui/theme/useTheme';
 import { spacing } from '../../ui/spacing';
+import { layout } from '../../ui/layout';
 import { radius } from '../../ui/theme/theme';
 
 interface CashflowPrimaryCardProps {
@@ -194,20 +195,20 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   deltaValue: {
-    marginTop: 2,
+    marginTop: layout.componentGapTiny,
   },
   cardTitle: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   primaryValue: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   primaryValueOutcome: {
   },
   cardDescription: {
     // Typography moved to inline style with theme token
-    marginTop: 1,
+    marginTop: layout.componentGapTiny,
   },
 });

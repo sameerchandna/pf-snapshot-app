@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './ui/theme/useTheme';
 import SnapshotScreen from './screens/SnapshotScreen';
 import GrossIncomeDetailScreen from './screens/GrossIncomeDetailScreen';
@@ -19,6 +20,7 @@ import NetWorthDetailScreen from './screens/NetWorthDetailScreen';
 import AccountsScreen from './screens/AccountsScreen';
 import WhatIfPickerScreen from './screens/WhatIfPickerScreen';
 import ScenarioExplorerScreen from './screens/ScenarioExplorerScreen';
+import QuestionAnswerScreen from './screens/QuestionAnswerScreen';
 import ProjectionResultsScreen from './screens/ProjectionResultsScreen';
 import ProjectionSettingsScreen from './screens/ProjectionSettingsScreen';
 import ScenarioManagementScreen from './screens/ScenarioManagementScreen';
@@ -46,9 +48,9 @@ const TAB_ROUTE_WHATIF: string = 'WhatIfTab';
 const TAB_ROUTE_PROJECTION: string = 'ProjectionTab';
 const TAB_ROUTE_SETTINGS: string = 'SettingsTab';
 
-const TAB_LABEL_SNAPSHOT: string = 'Snapshot';
-const TAB_LABEL_WHATIF: string = 'What If';
-const TAB_LABEL_PROJECTION: string = 'Projection';
+const TAB_LABEL_SNAPSHOT: string = 'Today';
+const TAB_LABEL_WHATIF: string = 'Explore';
+const TAB_LABEL_PROJECTION: string = 'Forecast';
 const TAB_LABEL_SETTINGS: string = 'Settings';
 
 const TAB_INITIAL_ROUTE_NAME: string = TAB_ROUTE_SNAPSHOT;
@@ -82,6 +84,7 @@ function WhatIfStackNavigator() {
     <WhatIfStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
       <WhatIfStack.Screen name="WhatIfPicker" component={WhatIfPickerScreen} />
       <WhatIfStack.Screen name="ScenarioExplorer" component={ScenarioExplorerScreen} />
+      <WhatIfStack.Screen name="QuestionAnswer" component={QuestionAnswerScreen} />
       <WhatIfStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
       <WhatIfStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
     </WhatIfStack.Navigator>
@@ -131,22 +134,22 @@ export default function AppNavigator() {
       <Tab.Screen
         name={TAB_ROUTE_SNAPSHOT}
         component={SnapshotStackNavigator}
-        options={{ title: TAB_LABEL_SNAPSHOT, tabBarLabel: TAB_LABEL_SNAPSHOT }}
-      />
-      <Tab.Screen
-        name={TAB_ROUTE_WHATIF}
-        component={WhatIfStackNavigator}
-        options={{ title: TAB_LABEL_WHATIF, tabBarLabel: TAB_LABEL_WHATIF }}
+        options={{ title: TAB_LABEL_SNAPSHOT, tabBarLabel: TAB_LABEL_SNAPSHOT, tabBarIcon: ({ color, size }) => <Ionicons name="today-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name={TAB_ROUTE_PROJECTION}
         component={ProjectionStackNavigator}
-        options={{ title: TAB_LABEL_PROJECTION, tabBarLabel: TAB_LABEL_PROJECTION }}
+        options={{ title: TAB_LABEL_PROJECTION, tabBarLabel: TAB_LABEL_PROJECTION, tabBarIcon: ({ color, size }) => <Ionicons name="telescope-outline" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name={TAB_ROUTE_WHATIF}
+        component={WhatIfStackNavigator}
+        options={{ title: TAB_LABEL_WHATIF, tabBarLabel: TAB_LABEL_WHATIF, tabBarIcon: ({ color, size }) => <Ionicons name="flask-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name={TAB_ROUTE_SETTINGS}
         component={SettingsStackNavigator}
-        options={{ title: TAB_LABEL_SETTINGS, tabBarLabel: TAB_LABEL_SETTINGS }}
+        options={{ title: TAB_LABEL_SETTINGS, tabBarLabel: TAB_LABEL_SETTINGS, tabBarIcon: ({ color, size }) => <Ionicons name="ellipsis-horizontal-circle-outline" size={size} color={color} /> }}
       />
     </Tab.Navigator>
   );

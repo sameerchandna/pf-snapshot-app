@@ -15,6 +15,7 @@ import type {
   ReduceExpensesScenario,
   ChangeAssetGrowthRateScenario,
   SavingsWhatIfScenario,
+  MortgageWhatIfScenario,
 } from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
@@ -27,6 +28,9 @@ export type ProjectionInputDelta = {
   monthlyExpensesRealDelta?: number;
   // CHANGE_ASSET_GROWTH_RATE: per-asset override of annualGrowthRatePct
   assetGrowthRateOverrides?: Array<{ assetId: string; annualGrowthRatePct: number }>;
+  // MORTGAGE_WHAT_IF: per-liability overrides of rate and term
+  liabilityRateOverrides?: Array<{ liabilityId: string; annualInterestRatePct: number }>;
+  liabilityTermOverrides?: Array<{ liabilityId: string; remainingTermYears: number }>;
 };
 
 export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
@@ -99,6 +103,35 @@ export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
         {
           assetId: compound.assetId,
           annualGrowthRatePct: compound.newAnnualGrowthRatePct,
+        },
+      ],
+    };
+  }
+
+  if (s.kind === 'MORTGAGE_WHAT_IF') {
+    const mortgage = s as MortgageWhatIfScenario;
+    return {
+      // Only emit overpayment delta when > 0
+      ...(mortgage.overpaymentMonthly > 0
+        ? {
+            liabilityOverpaymentsDelta: [
+              {
+                liabilityId: mortgage.liabilityId,
+                amountMonthly: mortgage.overpaymentMonthly,
+              },
+            ],
+          }
+        : {}),
+      liabilityRateOverrides: [
+        {
+          liabilityId: mortgage.liabilityId,
+          annualInterestRatePct: mortgage.newAnnualInterestRatePct,
+        },
+      ],
+      liabilityTermOverrides: [
+        {
+          liabilityId: mortgage.liabilityId,
+          remainingTermYears: mortgage.newRemainingTermYears,
         },
       ],
     };

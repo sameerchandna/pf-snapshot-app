@@ -76,7 +76,7 @@ export default function ItemActiveCheckbox({
 
 const styles = StyleSheet.create({
   checkbox: {
-    marginLeft: 0,
+    marginLeft: spacing.zero,
     marginRight: spacing.tiny,
     width: 24,
     height: 24,
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   checkboxCircle: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: 11, // geometric: width / 2
     borderWidth: 1.5,
     backgroundColor: 'transparent',
     alignItems: 'center',

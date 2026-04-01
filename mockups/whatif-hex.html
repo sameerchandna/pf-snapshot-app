@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>What If — Hexagonal Grid</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 20px;
+  }
+  h1 { color: #fff; margin-bottom: 24px; font-size: 18px; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; }
+  .phone {
+    width: 375px;
+    height: 812px;
+    background: #F5F6F8;
+    border-radius: 44px;
+    border: 10px solid #2a2a3e;
+    box-shadow: 0 0 0 2px #444, 0 30px 80px rgba(0,0,0,0.5);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    background: #F5F6F8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: #111; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+  /* Screen header */
+  .screen-header {
+    background: #F5F6F8;
+    padding: 8px 20px 16px;
+    flex-shrink: 0;
+  }
+  .screen-title { font-size: 28px; font-weight: 700; color: #111; letter-spacing: -0.5px; }
+  .screen-subtitle { font-size: 14px; color: #888; margin-top: 3px; }
+  /* Scroll area */
+  .scroll-area {
+    flex: 1;
+    overflow: hidden;
+    padding: 8px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* Hex grid */
+  .hex-grid {
+    width: 100%;
+    position: relative;
+    margin-top: 12px;
+  }
+  .hex-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+  }
+  .hex-row.offset {
+    margin-top: -22px;
+    margin-left: 84px; /* half hex width + gap/2 */
+  }
+  /* Hexagon tile */
+  .hex-tile {
+    width: 104px;
+    height: 104px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .hex-tile svg.hex-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.10));
+    transition: filter 0.15s;
+  }
+  .hex-tile:hover svg.hex-bg {
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18));
+  }
+  .hex-content {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px;
+  }
+  .hex-icon { font-size: 26px; line-height: 1; }
+  .hex-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.25;
+    letter-spacing: 0.1px;
+  }
+  .hex-tile.disabled .hex-label { color: #aaa; }
+  .hex-tile.disabled .hex-icon { opacity: 0.45; filter: grayscale(0.6); }
+
+  /* Category legend */
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #666;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    height: 83px;
+    background: #fff;
+    border-top: 1px solid #e8e8ee;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding: 10px 8px 0;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    opacity: 0.4;
+  }
+  .tab-item.active { opacity: 1; }
+  .tab-item.active .tab-label { color: #2F5BEA; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; color: #888; }
+  .tab-item.active .tab-icon { filter: none; }
+</style>
+</head>
+<body>
+<h1>Option A — Hexagonal Grid</h1>
+<div class="phone">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><path d="M1 6C8.5 1 15.5 1 23 6"/><path d="M5 10C10 6.5 14 6.5 19 10"/><path d="M9 14c1.5-1.2 4.5-1.2 6 0"/><circle cx="12" cy="18" r="1.5" fill="#111" stroke="none"/></svg>
+      <svg viewBox="0 0 24 24" fill="#111"><rect x="2" y="7" width="15" height="10" rx="2"/><path d="M19 10v4a2 2 0 000-4z"/></svg>
+    </div>
+  </div>
+
+  <!-- Screen header -->
+  <div class="screen-header">
+    <div class="screen-title">What If</div>
+    <div class="screen-subtitle">Explore your financial scenarios</div>
+  </div>
+
+  <!-- Hex grid -->
+  <div class="scroll-area">
+    <div class="hex-grid">
+      <!-- Row 1: 2 tiles -->
+      <div class="hex-row">
+        <!-- Save & Grow (assets = green) -->
+        <div class="hex-tile">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#edf7ed" stroke="#5A8A5A" stroke-width="1.5"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">📈</span>
+            <span class="hex-label" style="color:#3a6a3a">Save &amp;<br>Grow</span>
+          </div>
+        </div>
+        <!-- Mortgage (liabilities = red) -->
+        <div class="hex-tile">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#fdf0f0" stroke="#B85A5A" stroke-width="1.5"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">🏠</span>
+            <span class="hex-label" style="color:#8a3a3a">My<br>Mortgage</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: 2 tiles, offset right -->
+      <div class="hex-row offset">
+        <!-- Retire Age (events = blue) -->
+        <div class="hex-tile">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#eef2fd" stroke="#2F5BEA" stroke-width="1.5"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">⏳</span>
+            <span class="hex-label" style="color:#1a3a9a">Retire<br>Age</span>
+          </div>
+        </div>
+        <!-- Spend Less (events = blue) -->
+        <div class="hex-tile">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#eef2fd" stroke="#2F5BEA" stroke-width="1.5"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">🐷</span>
+            <span class="hex-label" style="color:#1a3a9a">Spend<br>Less</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: 2 tiles (coming soon — ghosted) -->
+      <div class="hex-row" style="margin-top: -22px;">
+        <!-- Part Time (disabled) -->
+        <div class="hex-tile disabled">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#f4f4f6" stroke="#ccc" stroke-width="1.5" stroke-dasharray="5 3"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">🕐</span>
+            <span class="hex-label">Part<br>Time</span>
+            <span style="font-size:9px;color:#bbb;font-weight:600;letter-spacing:0.3px;">SOON</span>
+          </div>
+        </div>
+        <!-- Have a Baby (disabled) -->
+        <div class="hex-tile disabled">
+          <svg class="hex-bg" viewBox="0 0 104 104" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="52,2 98,27 98,77 52,102 6,77 6,27" fill="#f4f4f6" stroke="#ccc" stroke-width="1.5" stroke-dasharray="5 3"/>
+          </svg>
+          <div class="hex-content">
+            <span class="hex-icon">👶</span>
+            <span class="hex-label">Have a<br>Baby</span>
+            <span style="font-size:9px;color:#bbb;font-weight:600;letter-spacing:0.3px;">SOON</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#5A8A5A"></div>Assets</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#B85A5A"></div>Liabilities</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2F5BEA"></div>Events</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ccc;border:1px dashed #aaa"></div>Coming soon</div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">📊</span><span class="tab-label">Snapshot</span></div>
+    <div class="tab-item active"><span class="tab-icon" style="color:#2F5BEA">✦</span><span class="tab-label" style="color:#2F5BEA;font-weight:600;">What If</span></div>
+    <div class="tab-item"><span class="tab-icon">📉</span><span class="tab-label">Projection</span></div>
+    <div class="tab-item"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div>
+  </div>
+</div>
+</body>
+</html>

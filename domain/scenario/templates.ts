@@ -16,7 +16,7 @@ export interface SliderConfig {
   min: number;
   max: number;
   step: number;
-  format: 'currency_mo' | 'percent' | 'age'; // determines display formatting
+  format: 'currency_mo' | 'percent' | 'age' | 'years'; // determines display formatting
   affordabilityClamped?: boolean; // true = clamp max to monthly surplus
 }
 
@@ -75,19 +75,44 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   },
   // --- Liabilities ---
   {
-    id: 'overpay-mortgage',
-    question: 'What if I overpaid my mortgage?',
-    description: 'See how extra debt payments affect your liabilities and net worth',
-    scenarioKind: 'FLOW_TO_DEBT',
+    id: 'mortgage-what-if',
+    question: 'What if I changed my mortgage terms?',
+    description: 'Adjust overpayments, interest rate, and remaining term together',
+    scenarioKind: 'MORTGAGE_WHAT_IF',
     icon: 'HouseSimple',
     category: 'liabilities',
     targetSelector: 'loan',
-    defaults: {
-      amountMonthly: 100,
-      min: 50,
-      max: 1000,
-      step: 50,
-    },
+    defaults: null,
+    sliders: [
+      {
+        id: 'overpayment',
+        label: 'Extra monthly overpayment',
+        defaultValue: 0,
+        min: 0,
+        max: 1000,
+        step: 50,
+        format: 'currency_mo',
+        affordabilityClamped: true,
+      },
+      {
+        id: 'interestRate',
+        label: 'Annual interest rate',
+        defaultValue: 4.5, // static fallback; overridden dynamically from selected mortgage
+        min: 0.5,
+        max: 10,
+        step: 0.25,
+        format: 'percent',
+      },
+      {
+        id: 'remainingTerm',
+        label: 'Remaining term',
+        defaultValue: 25, // static fallback; overridden dynamically from selected mortgage
+        min: 5,
+        max: 35,
+        step: 1,
+        format: 'years',
+      },
+    ],
     enabled: true,
   },
   // --- Events ---

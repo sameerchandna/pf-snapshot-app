@@ -12,10 +12,11 @@ Concrete implementation reference. For concepts see ARCHITECTURE.md, for rules s
 │   ├── list/            List, Row, AddEntry, GroupedList, GroupedListSection
 │   └── rows/            CollectionRowWithActions, SemanticRow, SwipeRowContainer, RowVisual
 ├── context/             SnapshotContext (central state provider)
+├── debug/               Debug utilities (serializeDebugState)
 ├── domain/              Domain logic
 │   ├── kpi/             KPI metric definitions and selection persistence
 │   └── scenario/        Scenario types, delta mapping, validation
-├── engines/             Core computation (projection, loan, attribution, selectors)
+├── engines/             Core computation (projection, loan, attribution, selectors, insights)
 ├── fixtures/            Shared test/debug profile fixtures
 ├── insights/            Interpretation engine (Phase 10)
 ├── persistence/         Storage, profile migration, export/import
@@ -54,19 +55,19 @@ Concrete implementation reference. For concepts see ARCHITECTURE.md, for rules s
 
 ## Navigation (`navigation.tsx`)
 
-### Tabs
+### Tabs (order reflects actual tab bar order)
 | Tab | Label | Root Screen |
 |-----|-------|-------------|
-| `SnapshotTab` | Snapshot | SnapshotScreen |
-| `WhatIfTab` | What If | WhatIfPickerScreen |
-| `ProjectionTab` | Projection | ProjectionResultsScreen |
+| `SnapshotTab` | Today | SnapshotScreen |
+| `ProjectionTab` | Forecast | ProjectionResultsScreen |
+| `WhatIfTab` | Explore | WhatIfPickerScreen |
 | `SettingsTab` | Settings | SettingsScreen |
 
 ### Snapshot Stack
 Snapshot → GrossIncomeDetail, PensionDetail, NetIncomeDetail, DeductionsDetail, ExpensesDetail, AvailableCashDetail, LiabilityReductionDetail, AssetContributionDetail, MonthlySurplusDetail, AssetsDetail, LiabilitiesDetail, LoanDetail, NetWorthDetail, BalanceDeepDive, **Report** (AccountsScreen)
 
-### What If Stack (Phase 11)
-WhatIfPicker → ScenarioExplorer, ScenarioManagement, ScenarioEditor
+### What If Stack
+WhatIfPicker → ScenarioExplorer, **QuestionAnswer**, ScenarioManagement, ScenarioEditor
 
 ### Projection Stack
 ProjectionResults → ProjectionSettings, ScenarioManagement, ScenarioEditor, GoalEditor, BalanceDeepDive
@@ -93,11 +94,21 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 
 ### `engines/selectors.ts`
 - **Income:** `selectGrossIncome()`, `selectPension()`, `selectNetIncome()`
-- **Expenses:** `selectExpenses()`, `selectSnapshotExpenses()`, `selectLoanInterestExpense()`
+- **Expenses:** `selectExpenses()`, `selectSnapshotExpenses()`, `selectLoanInterestExpense()`, `selectDeductions()`
 - **Cash flow:** `selectAvailableCash()`, `selectMonthlySurplus()`, `selectMonthlySurplusWithScenario()`
-- **Balance:** `selectAssets()`, `selectLiabilities()`, `selectNetWorth()`
-- **Contributions:** `selectAssetContributions()`, `selectLiabilityReduction()`
+- **Balance:** `selectAssets()`, `selectLiabilities()`, `selectNetWorth()`, `selectNonLoanLiabilitiesTotal()`, `selectLoanLiabilitiesForProjection()`
+- **Contributions:** `selectAssetContributions()`, `selectLiabilityReduction()`, `selectSnapshotLiabilityReduction()`, `selectLoanPrincipalReduction()`
+- **Loan rows:** `selectLoanDerivedRows()`
+- **Totals:** `selectSnapshotTotals()`
 - **Helpers:** `sumFlat()`, `sumAmountMonthly()`, `sumGrouped()`
+
+### `engines/balanceInsights.ts`
+- **Functions:** `generateSavingsInsights()`, `generateMortgageInsights()`
+- Produces structured insight paragraphs for the Balance Deep Dive screen
+
+### `engines/loanDerivation.ts`
+- **Functions:** `monthsBetweenFullMonths()`, `deriveLoanStateAsOfToday()`
+- Derives current loan state (remaining balance, term) from original loan terms and start date
 
 ---
 
@@ -112,7 +123,8 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 | 5. Chart explanation | `projection/generateChartExplanation.ts` | `generateChartExplanation()` |
 | 6. Liquid assets | `projection/computeLiquidAssets.ts` | `computeLiquidAssetsSeries()`, `computeLockedAssetsSeries()` |
 | 7. Detect problems | `projection/detectProblems.ts` | `detectProblems()` |
-| 8. Back-solve | `projection/backSolve.ts` | Binary-search back-solve for gap-closing levers |
+| 8. Back-solve | `projection/backSolve.ts` | Binary-search back-solve for gap-closing levers; `backSolveEarliestRetirement()` |
+| 9. Question explanations | `projection/generateQuestionExplanation.ts` | `generateEarliestRetirementExplanation()`, `generateAssetsLongevityExplanation()` |
 
 ---
 
@@ -167,7 +179,7 @@ View-configuration layer for the "Your Projection" dashboard card. Persisted ind
 - **types.ts:** `ScenarioKind` = `'FLOW_TO_ASSET'` | `'FLOW_TO_DEBT'` | `'CHANGE_RETIREMENT_AGE'` | `'REDUCE_EXPENSES'` | `'CHANGE_ASSET_GROWTH_RATE'`, `Scenario` union type, `BASELINE_SCENARIO_ID`
 - **delta.ts:** `scenarioToDelta()` → `ProjectionInputDelta`
 - **validation.ts:** `validateScenario()`, `isScenarioTargetValid()`
-- **templates.ts (Phase 11 + 13.4):** `ScenarioCategory` (`'assets'` | `'liabilities'` | `'events'`), `ScenarioTemplate` type, `SCENARIO_TEMPLATES[]` (7 templates: 5 enabled, 2 coming-soon; grouped by category), `getTemplateById()`
+- **templates.ts (Phase 11 + 13.4):** `ScenarioCategory` (`'assets'` | `'liabilities'` | `'events'`), `ScenarioTemplate` type, `SCENARIO_TEMPLATES[]` (6 templates: 4 enabled, 2 coming-soon; grouped by category), `getTemplateById()`
 
 ### State (`scenarioState/`)
 - **scenarioStore.ts** — high-level API: `getScenarios()`, `saveScenario()`, `deleteScenario()`, `getActiveScenarioId()`, `setActiveScenarioId()`

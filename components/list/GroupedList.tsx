@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   groupCard: {
     backgroundColor: 'transparent',
-    padding: 0,
+    padding: spacing.zero,
   },
   groupBody: {
     marginTop: spacing.tiny,

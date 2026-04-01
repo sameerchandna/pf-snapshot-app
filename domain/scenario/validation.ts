@@ -21,6 +21,7 @@ import type {
   ReduceExpensesScenario,
   ChangeAssetGrowthRateScenario,
   SavingsWhatIfScenario,
+  MortgageWhatIfScenario,
 } from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
@@ -31,7 +32,8 @@ export function isScenarioKind(x: unknown): x is ScenarioKind {
     x === 'CHANGE_RETIREMENT_AGE' ||
     x === 'REDUCE_EXPENSES' ||
     x === 'CHANGE_ASSET_GROWTH_RATE' ||
-    x === 'SAVINGS_WHAT_IF'
+    x === 'SAVINGS_WHAT_IF' ||
+    x === 'MORTGAGE_WHAT_IF'
   );
 }
 
@@ -112,6 +114,22 @@ export function isScenario(x: unknown): x is Scenario {
       return false;
     }
     if (typeof obj.newAnnualGrowthRatePct !== 'number' || !Number.isFinite(obj.newAnnualGrowthRatePct)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'MORTGAGE_WHAT_IF') {
+    if (typeof obj.liabilityId !== 'string' || obj.liabilityId.trim() === '') {
+      return false;
+    }
+    if (typeof obj.overpaymentMonthly !== 'number' || !Number.isFinite(obj.overpaymentMonthly)) {
+      return false;
+    }
+    if (typeof obj.newAnnualInterestRatePct !== 'number' || !Number.isFinite(obj.newAnnualInterestRatePct)) {
+      return false;
+    }
+    if (typeof obj.newRemainingTermYears !== 'number' || !Number.isFinite(obj.newRemainingTermYears)) {
       return false;
     }
     return true;
@@ -206,6 +224,26 @@ export function validateScenario(s: Scenario): { ok: true } | { ok: false; error
         errors.push('SavingsWhatIfScenario newAnnualGrowthRatePct must be a finite number');
       }
     }
+
+    if (s.kind === 'MORTGAGE_WHAT_IF') {
+      const mwi = s as MortgageWhatIfScenario;
+      if (typeof mwi.liabilityId !== 'string' || mwi.liabilityId.trim() === '') {
+        errors.push('MortgageWhatIfScenario liabilityId must be a non-empty string');
+      }
+      if (typeof mwi.overpaymentMonthly !== 'number' || !Number.isFinite(mwi.overpaymentMonthly)) {
+        errors.push('MortgageWhatIfScenario overpaymentMonthly must be a finite number');
+      } else if (mwi.overpaymentMonthly < 0) {
+        errors.push('MortgageWhatIfScenario overpaymentMonthly must be >= 0');
+      }
+      if (typeof mwi.newAnnualInterestRatePct !== 'number' || !Number.isFinite(mwi.newAnnualInterestRatePct)) {
+        errors.push('MortgageWhatIfScenario newAnnualInterestRatePct must be a finite number');
+      }
+      if (typeof mwi.newRemainingTermYears !== 'number' || !Number.isFinite(mwi.newRemainingTermYears)) {
+        errors.push('MortgageWhatIfScenario newRemainingTermYears must be a finite number');
+      } else if (!Number.isInteger(mwi.newRemainingTermYears) || mwi.newRemainingTermYears < 1) {
+        errors.push('MortgageWhatIfScenario newRemainingTermYears must be a positive integer');
+      }
+    }
   }
 
   if (errors.length > 0) {
@@ -259,6 +297,11 @@ export function isScenarioTargetValid(
   if (scenario.kind === 'SAVINGS_WHAT_IF') {
     const compound = scenario as SavingsWhatIfScenario;
     return assets.some(a => a.id === compound.assetId);
+  }
+
+  if (scenario.kind === 'MORTGAGE_WHAT_IF') {
+    const mwi = scenario as MortgageWhatIfScenario;
+    return liabilities.some(l => l.id === mwi.liabilityId);
   }
 
   return false;

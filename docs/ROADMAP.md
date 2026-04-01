@@ -88,7 +88,7 @@ Only unchecked items may be worked on.
 - [x] 11.4: ScenarioExplorerScreen — slider explorer + target picker + live mini-chart
 - [x] 11.5: Comparison panel: baseline vs scenario outcome delta (net worth / assets / liabilities)
 - [x] 11.6: Savings what-if: contribution and rate sliders (merged into single SAVINGS_WHAT_IF template)
-- [ ] 11.7: Mortgage what-if: overpayment, term, rate sensitivity (deferred to sub-phase)
+- [x] 11.7: Mortgage what-if: overpayment, term, rate sensitivity (merged into single MORTGAGE_WHAT_IF template)
 - [x] 11.8: Save / discard semantics (saves scenario, activates it, navigates back)
 - [x] 11.9: Guardrails — no advice framing, no optimisation bias, affordability clamp
 
@@ -116,7 +116,7 @@ Only unchecked items may be worked on.
 - [x] 13.3: `InterpretationCard` warnings become tappable (bridge gap, longevity gap); new `components/ProblemSolverModal.tsx` (modal lever UI with back-solved targets + live sliders); new `components/CustomSlider.tsx` (extracted)
 
 ### WhatIf tab expansion
-- [x] 13.4: 3 new enabled templates (retire-at-age, spend-less, grow-faster); `ScenarioExplorerScreen` handles new kinds; `WhatIfPickerScreen` icon map updated; `docs/CODEBASE_MAP.md` synced
+- [x] 13.4: 2 new enabled templates (retire-at-age, spend-less); `ScenarioExplorerScreen` handles new kinds; `WhatIfPickerScreen` icon map updated; `docs/CODEBASE_MAP.md` synced
 
 ---
 

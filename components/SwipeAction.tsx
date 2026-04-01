@@ -55,31 +55,13 @@ export default function SwipeAction({
     ? theme.colors.actions.delete.icon
     : theme.colors.actions.edit.icon;
 
-  // Calculate pressed background (increase opacity slightly)
+  // Pressed background from theme tokens
+  const pressedBackground = isDelete
+    ? theme.colors.actions.delete.bgPressed
+    : theme.colors.actions.edit.bgPressed;
+
   const getPressedBackground = (pressed: boolean): string => {
-    if (!pressed) return backgroundColor;
-    
-    // Increase opacity for pressed state by adjusting rgba alpha
-    if (isDelete) {
-      // Delete: increase alpha by ~0.1
-      // Light: 0.12 → 0.22, Dark: 0.18 → 0.28
-      const match = backgroundColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
-      if (match) {
-        const [, r, g, b, alpha] = match;
-        const newAlpha = Math.min(parseFloat(alpha) + 0.1, 1.0);
-        return `rgba(${r},${g},${b},${newAlpha})`;
-      }
-    } else {
-      // Edit: double the alpha
-      // Light: 0.04 → 0.08, Dark: 0.06 → 0.12
-      const match = backgroundColor.match(/rgba\((\d+),(\d+),(\d+),([\d.]+)\)/);
-      if (match) {
-        const [, r, g, b, alpha] = match;
-        const newAlpha = Math.min(parseFloat(alpha) * 2, 1.0);
-        return `rgba(${r},${g},${b},${newAlpha})`;
-      }
-    }
-    return backgroundColor;
+    return pressed ? pressedBackground : backgroundColor;
   };
 
   return (

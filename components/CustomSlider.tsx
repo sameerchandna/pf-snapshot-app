@@ -10,6 +10,8 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { spacing } from '../ui/spacing';
+import { typography } from '../ui/theme/theme';
+import { useTheme } from '../ui/theme/useTheme';
 
 const PADDING_H = 11; // half of thumb width — geometric alignment
 
@@ -40,6 +42,7 @@ export default function CustomSlider({
   showSteppers = false,
   stepperColor,
 }: CustomSliderProps) {
+  const { theme } = useTheme();
   const trackWidthRef = useRef<number>(0);
   const [trackWidth, setTrackWidth] = useState<number>(0);
 
@@ -145,7 +148,7 @@ export default function CustomSlider({
         <View
           style={[
             styles.thumb,
-            { left: thumbPos - PADDING_H, backgroundColor: thumbColor, borderColor: trackColor },
+            { left: thumbPos - PADDING_H, backgroundColor: thumbColor, borderColor: trackColor, shadowColor: theme.colors.shadow.color, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 2 },
           ]}
         />
       </View>
@@ -214,10 +217,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11, // geometric: width / 2
     borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    // Shadow applied dynamically via inline style (needs theme token)
     elevation: 2,
   },
   stepperRow: {
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperSymbol: {
-    fontSize: 18,
-    lineHeight: 20,
+    ...typography.valueLarge,
+    fontWeight: '400',
     includeFontPadding: false,
   },
 });

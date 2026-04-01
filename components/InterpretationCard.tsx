@@ -76,7 +76,7 @@ function WarningRow({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({ backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' })}
         accessibilityRole="button"
         accessibilityLabel="Fix this problem"
       >
@@ -209,7 +209,8 @@ function KpiPickerModal({ visible, currentSelection, onSave, onDismiss }: KpiPic
                   styles.pickerRow,
                   {
                     borderBottomColor: theme.colors.border.subtle,
-                    opacity: isDisabled ? 0.4 : pressed ? 0.7 : 1,
+                    opacity: isDisabled ? 0.4 : 1,
+                    backgroundColor: !isDisabled && pressed ? theme.colors.bg.subtlePressed : 'transparent',
                   },
                 ]}
                 accessibilityRole="checkbox"
@@ -332,7 +333,7 @@ export default function InterpretationCard({
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Edit metrics"
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' })}
           >
             <Pencil size={16} color={theme.colors.text.secondary} weight="regular" />
           </Pressable>

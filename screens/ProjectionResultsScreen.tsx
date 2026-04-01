@@ -3425,7 +3425,7 @@ export default function ProjectionResultsScreen() {
               </Text>
             </Pressable>
             {chartExplainExpanded && (
-              <View style={{ gap: spacing.lg, marginTop: spacing.md }}>
+              <View style={{ gap: layout.lg, marginTop: layout.md }}>
                 {chartExplanation.map((para, i) => (
                   <View key={i}>
                     <Text style={[styles.explainHeading, { color: para.kind === 'warning' ? theme.colors.semantic.warning : theme.colors.text.secondary }]}>
@@ -3991,7 +3991,7 @@ function makeStyles(theme: Theme) {
       flex: 1,
     },
     scrollContent: {
-      paddingTop: 0,
+      paddingTop: spacing.zero,
       paddingBottom: spacing.base,
     },
     projectionStickyHeader: {
@@ -4196,13 +4196,12 @@ function makeStyles(theme: Theme) {
       paddingTop: spacing.base,
     },
     educationBlock: {
-      marginBottom: 14,
-      paddingHorizontal: 2,
+      marginBottom: layout.educationBottom,
+      paddingHorizontal: layout.componentGapTiny,
     },
     educationText: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
       color: theme.colors.text.secondary,
-      lineHeight: 18,
     },
     hairlineDivider: {
       height: 0.5,
@@ -4215,7 +4214,7 @@ function makeStyles(theme: Theme) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 0,
+      marginBottom: spacing.zero,
     },
     chartMiniToggle: {
       minWidth: 96,
@@ -4327,7 +4326,7 @@ function makeStyles(theme: Theme) {
     insightText: {
       ...theme.typography.bodySmall,
       marginTop: spacing.xs,
-      marginBottom: 0,
+      marginBottom: spacing.zero,
       textAlign: 'center',
       fontStyle: 'italic',
     },
@@ -4473,7 +4472,6 @@ function makeStyles(theme: Theme) {
       ...theme.typography.label,
       color: theme.colors.text.muted,
       marginBottom: layout.inputPadding,
-      lineHeight: 16,
     },
     attrRows: {
       gap: spacing.sm,
@@ -4501,7 +4499,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
       gap: layout.inputPadding,
       marginBottom: spacing.sm,
-      paddingBottom: 0,
+      paddingBottom: spacing.zero,
       marginHorizontal: -spacing.base,
       paddingHorizontal: spacing.base,
     },
@@ -4714,9 +4712,8 @@ function makeStyles(theme: Theme) {
       color: theme.colors.text.muted,
     },
     projectedMainSubtitle: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
       color: theme.colors.text.muted,
-      lineHeight: 17,
     },
     projectedSubHeading: {
       ...theme.typography.valueSmall,
@@ -4749,8 +4746,8 @@ function makeStyles(theme: Theme) {
       zIndex: 0,
     },
     cashflowSubGroup: {
-      marginTop: 0,
-      marginBottom: 0,
+      marginTop: spacing.zero,
+      marginBottom: spacing.zero,
     },
     cashflowCard: {},
     cashflowMb: {
@@ -4803,12 +4800,12 @@ function makeStyles(theme: Theme) {
     cashflowCardLeft: {
       flex: 1,
       flexShrink: 1,
-      paddingRight: 100,
+      paddingRight: 100, // intentional: reserves space for absolutely-positioned right value
     },
     cashflowCardLeftIndented: {
       flex: 1,
       flexShrink: 1,
-      paddingRight: 100,
+      paddingRight: 100, // intentional: reserves space for absolutely-positioned right value
     },
     cashflowCardRight: {
       position: 'absolute',
@@ -4821,19 +4818,19 @@ function makeStyles(theme: Theme) {
     },
     projectedCard: {
       padding: spacing.sm,
-      marginBottom: 0,
+      marginBottom: spacing.zero,
       borderRadius: theme.radius.pill,
       borderWidth: 0.5,
       borderColor: theme.colors.border.default,
     },
     projectedCardMinimal: {
       padding: spacing.sm,
-      marginBottom: 0,
+      marginBottom: spacing.zero,
       borderRadius: theme.radius.pill,
     },
     projectedCardBordered: {
       padding: spacing.sm,
-      marginBottom: 0,
+      marginBottom: spacing.zero,
       borderRadius: theme.radius.pill,
       borderWidth: 0.5,
       borderColor: theme.colors.border.default,
@@ -4841,18 +4838,18 @@ function makeStyles(theme: Theme) {
     projectedCardTitle: {
       ...theme.typography.label,
       fontWeight: '600',
-      marginBottom: 1,
+      marginBottom: layout.componentGapTiny,
       color: theme.colors.text.tertiary,
     },
     projectedSubCardTitle: {
       ...theme.typography.label,
       fontWeight: '600',
-      marginBottom: 1,
+      marginBottom: layout.componentGapTiny,
       color: theme.colors.text.muted,
     },
     projectedPrimaryValue: {
       ...theme.typography.sectionTitle,
-      marginBottom: 0,
+      marginBottom: spacing.zero,
       color: theme.colors.text.primary,
     },
     projectedPrimaryValueOutcome: {},
@@ -4908,7 +4905,7 @@ function makeStyles(theme: Theme) {
     },
     dotSeparatorTight: {
       alignItems: 'center',
-      marginVertical: 4,
+      marginVertical: spacing.tiny,
     },
     dot: {
       ...theme.typography.caption,
@@ -4981,10 +4978,9 @@ function makeStyles(theme: Theme) {
       marginTop: layout.md,
     },
     bodyText: {
-      ...theme.typography.bodyLarge,
+      ...theme.typography.bodyMedium,
       color: theme.colors.text.secondary,
       marginBottom: spacing.xs,
-      lineHeight: 18,
     },
     bodyTextMuted: {
       color: theme.colors.text.muted,
@@ -4995,8 +4991,7 @@ function makeStyles(theme: Theme) {
       marginBottom: spacing.xs,
     },
     explainBody: {
-      ...theme.typography.body,
-      lineHeight: 20,
+      ...theme.typography.bodyLarge,
     },
     snapshotCard: {
       paddingVertical: spacing.tiny,
@@ -5010,7 +5005,7 @@ function makeStyles(theme: Theme) {
     snapshotCardTitle: {
       ...theme.typography.bodyLarge,
       fontWeight: '600',
-      marginBottom: 1,
+      marginBottom: layout.componentGapTiny,
       color: theme.colors.text.primary,
     },
     snapshotSubCardTitle: {
@@ -5021,7 +5016,7 @@ function makeStyles(theme: Theme) {
     },
     snapshotPrimaryValue: {
       ...theme.typography.value,
-      marginBottom: 1,
+      marginBottom: layout.componentGapTiny,
       color: theme.colors.text.primary,
     },
     snapshotPrimaryValueOutcome: {},
@@ -5029,12 +5024,12 @@ function makeStyles(theme: Theme) {
     snapshotCardDescription: {
       ...theme.typography.body,
       color: theme.colors.text.muted,
-      marginTop: 1,
+      marginTop: layout.componentGapTiny,
     },
     snapshotDeltaValue: {
       ...theme.typography.body,
       color: theme.colors.text.muted,
-      marginTop: 1,
+      marginTop: layout.componentGapTiny,
     },
     snapshotDeltaValueMuted: {},
     comparisonValuesContainer: {
@@ -5053,7 +5048,7 @@ function makeStyles(theme: Theme) {
       flexDirection: 'row',
       gap: spacing.base,
       alignItems: 'flex-start',
-      marginTop: 2,
+      marginTop: layout.componentGapTiny,
     },
     chartHelperText: {
       ...theme.typography.label,
@@ -5140,8 +5135,7 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
     },
     modalWarningBannerText: {
-      ...theme.typography.bodyLarge,
-      lineHeight: 18,
+      ...theme.typography.bodyMedium,
     },
   });
 }

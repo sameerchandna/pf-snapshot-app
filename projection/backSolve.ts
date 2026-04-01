@@ -322,3 +322,93 @@ export function backSolve(
 
   return { problem, levers };
 }
+
+// ─── Goal-seeking: earliest retirement age ───────────────────────────────────
+
+/**
+ * Checks whether a set of projection inputs has no problems of any kind.
+ */
+function isGapFree(
+  candidate: ProjectionEngineInputs,
+  assetsWithAvailability: AssetItem[],
+): boolean {
+  const liquidSeries = computeLiquidAssetsSeries(candidate, assetsWithAvailability);
+  const summary = computeProjectionSummary(candidate);
+  const problems = detectProblems({
+    inputs: candidate,
+    assetsWithAvailability,
+    liquidAssetsSeries: liquidSeries,
+    depletionAge: summary.depletionAge,
+  });
+  return problems.length === 0;
+}
+
+export interface EarliestRetirementResult {
+  /**
+   * Minimum retirement age where all funding gaps are resolved, or null if
+   * no age within the search range achieves this.
+   */
+  earliestAge: number | null;
+  /** Problems detected at the current planned retirement age. */
+  currentProblems: DetectedProblem[];
+  /**
+   * Minimum retirement age that resolves the bridge gap alone.
+   * Null if no bridge gap exists at the current plan, or if unsolvable in range.
+   */
+  bridgeGapMinAge: number | null;
+  /**
+   * Minimum retirement age that resolves the longevity gap alone.
+   * Null if no longevity gap exists at the current plan, or if unsolvable in range.
+   */
+  longevityGapMinAge: number | null;
+}
+
+/**
+ * Back-solves for the earliest retirement age that has no funding gaps.
+ *
+ * Searches from a minimum floor (age 50 or currentAge+5) up to 20 years
+ * beyond the current planned retirement age. This correctly handles the case
+ * where the current plan already has gaps — it finds the minimum LATER age
+ * that resolves them.
+ *
+ * Also computes per-gap minimum ages (bridge gap alone, longevity gap alone)
+ * so the caller can explain each gap individually, matching the Problem Solver output.
+ */
+export function backSolveEarliestRetirement(
+  baseline: ProjectionEngineInputs,
+  assetsWithAvailability: AssetItem[],
+): EarliestRetirementResult {
+  const { retirementAge, currentAge, endAge } = baseline;
+  const lo = Math.max(50, currentAge + 5);
+  // Search up to 20 years beyond the current plan, capped at endAge - 1
+  const hi = Math.min(endAge - 1, Math.max(retirementAge, lo) + 20);
+
+  // Detect what problems exist at the current planned retirement age
+  const currentLiquidSeries = computeLiquidAssetsSeries(baseline, assetsWithAvailability);
+  const currentSummary = computeProjectionSummary(baseline);
+  const currentProblems = detectProblems({
+    inputs: baseline,
+    assetsWithAvailability,
+    liquidAssetsSeries: currentLiquidSeries,
+    depletionAge: currentSummary.depletionAge,
+  });
+
+  const hasBridgeGap = currentProblems.some(p => p.kind === 'BRIDGE_GAP');
+  const hasLongevityGap = currentProblems.some(p => p.kind === 'LONGEVITY_GAP');
+  const applyAge = (age: number) => ({ ...baseline, retirementAge: age });
+
+  // Per-gap minimum ages (only computed when that gap actually exists)
+  const bridgeGapMinAge = hasBridgeGap
+    ? binarySearchInteger(lo, hi, applyAge, c => isProblemSolved(c, assetsWithAvailability, 'BRIDGE_GAP')) ?? null
+    : null;
+
+  const longevityGapMinAge = hasLongevityGap
+    ? binarySearchInteger(lo, hi, applyAge, c => isProblemSolved(c, assetsWithAvailability, 'LONGEVITY_GAP')) ?? null
+    : null;
+
+  // Minimum age where ALL gaps are gone
+  const earliestAge =
+    binarySearchInteger(lo, hi, applyAge, c => isGapFree(c, assetsWithAvailability)) ?? null;
+
+  return { earliestAge, currentProblems, bridgeGapMinAge, longevityGapMinAge };
+}

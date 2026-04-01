@@ -16,7 +16,7 @@ import {
 } from 'phosphor-react-native';
 
 import { useTheme } from '../ui/theme/useTheme';
-import { formatCurrencyCompact } from '../ui/formatters';
+import { formatCurrencyCompact, formatYearsMonths } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { typography, radius } from '../ui/theme/theme';
@@ -44,12 +44,12 @@ function problemDescription(problem: DetectedProblem): string {
     return (
       `Savings run out at ${problem.liquidDepletionAge}, ` +
       `${problem.bridgeAssetName} unlocks at ${problem.lockedUnlockAge} — ` +
-      `${problem.gapYears}-year gap.`
+      `${formatYearsMonths(problem.gapYears)} gap.`
     );
   }
   return (
-    `Portfolio depleted at ${problem.depletionAge}, plan runs to ${problem.endAge} — ` +
-    `${problem.shortfallYears}-year shortfall.`
+    `Portfolio depleted at age ${Math.round(problem.depletionAge)}, plan runs to ${problem.endAge} — ` +
+    `${formatYearsMonths(problem.shortfallYears)} shortfall.`
   );
 }
 
@@ -108,7 +108,7 @@ export default function ProblemSolverModal({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, { backgroundColor: theme.colors.overlay.scrim40 }]}>
         <View
           style={[
             styles.sheet,
@@ -200,7 +200,7 @@ export default function ProblemSolverModal({
                 <Pressable
                   key={lever.kind}
                   onPress={() => onSelectLever(lever)}
-                  style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  style={({ pressed }) => [{ backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' }]}
                   accessibilityRole="button"
                   accessibilityLabel={`Explore: ${formatLeverSummary(lever)}`}
                 >
@@ -225,7 +225,6 @@ export default function ProblemSolverModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   sheet: {

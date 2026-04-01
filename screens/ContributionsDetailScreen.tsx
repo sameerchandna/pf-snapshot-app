@@ -360,9 +360,9 @@ const styles = StyleSheet.create({
   modalSheet: {
     borderTopLeftRadius: radius.modal,
     borderTopRightRadius: radius.modal,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: layout.modalPaddingTop,
+    paddingBottom: layout.modalPaddingBottom,
     maxHeight: '70%',
   },
   modalTitle: {

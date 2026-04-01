@@ -73,6 +73,23 @@ export function formatCurrencyCompactSigned(value: number): string {
 }
 
 /**
+ * Format a decimal year duration as "Xy Ym" (e.g. 8.777 → "8y 8m").
+ * Values under 1 year are shown as months only (e.g. 0.5 → "6m").
+ * Whole years with no remaining months show as "Xy" (e.g. 3.0 → "3y").
+ *
+ * @param decimalYears - Duration in fractional years
+ * @returns Formatted string like "8y 7m", "3y", or "6m"
+ */
+export function formatYearsMonths(decimalYears: number): string {
+  const totalMonths = Math.round(Math.abs(decimalYears) * 12);
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  if (years === 0) return `${months}m`;
+  if (months === 0) return `${years}y`;
+  return `${years}y ${months}m`;
+}
+
+/**
  * Format percentage value.
  *
  * @param value - The numeric percentage value (e.g., 1.5 for 1.5%)

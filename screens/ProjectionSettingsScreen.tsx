@@ -209,7 +209,7 @@ export default function ProjectionSettingsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Done"
         >
-          <Text style={styles.doneButtonText}>Done</Text>
+          <Text style={[styles.doneButtonText, { color: theme.colors.text.primary }]}>Done</Text>
         </Pressable>
       }
       groups={groups}
@@ -253,7 +253,6 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     ...typography.button,
-    color: '#111',
   },
 });
 

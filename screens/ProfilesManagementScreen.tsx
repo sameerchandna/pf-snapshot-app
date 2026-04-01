@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     // Divider component handles visual styling
   },
   list: {
-    gap: 0,
+    gap: spacing.zero,
   },
   dotContainer: {
     width: 20,
@@ -645,11 +645,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.section,
   },
   modalContent: {
     borderRadius: radius.large,
-    padding: 20,
+    padding: spacing.section,
     width: '100%',
     maxWidth: 320,
   },
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     paddingVertical: layout.inputPadding,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.section,
     borderRadius: radius.medium,
     minWidth: 80,
     alignItems: 'center',

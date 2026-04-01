@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   bullet: {
     ...typography.bodyLarge,
     width: 16,
-    marginTop: 1,
+    marginTop: layout.componentGapTiny,
   },
   rowBody: {
     flex: 1,

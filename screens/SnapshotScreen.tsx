@@ -138,7 +138,7 @@ export default function SnapshotScreen() {
              Snapshot cashflow uses full currency with explicit signs
              (formatCurrencyFullAlwaysSigned) to represent the current
              financial state precisely. */}
-        <SectionCard useGradient={true} style={{ marginTop: layout.sectionGap }}>
+        <SectionCard style={{ marginTop: layout.sectionGap }}>
           <SectionHeader title="Cash Flow" />
 
           {/* Cash Flow Hero Value */}
@@ -369,11 +369,11 @@ const styles = StyleSheet.create({
   },
   dotSeparator: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: spacing.xl,
   },
   dotSeparatorTight: {
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: layout.md,
   },
   dot: {
     // Typography moved to inline style with theme token
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     paddingLeft: layout.inputPadding - 4, // 6px - shifted right
-    paddingRight: 0, // Eliminated to reclaim space and anchor cards to right edge
+    paddingRight: spacing.zero, // Eliminated to reclaim space and anchor cards to right edge
   },
   cashflowCardsWrapper: {
     position: 'relative',
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cashflowLastCard: {
-    marginBottom: 0,
+    marginBottom: spacing.zero,
   },
   cashFlowHero: {
     alignItems: 'center',
@@ -527,13 +527,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 80,
-    marginBottom: 0,
+    marginBottom: spacing.zero,
   },
   cashflowCard: {
     position: 'relative',
   },
   cashflowMb0: {
-    marginBottom: 0,
+    marginBottom: spacing.zero,
   },
   cashflowMbXs: {
     marginBottom: spacing.xs,
@@ -597,12 +597,12 @@ const styles = StyleSheet.create({
   cashflowCardLeft: {
     flex: 1,
     flexShrink: 1,
-    paddingRight: 100, // Reserve space for right-aligned value column
+    paddingRight: 100, // Intentional: reserve space for right-aligned value column (no token equivalent)
   },
   cashflowCardLeftIndented: {
     flex: 1,
     flexShrink: 1,
-    paddingRight: 100, // Reserve space for right-aligned value column
+    paddingRight: 100, // Intentional: reserve space for right-aligned value column (no token equivalent)
   },
   cashflowCardRight: {
     alignItems: 'flex-end',
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   subCardTitle: {
     // Subtle cue on label only; values remain equally prominent.
@@ -625,13 +625,13 @@ const styles = StyleSheet.create({
   },
   primaryValue: {
     // Typography moved to inline style with theme token
-    marginBottom: 1,
+    marginBottom: layout.componentGapTiny,
   },
   primaryValueOutcome: {
   },
   cardDescription: {
     // Typography moved to inline style with theme token
-    marginTop: 1,
+    marginTop: layout.componentGapTiny,
   },
   subtext: {
     // Typography moved to inline style with theme token

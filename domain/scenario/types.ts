@@ -21,7 +21,8 @@ export type ScenarioKind =
   | 'CHANGE_RETIREMENT_AGE'
   | 'REDUCE_EXPENSES'
   | 'CHANGE_ASSET_GROWTH_RATE'
-  | 'SAVINGS_WHAT_IF';
+  | 'SAVINGS_WHAT_IF'
+  | 'MORTGAGE_WHAT_IF';
 
 export interface ScenarioBase {
   id: ScenarioId;
@@ -65,13 +66,22 @@ export interface SavingsWhatIfScenario extends ScenarioBase {
   newAnnualGrowthRatePct: number; // growth rate override in percent (e.g. 7.0 = 7%)
 }
 
+export interface MortgageWhatIfScenario extends ScenarioBase {
+  kind: 'MORTGAGE_WHAT_IF';
+  liabilityId: string;
+  overpaymentMonthly: number; // extra monthly payment (>= 0; can be 0 if only adjusting rate/term)
+  newAnnualInterestRatePct: number; // rate override in percent (e.g. 4.5 = 4.5%)
+  newRemainingTermYears: number; // term override in years (integer, >= 1)
+}
+
 export type Scenario =
   | FlowToAssetScenario
   | FlowToDebtScenario
   | ChangeRetirementAgeScenario
   | ReduceExpensesScenario
   | ChangeAssetGrowthRateScenario
-  | SavingsWhatIfScenario;
+  | SavingsWhatIfScenario
+  | MortgageWhatIfScenario;
 
 /**
  * Creates the baseline scenario object.

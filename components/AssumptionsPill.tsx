@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   textBlock: {
-    gap: 2,
+    gap: layout.componentGapTiny,
     flex: 1,
   },
   titleRow: {
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     paddingVertical: spacing.sm,
-    paddingHorizontal: 0,
+    paddingHorizontal: spacing.zero,
     marginTop: spacing.xs,
   },
   clearButtonText: {
@@ -446,9 +446,9 @@ const styles = StyleSheet.create({
   modalSheet: {
     borderTopLeftRadius: radius.modal,
     borderTopRightRadius: radius.modal,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 18,
+    paddingHorizontal: spacing.xl,
+    paddingTop: layout.modalPaddingTop,
+    paddingBottom: layout.modalPaddingBottom,
     maxHeight: '70%',
   },
   modalTitle: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   modalListContent: {
-    paddingBottom: 12,
+    paddingBottom: spacing.base,
   },
   modalOption: {
     paddingVertical: spacing.base,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   },
   modalOptionContent: {
     flexDirection: 'column',
-    gap: 2,
+    gap: layout.componentGapTiny,
   },
   modalOptionText: {
     ...typography.valueSmall,
