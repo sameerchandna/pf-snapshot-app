@@ -121,6 +121,21 @@ Monthly surplus is a **flow-derived diagnostic**, not an accumulating balance.
 
 All simulation operates on monthly granularity only.
 
+### Retirement & Decumulation (Phase 12)
+
+At `retirementAge` (default 67, editable in Projection Settings):
+- Asset contributions stop (income has ceased)
+- Discretionary debt reduction stops
+- Living expenses + scheduled mortgage payments are withdrawn from assets
+- Withdrawals are proportional by balance across withdrawable assets
+- Asset availability governs withdrawability:
+  - `immediate` — always withdrawable
+  - `locked` with `unlockAge` — withdrawable once age >= unlockAge
+  - `illiquid` — never withdrawable (e.g. property)
+- Loan amortization continues (contractual obligation)
+- Depletion is detected when all withdrawable assets reach zero
+- `depletionAge` is recorded in `ProjectionSummary`
+
 ---
 
 ## Cash Semantics

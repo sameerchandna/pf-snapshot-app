@@ -41,7 +41,7 @@ Concrete implementation reference. For concepts see ARCHITECTURE.md, for rules s
 | `LiabilityItem` | Liability/loan with rate, term, kind |
 | `ContributionItem` | Monthly asset contribution |
 | `LiabilityReductionItem` | Monthly debt payment |
-| `ProjectionInputs` | Projection config: currentAge, endAge, inflationPct, monthlyDebtReduction |
+| `ProjectionInputs` | Projection config: currentAge, endAge, retirementAge, inflationPct, monthlyDebtReduction |
 | `SnapshotState` | Full financial snapshot (all items + projection inputs) |
 | `GoalConfig` | Goal union: `'fi'` \| `'netWorthMilestone'` \| `'retirementIncome'` |
 | `GoalState` | `{ goals: GoalConfig[] }` |
@@ -112,9 +112,9 @@ Settings → A3Validation, ProjectionRefactorValidation, SnapshotDataSummary
 
 ## Interpretation Layer (`insights/interpretProjection.ts`)
 
-- **Input:** ProjectionSeriesPoint[], ProjectionSummary, expenses, age range, GoalConfig[]
-- **Output:** `InterpretationResult` — headline, subline, trajectory, fiNumber, fiProgress, keyMoments[], goals[]
-- **Key Moments:** DEBT_FREE, NET_WORTH_POSITIVE, ASSETS_EXCEED_LIABILITIES, NET_WORTH_100K/250K/500K/1M
+- **Input:** ProjectionSeriesPoint[], ProjectionSummary, expenses, age range, GoalConfig[], retirementAge
+- **Output:** `InterpretationResult` — headline, subline, trajectory, fiNumber, fiProgress, keyMoments[], goals[], retirementAge, depletionAge?, portfolioLastsYears?
+- **Key Moments:** DEBT_FREE, NET_WORTH_POSITIVE, ASSETS_EXCEED_LIABILITIES, NET_WORTH_100K/250K/500K/1M, RETIREMENT_START, PORTFOLIO_DEPLETED
 - **Goal Assessment:** status (`on_track` | `off_track` | `achieved`), achievedAge, gap
 
 ---
