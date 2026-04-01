@@ -94,13 +94,13 @@ Only unchecked items may be worked on.
 
 ---
 
-## Phase 12 — Retirement & Decumulation Simulation
-- [ ] 12.1: Retirement age in ProjectionInputs
-- [ ] 12.2: Engine: stop earned income after retirement age
-- [ ] 12.3: Engine: assets fund expense shortfall post-retirement
-- [ ] 12.4: Depletion detection: "Portfolio lasts until age X"
-- [ ] 12.5: Decumulation curve on chart
-- [ ] 12.6: Integrate retirement insights into interpretation card
+## Phase 12 — Retirement & Decumulation Simulation ✓
+- [x] 12.1: Retirement age in ProjectionInputs (default 67, editable in Projection Settings)
+- [x] 12.2: Engine: stop contributions and debt reduction after retirement age
+- [x] 12.3: Engine: assets fund expense shortfall post-retirement (respects availability: immediate/locked/illiquid)
+- [x] 12.4: Depletion detection: depletionAge in ProjectionSummary
+- [x] 12.5: Retirement marker line on chart; depletion dot via key moments
+- [x] 12.6: Integrate retirement insights into interpretation layer (RETIREMENT_START, PORTFOLIO_DEPLETED moments; depletionAge, portfolioLastsYears in result)
 
 ---
 

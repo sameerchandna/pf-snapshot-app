@@ -66,6 +66,7 @@ export interface ProjectionInputs {
   // Time horizon
   currentAge: number; // integer
   endAge: number; // integer
+  retirementAge: number; // integer, default 67 (UK state pension age)
 
   // Assumptions (percent values: 2.0 = 2%)
   inflationPct: number;

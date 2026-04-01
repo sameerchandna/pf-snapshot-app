@@ -41,6 +41,9 @@ export function buildProjectionInputsFromState(state: SnapshotState): Projection
     name: a.name,
     balance: a.balance,
     annualGrowthRatePct: a.annualGrowthRatePct,
+    availability: a.availability
+      ? { type: a.availability.type, unlockAge: a.availability.unlockAge }
+      : undefined,
   }));
 
   // Phase 3.1: Deterministic ordering - sort by id for consistent iteration order
@@ -65,13 +68,23 @@ export function buildProjectionInputsFromState(state: SnapshotState): Projection
     return a.amountMonthly - b.amountMonthly;
   });
 
+  // Non-loan monthly expenses (real terms) — used for post-retirement withdrawals.
+  // Excludes loan-derived items (loan-interest:*, loan-principal:*) since the engine handles
+  // mortgage amortisation in its own step; withdrawing them again would double-count.
+  const nonLoanExpenses = state.expenses
+    .filter(e => e.isActive !== false)
+    .filter(e => !e.id.startsWith('loan-interest:') && !e.id.startsWith('loan-principal:'))
+    .reduce((sum, e) => sum + e.monthlyAmount, 0);
+
   return {
     assetsToday,
     liabilitiesToday,
     currentAge: state.projection.currentAge,
     endAge: state.projection.endAge,
+    retirementAge: state.projection.retirementAge,
     inflationRatePct: state.projection.inflationPct,
     assetContributionsMonthly: activeContributions,
     monthlyDebtReduction: state.projection.monthlyDebtReduction,
+    monthlyExpensesReal: nonLoanExpenses,
   };
 }

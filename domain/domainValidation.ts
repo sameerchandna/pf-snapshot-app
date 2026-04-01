@@ -92,7 +92,8 @@ export function emptySnapshotState(): SnapshotState {
     liabilityReductions: [],
     projection: {
       currentAge: 30,
-      endAge: 60,
+      endAge: 90,
+      retirementAge: 67,
       inflationPct: 0.0,
       monthlyDebtReduction: 0,
     },
@@ -137,6 +138,14 @@ function parseProjectionInputs(v: unknown, fallback: SnapshotState['projection']
   const currentAge = typeof v.currentAge === 'number' || typeof v.currentAge === 'string' ? parseMoney(v.currentAge) : null;
   const endAge = typeof v.endAge === 'number' || typeof v.endAge === 'string' ? parseMoney(v.endAge) : null;
 
+  const rawRetirementAge = typeof v.retirementAge === 'number' || typeof v.retirementAge === 'string' ? parseMoney(v.retirementAge) : null;
+  // Validate: must be integer and > currentAge; fall back to 67 (UK state pension age)
+  const resolvedCurrentAge = currentAge ?? fallback.currentAge;
+  const retirementAge =
+    rawRetirementAge != null && Number.isInteger(rawRetirementAge) && rawRetirementAge > resolvedCurrentAge
+      ? rawRetirementAge
+      : (fallback.retirementAge ?? 67);
+
   const inflationPct =
     typeof v.inflationPct === 'number' || typeof v.inflationPct === 'string' ? parseMoney(v.inflationPct) : null;
 
@@ -148,6 +157,7 @@ function parseProjectionInputs(v: unknown, fallback: SnapshotState['projection']
   return {
     currentAge: currentAge ?? fallback.currentAge,
     endAge: endAge ?? fallback.endAge,
+    retirementAge,
     inflationPct: inflationPct ?? fallback.inflationPct,
     monthlyDebtReduction: monthlyDebtReduction ?? fallback.monthlyDebtReduction,
   };

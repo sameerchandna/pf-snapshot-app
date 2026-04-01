@@ -2445,6 +2445,7 @@ export default function ProjectionResultsScreen() {
       state.projection.endAge,
       goals,
       showLiquidOnly ? liquidAssetsSeries : undefined,
+      state.projection.retirementAge,
     );
   }, [baselineSeries, baselineSummary, state, profilesState, showLiquidOnly, liquidAssetsSeries]);
 
@@ -3197,6 +3198,32 @@ export default function ProjectionResultsScreen() {
                     );
                   })
                   .filter(Boolean)}
+                {/* Phase 12.5: Retirement age marker — subtle vertical dashed line */}
+                {state.projection.retirementAge != null &&
+                  state.projection.retirementAge > state.projection.currentAge &&
+                  state.projection.retirementAge < state.projection.endAge &&
+                  (() => {
+                    const domainRange = chartData.domainMax - chartData.domainMin;
+                    const padding = domainRange * 0.05;
+                    const shortenedMin = chartData.domainMin + padding;
+                    const shortenedMax = chartData.domainMax - padding;
+                    return (
+                      <VictoryLine
+                        data={[
+                          { x: state.projection.retirementAge, y: shortenedMin },
+                          { x: state.projection.retirementAge, y: shortenedMax },
+                        ]}
+                        style={{
+                          data: {
+                            stroke: theme.colors.text.muted,
+                            strokeWidth: 1.0,
+                            strokeDasharray: '4,3',
+                            opacity: 0.45,
+                          },
+                        }}
+                      />
+                    );
+                  })()}
                 {/* Vertical marker line at selectedAge (visual cursor, not a filter) */}
                  {/* Phase 7.11: Muted grey, thinner than data lines, darker and more dotted */}
                  {selectedAge != null && (() => {

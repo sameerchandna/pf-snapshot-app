@@ -74,7 +74,8 @@ const getInitialState = (): SnapshotState => ({
   liabilityReductions: [],
   projection: {
     currentAge: 30,
-    endAge: 60,
+    endAge: 90,
+    retirementAge: 67,
     inflationPct: 0.0,
     monthlyDebtReduction: 0,
   },

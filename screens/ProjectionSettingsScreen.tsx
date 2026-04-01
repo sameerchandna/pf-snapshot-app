@@ -24,6 +24,7 @@ const GROUP_CONTRIBUTIONS: string = 'projection-contributions';
 
 const ID_CURRENT_AGE: string = 'currentAge';
 const ID_END_AGE: string = 'endAge';
+const ID_RETIREMENT_AGE: string = 'retirementAge';
 const ID_HORIZON: string = 'horizonYears';
 
 const ID_INFLATION: string = 'inflationPct';
@@ -56,6 +57,7 @@ export default function ProjectionSettingsScreen() {
       // Time Horizon
       { id: ID_CURRENT_AGE, name: 'Current age', groupId: GROUP_TIME, value: state.projection.currentAge },
       { id: ID_END_AGE, name: 'End age', groupId: GROUP_TIME, value: state.projection.endAge },
+      { id: ID_RETIREMENT_AGE, name: 'Retirement age', groupId: GROUP_TIME, value: state.projection.retirementAge },
       { id: ID_HORIZON, name: 'Horizon', groupId: GROUP_TIME, value: horizonYears },
 
       // Assumptions
@@ -68,6 +70,7 @@ export default function ProjectionSettingsScreen() {
     horizonYears,
     state.projection.currentAge,
     state.projection.endAge,
+    state.projection.retirementAge,
     state.projection.inflationPct,
     state.projection.monthlyDebtReduction,
   ]);
@@ -78,6 +81,7 @@ export default function ProjectionSettingsScreen() {
     setProjection({
       currentAge: byId.get(ID_CURRENT_AGE) ?? state.projection.currentAge,
       endAge: byId.get(ID_END_AGE) ?? state.projection.endAge,
+      retirementAge: byId.get(ID_RETIREMENT_AGE) ?? state.projection.retirementAge,
       inflationPct: byId.get(ID_INFLATION) ?? state.projection.inflationPct,
       monthlyDebtReduction: byId.get(ID_MONTHLY_DEBT_REDUCTION) ?? state.projection.monthlyDebtReduction,
     });
@@ -90,7 +94,7 @@ export default function ProjectionSettingsScreen() {
   const formatItemAmountText = (item: ProjectionFieldItem, value: number): string => {
     if (item.id === ID_HORIZON) return `${horizonYears} years`;
 
-    if (item.id === ID_CURRENT_AGE || item.id === ID_END_AGE) {
+    if (item.id === ID_CURRENT_AGE || item.id === ID_END_AGE || item.id === ID_RETIREMENT_AGE) {
       return `${Math.round(value)}`;
     }
 
@@ -105,12 +109,15 @@ export default function ProjectionSettingsScreen() {
   const validateEditedItem = ({ itemId, amount }: { itemId: string | null; name: string; amount: number }): string | null => {
     if (!itemId) return null;
 
-    // Ages: integers only + End age > Current age
-    if (itemId === ID_CURRENT_AGE || itemId === ID_END_AGE) {
+    // Ages: integers only + End age > Current age, Retirement age between current and end
+    if (itemId === ID_CURRENT_AGE || itemId === ID_END_AGE || itemId === ID_RETIREMENT_AGE) {
       if (!Number.isInteger(amount)) return 'Please enter a whole number age.';
       const nextCurrent = itemId === ID_CURRENT_AGE ? amount : state.projection.currentAge;
       const nextEnd = itemId === ID_END_AGE ? amount : state.projection.endAge;
+      const nextRetirement = itemId === ID_RETIREMENT_AGE ? amount : state.projection.retirementAge;
       if (nextEnd <= nextCurrent) return 'End age must be greater than current age.';
+      if (nextRetirement <= nextCurrent) return 'Retirement age must be greater than current age.';
+      if (nextRetirement >= nextEnd) return 'Retirement age must be less than end age.';
       return null;
     }
 

@@ -170,6 +170,8 @@ export default function EntryScreen() {
       state.projection.currentAge,
       state.projection.endAge,
       [], // no goals on entry screen — use computed defaults internally
+      undefined, // liquidAssetsSeries
+      state.projection.retirementAge,
     );
   }, [baselineSeries, state]);
 

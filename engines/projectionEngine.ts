@@ -18,6 +18,10 @@ export type ProjectionEngineInputs = {
     name: string;
     balance: number; // >= 0
     annualGrowthRatePct?: number; // percent (5.0 = 5%); missing -> 0
+    availability?: {
+      type: 'immediate' | 'locked' | 'illiquid';
+      unlockAge?: number; // only used when type='locked'
+    };
   }>;
 
   liabilitiesToday: Array<{
@@ -32,6 +36,7 @@ export type ProjectionEngineInputs = {
   // Time horizon
   currentAge: number; // integer
   endAge: number; // integer
+  retirementAge: number; // integer, default 67; contributions stop and withdrawals begin at this age
 
   inflationRatePct: number;
 
@@ -39,6 +44,11 @@ export type ProjectionEngineInputs = {
   assetContributionsMonthly: Array<{ assetId: string; amountMonthly: number }>;
   monthlyDebtReduction: number;
   liabilityOverpaymentsMonthly?: Array<{ liabilityId: string; amountMonthly: number }>;
+
+  // Post-retirement: monthly non-loan expenses in today's money (real terms).
+  // Used to withdraw living expenses from assets post-retirement.
+  // Excludes loan-derived items (handled by engine's loan amortisation step).
+  monthlyExpensesReal?: number;
   
   // Scenario transfers (explicit asset-to-asset transfers)
   // 
@@ -56,6 +66,7 @@ export type ProjectionSummary = {
   totalPrincipalRepaid: number; // liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
   totalScheduledMortgagePayment: number; // interest + scheduled principal (full payment as expense)
   totalMortgageOverpayments: number; // explicit overpayments only (liability reduction)
+  depletionAge?: number; // age at which all withdrawable assets reach zero; undefined if never depleted
 };
 
 export type ProjectionSeriesPoint = {
@@ -121,6 +132,7 @@ function runMonthlySimulation(
     mortgageOverpayments: number;
   };
   horizonMonths: number;
+  depletionMonth: number | null;
 } {
   const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
@@ -129,8 +141,15 @@ function runMonthlySimulation(
   let totalPrincipalRepaid = 0; // Liability reduction (non-loan debt paydown + loan principal: scheduled + overpayments)
   let totalScheduledMortgagePayment = 0; // Full scheduled payment (interest + scheduled principal) - treated as expense
   let totalMortgageOverpayments = 0; // Explicit overpayments only - treated as liability reduction
+  let depletionMonth: number | null = null; // First month when all withdrawable assets reach zero
 
-  const assetStates: Array<{ id: string; name: string; balance: number; monthlyGrowthRate: number }> = inputs.assetsToday.map(a => {
+  const assetStates: Array<{
+    id: string;
+    name: string;
+    balance: number;
+    monthlyGrowthRate: number;
+    availability?: { type: 'immediate' | 'locked' | 'illiquid'; unlockAge?: number };
+  }> = inputs.assetsToday.map(a => {
     const pct = typeof a.annualGrowthRatePct === 'number' && Number.isFinite(a.annualGrowthRatePct) ? a.annualGrowthRatePct : 0;
     const monthlyGrowthRate = annualPctToMonthlyRate(pct);
     return {
@@ -138,6 +157,7 @@ function runMonthlySimulation(
       name: a.name,
       balance: Number.isFinite(a.balance) ? Math.max(0, a.balance) : 0,
       monthlyGrowthRate,
+      availability: a.availability,
     };
   });
 
@@ -217,27 +237,34 @@ function runMonthlySimulation(
     // CORRECT MONTHLY MODEL: All money present in a period must compound together.
     // Order: 1) Add contributions (baseline + scenario deltas), 2) Apply growth to entire balance
     // This ensures contributions compound with the balance, maintaining compound growth invariants.
-    // 
+    //
     // FLOW scenarios work through contribution deltas (assetContributionsMonthly, liabilityOverpaymentsMonthly).
     // Scenario deltas are already merged into these arrays by applyScenarioToProjectionInputs().
     // No scenarioTransfers are used for FLOW scenarios.
-    
+
+    // Determine whether the user is retired at this point in the simulation
+    const ageAtMonth = inputs.currentAge + monthIndex / 12;
+    const isRetired = ageAtMonth >= inputs.retirementAge;
+
     // 1) Apply asset contributions (baseline + scenario deltas already merged)
     // Contributions are added to balance, then the entire balance compounds together
     // FLOW scenarios: scenario deltas are already merged into assetContributionsMonthly
     // Cash is STOCK-only - FLOW scenarios do not mutate cash balance (enforced by guardrail in applyScenarioToInputs)
+    // Post-retirement: no contributions (income has stopped)
     let contributionTotalThisMonth = 0; // Track only contributions that were actually applied
-    for (const c of sortedContributions) {
-      const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
-      if (amt <= 0) continue;
-      const idx = assetStates.findIndex(a => a.id === c.assetId);
-      if (idx >= 0) {
-        assetStates[idx].balance += amt;
-        contributionTotalThisMonth += amt; // Only count contributions that were actually applied
-      } else {
-        // Contribution references a missing asset id. Ignore (state should prevent this).
-        // Keep it silent to avoid noisy logs on bad persisted states.
-        // Do NOT count this contribution - it was not applied to any asset
+    if (!isRetired) {
+      for (const c of sortedContributions) {
+        const amt = typeof c.amountMonthly === 'number' && Number.isFinite(c.amountMonthly) ? c.amountMonthly : 0;
+        if (amt <= 0) continue;
+        const idx = assetStates.findIndex(a => a.id === c.assetId);
+        if (idx >= 0) {
+          assetStates[idx].balance += amt;
+          contributionTotalThisMonth += amt; // Only count contributions that were actually applied
+        } else {
+          // Contribution references a missing asset id. Ignore (state should prevent this).
+          // Keep it silent to avoid noisy logs on bad persisted states.
+          // Do NOT count this contribution - it was not applied to any asset
+        }
       }
     }
 
@@ -314,24 +341,72 @@ function runMonthlySimulation(
     totalMortgageOverpayments += loanOverpaymentThisMonth;
 
     // 5) Monthly debt reduction input applies ONLY to non-loan debt, proportionally by balance.
-    const nonLoanTotal = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
-    const debtPaydownTotal = nonLoanTotal > 0 ? Math.min(inputs.monthlyDebtReduction, nonLoanTotal) : 0;
-    if (debtPaydownTotal > 0 && nonLoanTotal > 0) {
-      let remaining = debtPaydownTotal;
-      for (let i = 0; i < nonLoanStates.length; i++) {
-        const l = nonLoanStates[i];
-        if (l.balance <= 0) continue;
-        const isLast = i === nonLoanStates.length - 1;
-        const share = isLast ? remaining : debtPaydownTotal * (l.balance / nonLoanTotal);
-        const pay = Math.min(l.balance, share);
-        l.balance -= pay;
-        // Clamp to prevent negative residue from rounding or ordering issues
-        l.balance = Math.max(0, l.balance);
-        remaining -= pay;
+    // Post-retirement: no discretionary debt reduction (income has stopped).
+    let debtPaydownTotal = 0;
+    if (!isRetired) {
+      const nonLoanTotal = nonLoanStates.reduce((sum, l) => sum + l.balance, 0);
+      debtPaydownTotal = nonLoanTotal > 0 ? Math.min(inputs.monthlyDebtReduction, nonLoanTotal) : 0;
+      if (debtPaydownTotal > 0 && nonLoanTotal > 0) {
+        let remaining = debtPaydownTotal;
+        for (let i = 0; i < nonLoanStates.length; i++) {
+          const l = nonLoanStates[i];
+          if (l.balance <= 0) continue;
+          const isLast = i === nonLoanStates.length - 1;
+          const share = isLast ? remaining : debtPaydownTotal * (l.balance / nonLoanTotal);
+          const pay = Math.min(l.balance, share);
+          l.balance -= pay;
+          // Clamp to prevent negative residue from rounding or ordering issues
+          l.balance = Math.max(0, l.balance);
+          remaining -= pay;
+        }
       }
     }
 
-    // 6) Accumulate explicit effort
+    // 6) Post-retirement withdrawal: fund living expenses + mortgage payments from withdrawable assets.
+    // Only runs after retirement age. Withdrawable = immediate (liquid) or locked with unlockAge <= ageAtMonth.
+    // Illiquid assets (property) are never withdrawn. Proportional by balance across withdrawable assets.
+    if (isRetired) {
+      // Inflate non-loan expenses from real (today's money) to nominal terms
+      const inflationRate = inputs.inflationRatePct / 100;
+      const inflationFactor = Math.pow(1 + inflationRate, monthIndex / 12);
+      const realExpenses = inputs.monthlyExpensesReal ?? 0;
+      const nominalLivingExpenses = realExpenses * inflationFactor;
+
+      // Total withdrawal = living expenses + scheduled mortgage payment (already accumulated in step 4)
+      const totalWithdrawal = nominalLivingExpenses + scheduledMortgagePaymentThisMonth;
+
+      if (totalWithdrawal > 0) {
+        // Identify withdrawable assets
+        const withdrawable = assetStates.filter(a => {
+          if (!a.availability || a.availability.type === 'immediate') return true;
+          if (a.availability.type === 'locked' && typeof a.availability.unlockAge === 'number') {
+            return ageAtMonth >= a.availability.unlockAge;
+          }
+          return false; // illiquid or locked without unlockAge
+        });
+
+        const totalWithdrawable = withdrawable.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
+
+        if (totalWithdrawable > 0) {
+          const capped = Math.min(totalWithdrawal, totalWithdrawable);
+          for (const a of withdrawable) {
+            if (a.balance <= 0) continue;
+            const share = a.balance / totalWithdrawable;
+            a.balance = Math.max(0, a.balance - capped * share);
+          }
+        }
+
+        // Depletion detection: first month withdrawable assets hit zero
+        if (depletionMonth === null) {
+          const withdrawableNow = withdrawable.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
+          if (withdrawableNow <= 0) {
+            depletionMonth = monthIndex;
+          }
+        }
+      }
+    }
+
+    // 7) Accumulate explicit effort
     // contributionTotalThisMonth was already computed during contribution application (step 1)
     // This ensures we only count contributions that were actually applied to existing assets
     // totalContributions: asset contributions only (post-tax + pension)
@@ -396,6 +471,7 @@ function runMonthlySimulation(
       mortgageOverpayments: totalMortgageOverpayments,
     },
     horizonMonths,
+    depletionMonth,
   };
 }
 
@@ -406,7 +482,7 @@ function runMonthlySimulation(
 function computeMonthlyProjection(
   inputs: ProjectionEngineInputs,
   onMonth?: (ctx: { monthIndex: number; assets: number; liabilities: number }) => void,
-): { assets: number; liabilities: number; totalContributions: number; totalPrincipalRepaid: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number } {
+): { assets: number; liabilities: number; totalContributions: number; totalPrincipalRepaid: number; totalScheduledMortgagePayment: number; totalMortgageOverpayments: number; horizonMonths: number; depletionMonth: number | null } {
   // Handle zero horizon case
   const horizonMonthsRaw = (inputs.endAge - inputs.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
@@ -419,19 +495,20 @@ function computeMonthlyProjection(
     const loanStart = inputs.liabilitiesToday
       .filter(isLoanLike)
       .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
-    return { 
-      assets: assetsNow, 
-      liabilities: nonLoanNow + loanStart, 
-      totalContributions: 0, 
+    return {
+      assets: assetsNow,
+      liabilities: nonLoanNow + loanStart,
+      totalContributions: 0,
       totalPrincipalRepaid: 0,
-      totalScheduledMortgagePayment: 0, 
-      totalMortgageOverpayments: 0, 
+      totalScheduledMortgagePayment: 0,
+      totalMortgageOverpayments: 0,
       horizonMonths: 0,
+      depletionMonth: null,
     };
   }
 
   // Delegate to runMonthlySimulation
-  const { finalState, totals, horizonMonths: computedHorizonMonths } = runMonthlySimulation(
+  const { finalState, totals, horizonMonths: computedHorizonMonths, depletionMonth } = runMonthlySimulation(
     inputs,
     onMonth ? (ctx) => {
       // Convert new callback format to legacy format
@@ -456,6 +533,7 @@ function computeMonthlyProjection(
     totalScheduledMortgagePayment: totals.scheduledMortgagePayment,
     totalMortgageOverpayments: totals.mortgageOverpayments,
     horizonMonths: computedHorizonMonths,
+    depletionMonth,
   };
 }
 
@@ -498,14 +576,15 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
       .reduce((sum, l) => sum + (Number.isFinite(l.balance) ? Math.max(0, l.balance) : 0), 0);
     const endLiabilities = nonLoanStart + loanStart;
     const endNetWorth = endAssets - endLiabilities;
-    return { 
-      endAssets, 
-      endLiabilities, 
-      endNetWorth, 
-      totalContributions: 0, 
+    return {
+      endAssets,
+      endLiabilities,
+      endNetWorth,
+      totalContributions: 0,
       totalPrincipalRepaid: 0,
-      totalScheduledMortgagePayment: 0, 
+      totalScheduledMortgagePayment: 0,
       totalMortgageOverpayments: 0,
+      depletionAge: undefined,
     };
   }
 
@@ -516,7 +595,7 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
     endAge,
   };
 
-  const { assets, liabilities, totalContributions, totalPrincipalRepaid, totalScheduledMortgagePayment, totalMortgageOverpayments } = computeMonthlyProjection(normalizedInputs);
+  const { assets, liabilities, totalContributions, totalPrincipalRepaid, totalScheduledMortgagePayment, totalMortgageOverpayments, depletionMonth } = computeMonthlyProjection(normalizedInputs);
 
   const endAssets = deflateToTodaysMoney(assets, clonedInputs.inflationRatePct, horizonMonths);
   const endLiabilities = deflateToTodaysMoney(liabilities, clonedInputs.inflationRatePct, horizonMonths);
@@ -526,6 +605,8 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
   const endScheduledMortgagePayment = deflateToTodaysMoney(totalScheduledMortgagePayment, clonedInputs.inflationRatePct, horizonMonths);
   const endMortgageOverpayments = deflateToTodaysMoney(totalMortgageOverpayments, clonedInputs.inflationRatePct, horizonMonths);
 
+  const depletionAge = depletionMonth != null ? currentAge + depletionMonth / 12 : undefined;
+
   return {
     endAssets,
     endLiabilities,
@@ -534,6 +615,7 @@ export function computeProjectionSummary(inputs: ProjectionEngineInputs): Projec
     totalPrincipalRepaid: endTotalPrincipalRepaid,
     totalScheduledMortgagePayment: endScheduledMortgagePayment,
     totalMortgageOverpayments: endMortgageOverpayments,
+    depletionAge,
   };
 }
 

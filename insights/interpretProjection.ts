@@ -27,7 +27,9 @@ export type MomentType =
   | 'NET_WORTH_100K'
   | 'NET_WORTH_250K'
   | 'NET_WORTH_500K'
-  | 'NET_WORTH_1M';
+  | 'NET_WORTH_1M'
+  | 'RETIREMENT_START'           // age at which retirement begins (contributions stop, withdrawals start)
+  | 'PORTFOLIO_DEPLETED';        // age at which all withdrawable assets reach zero
 
 export type InterpretationKeyMoment = {
   type: MomentType;
@@ -67,9 +69,13 @@ export type InterpretationResult = {
   /** Net worth at start of projection / FI number, capped at 1.0 */
   fiProgress: number;
 
-  /** UK state pension age */
-  retirementAge: 67;
+  /** User's retirement age (from projection inputs, default 67) */
+  retirementAge: number;
   netWorthAtRetirement: number;
+  /** Age at which all withdrawable assets deplete; undefined if never within projection */
+  depletionAge?: number;
+  /** Years portfolio sustains retirement spending; undefined if no depletion detected */
+  portfolioLastsYears?: number;
 
   /** All detected moments, sorted by age ascending */
   keyMoments: InterpretationKeyMoment[];
@@ -93,6 +99,7 @@ const FLAT_THRESHOLD_PCT = 0.02; // ±2% change over the projection → flat
 function detectKeyMoments(
   series: ProjectionSeriesPoint[],
   liquidAssetsSeries?: number[],
+  retirementAge?: number,
 ): InterpretationKeyMoment[] {
   const moments: InterpretationKeyMoment[] = [];
   if (!series || series.length === 0) return moments;
@@ -171,6 +178,32 @@ function detectKeyMoments(
     }
   }
 
+  // RETIREMENT_START: mark the retirement age on the net worth series
+  if (retirementAge != null) {
+    const retirementPoint = series.find(p => p.age >= retirementAge);
+    if (retirementPoint) {
+      moments.push({
+        type: 'RETIREMENT_START',
+        seriesId: 'netWorth',
+        age: retirementAge,
+        value: retirementPoint.netWorth,
+      });
+    }
+  }
+
+  // PORTFOLIO_DEPLETED: first point after retirement where assets hit zero
+  if (retirementAge != null) {
+    const depletionPoint = series.find(p => p.age >= retirementAge && p.assets <= UI_TOLERANCE);
+    if (depletionPoint) {
+      moments.push({
+        type: 'PORTFOLIO_DEPLETED',
+        seriesId: 'assets',
+        age: depletionPoint.age,
+        value: depletionPoint.assets,
+      });
+    }
+  }
+
   // Sort all moments by age ascending
   return moments.sort((a, b) => a.age - b.age);
 }
@@ -198,11 +231,11 @@ function netWorthAtAge(series: ProjectionSeriesPoint[], targetAge: number): numb
   return point ? point.netWorth : series[series.length - 1].netWorth;
 }
 
-function computeDefaultGoals(monthlyExpenses: number): GoalConfig[] {
+function computeDefaultGoals(monthlyExpenses: number, retirementAge: number): GoalConfig[] {
   const annualExpenses = monthlyExpenses * 12;
   return [
     { type: 'fi', target: annualExpenses * 25 },
-    { type: 'retirementIncome', target: annualExpenses, targetAge: UK_STATE_PENSION_AGE },
+    { type: 'retirementIncome', target: annualExpenses, targetAge: retirementAge },
   ];
 }
 
@@ -333,14 +366,19 @@ function buildHeadlineAndSubline(
   keyMoments: InterpretationKeyMoment[],
   fiNumber: number,
   endAge: number,
+  retirementAge?: number,
+  depletionAge?: number,
 ): { headline: string; subline: string } {
   const debtFree = keyMoments.find(m => m.type === 'DEBT_FREE');
   const nwPositive = keyMoments.find(m => m.type === 'NET_WORTH_POSITIVE');
   const fiReached = series.find(p => p.netWorth >= fiNumber);
 
-  // Headline
+  // Headline — depletion takes priority over trajectory
   let headline: string;
-  if (trajectory === 'shrinking') {
+  if (depletionAge != null && retirementAge != null) {
+    const yearsLast = Math.round(depletionAge - retirementAge);
+    headline = `Portfolio projected to last until ${formatAge(depletionAge)} — ${yearsLast} year${yearsLast !== 1 ? 's' : ''} into retirement.`;
+  } else if (trajectory === 'shrinking') {
     const startNW = series.length > 0 ? series[0].netWorth : 0;
     const years = endAge - (series.length > 0 ? series[0].age : 0);
     headline = `Net worth is projected to decline from ${formatGBP(startNW)} to ${formatGBP(summary.endNetWorth)} over ${Math.round(years)} years.`;
@@ -352,8 +390,13 @@ function buildHeadlineAndSubline(
 
   // Subline
   const parts: string[] = [];
-  if (trajectory === 'growing') parts.push('Net worth is on a growing trajectory.');
-  else if (trajectory === 'flat')    parts.push('Net worth is broadly stable.');
+  if (depletionAge == null && retirementAge != null) {
+    parts.push(`Portfolio sustains retirement spending through ${formatAge(endAge)}.`);
+  } else if (trajectory === 'growing') {
+    parts.push('Net worth is on a growing trajectory.');
+  } else if (trajectory === 'flat') {
+    parts.push('Net worth is broadly stable.');
+  }
 
   if (nwPositive) parts.push(`Net worth turns positive at ${formatAge(nwPositive.age)}.`);
   if (fiReached)  parts.push(`FI threshold reached at ${formatAge(fiReached.age)}.`);
@@ -386,8 +429,10 @@ export function interpretProjection(
   endAge: number,
   goals: GoalConfig[],
   liquidAssetsSeries?: number[],
+  retirementAge?: number,
 ): InterpretationResult {
-  const keyMoments = detectKeyMoments(series, liquidAssetsSeries);
+  const effectiveRetirementAge = retirementAge ?? UK_STATE_PENSION_AGE;
+  const keyMoments = detectKeyMoments(series, liquidAssetsSeries, effectiveRetirementAge);
   const trajectory = computeTrajectory(series);
 
   const fiNumber = monthlyExpenses * 12 * 25;
@@ -396,7 +441,13 @@ export function interpretProjection(
     ? Math.min(1, Math.max(0, startNetWorth / fiNumber))
     : 1;
 
-  const netWorthAtRetirement = netWorthAtAge(series, UK_STATE_PENSION_AGE);
+  const netWorthAtRetirement = netWorthAtAge(series, effectiveRetirementAge);
+
+  // Derive depletionAge from summary (engine computed) or from series as fallback
+  const depletionAge = summary.depletionAge;
+  const portfolioLastsYears = depletionAge != null
+    ? Math.max(0, depletionAge - effectiveRetirementAge)
+    : undefined;
 
   const { headline, subline } = buildHeadlineAndSubline(
     series,
@@ -405,12 +456,14 @@ export function interpretProjection(
     keyMoments,
     fiNumber,
     endAge,
+    effectiveRetirementAge,
+    depletionAge,
   );
 
   // Use computed defaults when no goals have been user-customised
   const effectiveGoals = goals.length > 0
     ? goals
-    : computeDefaultGoals(monthlyExpenses);
+    : computeDefaultGoals(monthlyExpenses, effectiveRetirementAge);
 
   const goalAssessments = effectiveGoals.map(g => assessGoal(g, series, monthlyExpenses));
 
@@ -421,8 +474,10 @@ export function interpretProjection(
     trajectory,
     fiNumber,
     fiProgress,
-    retirementAge: UK_STATE_PENSION_AGE,
+    retirementAge: effectiveRetirementAge,
     netWorthAtRetirement,
+    depletionAge,
+    portfolioLastsYears,
     keyMoments,
     goals: goalAssessments,
   };
