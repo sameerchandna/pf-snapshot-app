@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Line } from 'react-native-svg';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { typography, radius } from '../ui/theme/theme';
 import Icon, { type IconName } from './Icon';
 import IconButton from './IconButton';
+
+const SCREEN_BG = '#F7F6F2';
+const HATCH_GAP = 14;
+
+function rand(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
 
 /**
  * Control item types - explicitly typed, not unioned.
@@ -18,6 +28,8 @@ export type ControlBarPillItem = {
   active?: boolean;
   disabled?: boolean;
   icon?: IconName; // Optional icon before text (e.g., "zap" for Quick what-if)
+  chevron?: 'down' | 'right'; // defaults to 'down'
+  emphasis?: boolean; // larger, heavier text
 };
 
 export type ControlBarItemButton = {
@@ -42,8 +54,12 @@ export type ControlBarLeftItem = ControlBarPillItem | ControlBarItemButton;
 export type ControlBarRightItem = ControlBarPillItem | ControlBarIconItem;
 
 type ControlBarProps = {
-  leftItems?: ControlBarLeftItem[];
-  rightItems?: ControlBarRightItem[];
+  /** Col 1 (left-aligned) — typically the Scenario dropdown */
+  col1?: ControlBarLeftItem;
+  /** Col 2 (center-aligned) — typically the Age dropdown */
+  col2?: ControlBarLeftItem;
+  /** Col 3 (right-aligned) — typically action icon buttons */
+  col3Items?: ControlBarRightItem[];
   containerStyle?: object;
 };
 
@@ -60,11 +76,37 @@ type ControlBarProps = {
  * Uses theme tokens exclusively (no hardcoded colors, spacing, radius).
  */
 export default function ControlBar({
-  leftItems = [],
-  rightItems = [],
+  col1,
+  col2,
+  col3Items = [],
   containerStyle,
 }: ControlBarProps) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const hatchLines: React.ReactNode[] = [];
+  if (size.width > 0 && size.height > 0) {
+    const { width, height } = size;
+    const totalLines = Math.ceil((width + height) / HATCH_GAP) + 1;
+    for (let i = 0; i < totalLines; i++) {
+      const offset = i * HATCH_GAP;
+      const op1 = 0.07 + rand(i) * 0.10;
+      const sw1 = 0.4 + rand(i * 3 + 7) * 0.9;
+      // `/` direction
+      hatchLines.push(
+        <Line key={`a${i}`} x1={offset} y1={0} x2={offset - height} y2={height}
+          stroke={palette.accent} strokeWidth={sw1} strokeOpacity={op1} />
+      );
+      // `\` direction
+      const op2 = 0.07 + rand(i * 5 + 13) * 0.10;
+      const sw2 = 0.4 + rand(i * 7 + 3) * 0.9;
+      hatchLines.push(
+        <Line key={`b${i}`} x1={offset - height} y1={0} x2={offset} y2={height}
+          stroke={palette.accent} strokeWidth={sw2} strokeOpacity={op2} />
+      );
+    }
+  }
 
   const renderPillItem = (item: ControlBarPillItem, index: number) => {
     const isActive = item.active ?? false;
@@ -92,6 +134,7 @@ export default function ControlBar({
         <Text
           style={[
             styles.pillButtonText,
+            item.emphasis && styles.pillButtonTextEmphasis,
             isActive && [styles.pillButtonTextActive, { color: theme.colors.brand.primary }],
             isDisabled && { color: theme.colors.text.disabled },
           ]}
@@ -105,7 +148,7 @@ export default function ControlBar({
             isDisabled && { color: theme.colors.text.disabled },
           ]}
         >
-          ▼
+          {item.chevron === 'right' ? '▸' : '▼'}
         </Text>
       </Pressable>
     );
@@ -201,27 +244,39 @@ export default function ControlBar({
         style={[
           styles.surface,
           {
-            backgroundColor: theme.colors.bg.card,
+            backgroundColor: SCREEN_BG,
             borderColor: theme.colors.border.subtle,
             borderRadius: theme.radius.medium,
             ...theme.shadows.medium,
           },
         ]}
+        onLayout={e => {
+          const { width, height } = e.nativeEvent.layout;
+          setSize({ width, height });
+        }}
       >
+        {size.width > 0 && size.height > 0 && (
+          <Svg
+            width={size.width}
+            height={size.height}
+            style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.medium }]}
+            pointerEvents="none"
+          >
+            {hatchLines}
+          </Svg>
+        )}
         <View style={styles.row}>
-          {leftItems.length > 0 && (
-            <View style={styles.leftGroup}>
-              {leftItems.map((item, index) => renderLeftItem(item, index))}
-            </View>
-          )}
+          <View style={styles.col1}>
+            {col1 && renderLeftItem(col1, 0)}
+          </View>
 
-          <View style={styles.spacer} />
+          <View style={styles.col2}>
+            {col2 && renderLeftItem(col2, 0)}
+          </View>
 
-          {rightItems.length > 0 && (
-            <View style={styles.rightGroup}>
-              {rightItems.map((item, index) => renderRightItem(item, index))}
-            </View>
-          )}
+          <View style={styles.col3}>
+            {col3Items.map((item, index) => renderRightItem(item, index))}
+          </View>
         </View>
       </View>
     </View>
@@ -241,21 +296,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  leftGroup: {
+  col1: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    flexShrink: 1,
+    justifyContent: 'flex-start',
     minWidth: 0,
   },
-  spacer: {
+  col2: {
     flex: 1,
-  },
-  rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  col3: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: spacing.xs,
-    flexShrink: 0,
   },
   pillButton: {
     height: 28,
@@ -268,6 +328,10 @@ const styles = StyleSheet.create({
   },
   pillButtonText: {
     ...typography.body,
+  },
+  pillButtonTextEmphasis: {
+    ...typography.bodyLarge,
+    fontWeight: '600',
   },
   pillButtonTextActive: {
     fontWeight: '600',

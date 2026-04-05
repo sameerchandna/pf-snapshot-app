@@ -1,9 +1,10 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../ui/theme/useTheme';
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { spacing } from '../ui/spacing';
-import { layout } from '../ui/layout';
 import { typography } from '../ui/theme/theme';
+import { useScreenPalette } from '../ui/theme/palettes';
+
 type Props = {
   title: string;
   totalText?: string;
@@ -12,56 +13,60 @@ type Props = {
   rightAccessory?: React.ReactNode;
 };
 
-/**
- * Standard app-wide screen header.
- * Matches the existing "detail/card" header pattern: fixed header, iOS spacing, bottom divider.
- * Phase 6.7: Includes demo mode banner when active.
- */
-export default function ScreenHeader({ title, totalText, subtitle, subtitleFootnote, rightAccessory }: Props) {
-  const { theme } = useTheme();
+export default function ScreenHeader({ title, rightAccessory }: Props) {
+  const palette = useScreenPalette();
   return (
     <View>
-      <View style={[styles.header, styles.safeHeader, { borderBottomColor: theme.colors.border.default }]}>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>{title}</Text>
-        {totalText ? <Text style={[styles.headerTotal, { color: theme.colors.text.primary }]}>{totalText}</Text> : null}
-        {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.text.muted }, totalText ? styles.subtitleAfterTotal : null]}>{subtitle}</Text> : null}
-        {subtitleFootnote ? <Text style={[styles.subtitleFootnote, { color: theme.colors.text.disabled }]}>{subtitleFootnote}</Text> : null}
-        {rightAccessory ? <View style={styles.rightAccessory}>{rightAccessory}</View> : null}
+      <View style={[styles.header, styles.safeHeader]}>
+        <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
+        {rightAccessory ? (
+          <View style={styles.rightAccessory}>{rightAccessory}</View>
+        ) : (
+          <View style={styles.aiBadge}>
+            <Svg width={45} height={42}>
+              <Circle cx={22.5} cy={21} r={19} fill="#ffffff" stroke={palette.accent} strokeWidth={1.5} />
+              <SvgText
+                x={22.5}
+                y={25}
+                textAnchor="middle"
+                fill={palette.accent}
+                fontSize={14}
+                fontFamily="Virgil"
+              >
+                AI
+              </SvgText>
+            </Svg>
+          </View>
+        )}
       </View>
+      <View style={[styles.separator, { backgroundColor: palette.text }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    padding: spacing.xl,
-    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
   },
   safeHeader: {
     marginTop: Platform.OS === 'ios' ? 10 : 0,
   },
   title: {
-    ...typography.header,
-    marginBottom: spacing.tiny,
-  },
-  subtitle: {
-    ...typography.body,
-  },
-  subtitleAfterTotal: {
-    marginTop: spacing.sm,
-  },
-  subtitleFootnote: {
-    ...typography.body,
-    marginTop: layout.componentGapTiny,
-  },
-  headerTotal: {
-    ...typography.valueLarge,
+    ...typography.medium,
+    flex: 1,
   },
   rightAccessory: {
-    position: 'absolute',
-    right: spacing.xl,
-    top: 18,
+    marginLeft: spacing.sm,
+  },
+  aiBadge: {
+    marginLeft: spacing.sm,
+  },
+  separator: {
+    height: 1,
+    width: '100%',
   },
 });
-
-

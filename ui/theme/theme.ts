@@ -9,6 +9,34 @@
  * Phase 7.3: Typography, radius, and shadow tokens added (define only, not yet used).
  */
 
+// Shared sketch typography — used by both themes (Virgil font, 4-size scale)
+const sketchTypography = {
+  // New 4-size sketch scale
+  tiny:   { fontFamily: 'Virgil', fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
+  small:  { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  medium: { fontFamily: 'Virgil', fontSize: 20, fontWeight: '400' as const, lineHeight: 26 },
+  large:  { fontFamily: 'Virgil', fontSize: 28, fontWeight: '400' as const, lineHeight: 34 },
+
+  // Aliases mapping old tokens → new sketch sizes (for migration)
+  caption:      { fontFamily: 'Virgil', fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
+  bodySmall:    { fontFamily: 'Virgil', fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
+  label:        { fontFamily: 'Virgil', fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
+  groupTitle:   { fontFamily: 'Virgil', fontSize: 12, fontWeight: '400' as const, lineHeight: 16, letterSpacing: 0.6 },
+  body:         { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  bodyMedium:   { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  bodyLarge:    { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  input:        { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  button:       { fontFamily: 'Virgil', fontSize: 16, fontWeight: '400' as const, lineHeight: 22 },
+  header:       { fontFamily: 'Virgil', fontSize: 20, fontWeight: '400' as const, lineHeight: 26 },
+  sectionTitle: { fontFamily: 'Virgil', fontSize: 20, fontWeight: '400' as const, lineHeight: 26 },
+  value:        { fontFamily: 'Virgil', fontSize: 20, fontWeight: '400' as const, lineHeight: 26 },
+  valueSmall:   { fontFamily: 'Virgil', fontSize: 20, fontWeight: '400' as const, lineHeight: 26 },
+  valueLarge:   { fontFamily: 'Virgil', fontSize: 28, fontWeight: '400' as const, lineHeight: 34 },
+  valueHero:    { fontFamily: 'Virgil', fontSize: 28, fontWeight: '400' as const, lineHeight: 34 },
+} as const;
+
+const sketchShadows = { none: {}, small: {}, medium: {} } as const;
+
 export const lightTheme = {
   colors: {
     brand: {
@@ -26,7 +54,7 @@ export const lightTheme = {
       disabled: '#aaa', // Used in ScreenHeader subtitleFootnote
     },
     bg: {
-      app: '#F5F6F8',
+      app: '#F7F6F2',
       card: '#fff',
       subtle: '#fafafa',
       input: '#fbfbfb', // Interactive input surface - subtly darker than card, softer tone
@@ -95,112 +123,19 @@ export const lightTheme = {
       grey:       { cardBg: '#F1F1F5', cardBgPressed: '#E4E4EC', iconBg: '#E4E4EA', title: '#BBBBCC', body: '#CCCCDD' },
     },
   },
-  typography: {
-    header: {
-      fontSize: 20,
-      fontWeight: '600' as const,
-      lineHeight: 24,
-    },
-    sectionTitle: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    groupTitle: {
-      fontSize: 12,
-      fontWeight: '700' as const,
-      lineHeight: 16,
-      letterSpacing: 0.6,
-    },
-    bodyLarge: {
-      fontSize: 14,
-      fontWeight: '400' as const,
-      lineHeight: 20,
-    },
-    body: {
-      fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 16,
-    },
-    bodyMedium: {
-      fontSize: 13,
-      fontWeight: '400' as const,
-      lineHeight: 18,
-    },
-    bodySmall: {
-      fontSize: 11,
-      fontWeight: '400' as const,
-      lineHeight: 14,
-    },
-    caption: {
-      fontSize: 10,
-      fontWeight: '400' as const,
-      lineHeight: 14,
-    },
-    valueLarge: {
-      fontSize: 18,
-      fontWeight: '600' as const,
-      lineHeight: 22,
-    },
-    valueHero: {
-      fontSize: 22,
-      fontWeight: '700' as const,
-      lineHeight: 28,
-    },
-    value: {
-      fontSize: 15,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    valueSmall: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 18,
-    },
-    button: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    input: {
-      fontSize: 15,
-      fontWeight: '400' as const,
-      lineHeight: 20,
-    },
-    label: {
-      fontSize: 12,
-      fontWeight: '600' as const,
-      lineHeight: 16,
-    },
-  },
+  typography: sketchTypography,
   radius: {
     none: 0,
     small: 4,
     base: 6,
     medium: 8,
-    card: 10,   // Apple-standard card/section corner radius
+    card: 10,
     large: 12,
-    modal: 14,  // Modal sheet top corner radius
-    rounded: 16, // Rounded cards and bottom sheet corners
+    modal: 14,
+    rounded: 16,
     pill: 24,
   },
-  shadows: {
-    none: {},
-    small: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    medium: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-  },
+  shadows: sketchShadows,
 } as const;
 
 export const darkTheme = {
@@ -289,112 +224,19 @@ export const darkTheme = {
       grey:       { cardBg: '#1C1C1E', cardBgPressed: '#252528', iconBg: '#2A2A30', title: '#444444', body: '#383838' },
     },
   },
-  typography: {
-    header: {
-      fontSize: 20,
-      fontWeight: '600' as const,
-      lineHeight: 24,
-    },
-    sectionTitle: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    groupTitle: {
-      fontSize: 12,
-      fontWeight: '700' as const,
-      lineHeight: 16,
-      letterSpacing: 0.6,
-    },
-    bodyLarge: {
-      fontSize: 14,
-      fontWeight: '400' as const,
-      lineHeight: 20,
-    },
-    body: {
-      fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 16,
-    },
-    bodyMedium: {
-      fontSize: 13,
-      fontWeight: '400' as const,
-      lineHeight: 18,
-    },
-    bodySmall: {
-      fontSize: 11,
-      fontWeight: '400' as const,
-      lineHeight: 14,
-    },
-    caption: {
-      fontSize: 10,
-      fontWeight: '400' as const,
-      lineHeight: 14,
-    },
-    valueLarge: {
-      fontSize: 18,
-      fontWeight: '600' as const,
-      lineHeight: 22,
-    },
-    valueHero: {
-      fontSize: 22,
-      fontWeight: '700' as const,
-      lineHeight: 28,
-    },
-    value: {
-      fontSize: 15,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    valueSmall: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 18,
-    },
-    button: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-    },
-    input: {
-      fontSize: 15,
-      fontWeight: '400' as const,
-      lineHeight: 20,
-    },
-    label: {
-      fontSize: 12,
-      fontWeight: '600' as const,
-      lineHeight: 16,
-    },
-  },
+  typography: sketchTypography,
   radius: {
     none: 0,
     small: 4,
     base: 6,
     medium: 8,
-    card: 10,   // Apple-standard card/section corner radius
+    card: 10,
     large: 12,
-    modal: 14,  // Modal sheet top corner radius
-    rounded: 16, // Rounded cards and bottom sheet corners
+    modal: 14,
+    rounded: 16,
     pill: 24,
   },
-  shadows: {
-    none: {},
-    small: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    medium: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-  },
+  shadows: sketchShadows,
 } as const;
 
 // Theme type that accepts both light and dark themes
@@ -420,22 +262,5 @@ export const radius = {
 /**
  * Standalone typography tokens — same values as theme.typography, exported separately
  * so static StyleSheets (outside components) can use them without needing useTheme().
- * Typography scale (fontSize/fontWeight/lineHeight) does not differ between light and dark themes.
  */
-export const typography = {
-  header:       { fontSize: 20, fontWeight: '600' as const, lineHeight: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '600' as const, lineHeight: 20 },
-  groupTitle:   { fontSize: 12, fontWeight: '700' as const, lineHeight: 16, letterSpacing: 0.6 },
-  bodyLarge:    { fontSize: 14, fontWeight: '400' as const, lineHeight: 20 },
-  body:         { fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
-  bodyMedium:   { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
-  bodySmall:    { fontSize: 11, fontWeight: '400' as const, lineHeight: 14 },
-  caption:      { fontSize: 10, fontWeight: '400' as const, lineHeight: 14 },
-  valueLarge:   { fontSize: 18, fontWeight: '600' as const, lineHeight: 22 },
-  valueHero:    { fontSize: 22, fontWeight: '700' as const, lineHeight: 28 },
-  value:        { fontSize: 15, fontWeight: '600' as const, lineHeight: 20 },
-  valueSmall:   { fontSize: 14, fontWeight: '600' as const, lineHeight: 18 },
-  button:       { fontSize: 14, fontWeight: '600' as const, lineHeight: 20 },
-  input:        { fontSize: 15, fontWeight: '400' as const, lineHeight: 20 },
-  label:        { fontSize: 12, fontWeight: '600' as const, lineHeight: 16 },
-} as const;
+export const typography = sketchTypography;

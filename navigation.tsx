@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from './ui/theme/useTheme';
+import { ScreenPaletteProvider, palettes } from './ui/theme/palettes';
 import SnapshotScreen from './screens/SnapshotScreen';
 import GrossIncomeDetailScreen from './screens/GrossIncomeDetailScreen';
 import PensionDetailScreen from './screens/PensionDetailScreen';
@@ -38,6 +39,18 @@ const ProjectionStack = createNativeStackNavigator();
 const SettingsStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Wraps a screen component in the entry palette context (pink/purple).
+// Used for all data-entry detail screens in the Snapshot stack.
+function withEntryPalette(Component: React.ComponentType<any>): React.ComponentType<any> {
+  return function EntryPaletteScreen(props: any) {
+    return (
+      <ScreenPaletteProvider value={palettes.entry}>
+        <Component {...props} />
+      </ScreenPaletteProvider>
+    );
+  };
+}
+
 // Navigation headers remain disabled app-wide; all screens render their own in-screen headers.
 const STACK_HEADER_SHOWN: boolean = false;
 const TAB_HEADER_SHOWN: boolean = false;
@@ -57,61 +70,68 @@ const TAB_INITIAL_ROUTE_NAME: string = TAB_ROUTE_SNAPSHOT;
 
 function SnapshotStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
-      <Stack.Screen name="Snapshot" component={SnapshotScreen} />
-      <Stack.Screen name="GrossIncomeDetail" component={GrossIncomeDetailScreen} />
-      <Stack.Screen name="PensionDetail" component={PensionDetailScreen} />
-      <Stack.Screen name="NetIncomeDetail" component={NetIncomeDetailScreen} />
-      {/* IncomeDetailScreen retired in favour of the three flat list screens above */}
-      <Stack.Screen name="DeductionsDetail" component={DeductionsDetailScreen} />
-      <Stack.Screen name="ExpensesDetail" component={ExpensesDetailScreen} />
-      <Stack.Screen name="AvailableCashDetail" component={AvailableCashDetailScreen} />
-      <Stack.Screen name="LiabilityReductionDetail" component={LiabilityReductionsDetailScreen} />
-      <Stack.Screen name="AssetContributionDetail" component={ContributionsDetailScreen} />
-      <Stack.Screen name="MonthlySurplusDetail" component={MonthlySurplusDetailScreen} />
-      <Stack.Screen name="AssetsDetail" component={AssetsDetailScreen} />
-      <Stack.Screen name="LiabilitiesDetail" component={LiabilitiesDetailScreen} />
-      <Stack.Screen name="LoanDetail" component={LoanDetailScreen} />
-      <Stack.Screen name="NetWorthDetail" component={NetWorthDetailScreen} />
-      <Stack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
-      <Stack.Screen name="Report" component={AccountsScreen} />
-    </Stack.Navigator>
+    <ScreenPaletteProvider value={palettes.snapshot}>
+      <Stack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
+        <Stack.Screen name="Snapshot" component={SnapshotScreen} />
+        <Stack.Screen name="GrossIncomeDetail" component={withEntryPalette(GrossIncomeDetailScreen)} />
+        <Stack.Screen name="PensionDetail" component={withEntryPalette(PensionDetailScreen)} />
+        <Stack.Screen name="NetIncomeDetail" component={NetIncomeDetailScreen} />
+        <Stack.Screen name="DeductionsDetail" component={withEntryPalette(DeductionsDetailScreen)} />
+        <Stack.Screen name="ExpensesDetail" component={withEntryPalette(ExpensesDetailScreen)} />
+        <Stack.Screen name="AvailableCashDetail" component={AvailableCashDetailScreen} />
+        <Stack.Screen name="LiabilityReductionDetail" component={withEntryPalette(LiabilityReductionsDetailScreen)} />
+        <Stack.Screen name="AssetContributionDetail" component={withEntryPalette(ContributionsDetailScreen)} />
+        <Stack.Screen name="MonthlySurplusDetail" component={MonthlySurplusDetailScreen} />
+        <Stack.Screen name="AssetsDetail" component={withEntryPalette(AssetsDetailScreen)} />
+        <Stack.Screen name="LiabilitiesDetail" component={withEntryPalette(LiabilitiesDetailScreen)} />
+        <Stack.Screen name="LoanDetail" component={withEntryPalette(LoanDetailScreen)} />
+        <Stack.Screen name="NetWorthDetail" component={NetWorthDetailScreen} />
+        <Stack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
+        <Stack.Screen name="Report" component={AccountsScreen} />
+      </Stack.Navigator>
+    </ScreenPaletteProvider>
   );
 }
 
 function WhatIfStackNavigator() {
   return (
-    <WhatIfStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
-      <WhatIfStack.Screen name="WhatIfPicker" component={WhatIfPickerScreen} />
-      <WhatIfStack.Screen name="ScenarioExplorer" component={ScenarioExplorerScreen} />
-      <WhatIfStack.Screen name="QuestionAnswer" component={QuestionAnswerScreen} />
-      <WhatIfStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
-      <WhatIfStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
-    </WhatIfStack.Navigator>
+    <ScreenPaletteProvider value={palettes.whatIf}>
+      <WhatIfStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
+        <WhatIfStack.Screen name="WhatIfPicker" component={WhatIfPickerScreen} />
+        <WhatIfStack.Screen name="ScenarioExplorer" component={ScenarioExplorerScreen} />
+        <WhatIfStack.Screen name="QuestionAnswer" component={QuestionAnswerScreen} />
+        <WhatIfStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
+        <WhatIfStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
+      </WhatIfStack.Navigator>
+    </ScreenPaletteProvider>
   );
 }
 
 function ProjectionStackNavigator() {
   return (
-    <ProjectionStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
-      <ProjectionStack.Screen name="ProjectionResults" component={ProjectionResultsScreen} />
-      <ProjectionStack.Screen name="ProjectionSettings" component={ProjectionSettingsScreen} />
-      <ProjectionStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
-      <ProjectionStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
-      <ProjectionStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
-      <ProjectionStack.Screen name="GoalEditor" component={GoalEditorScreen} />
-    </ProjectionStack.Navigator>
+    <ScreenPaletteProvider value={palettes.projection}>
+      <ProjectionStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
+        <ProjectionStack.Screen name="ProjectionResults" component={ProjectionResultsScreen} />
+        <ProjectionStack.Screen name="ProjectionSettings" component={ProjectionSettingsScreen} />
+        <ProjectionStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
+        <ProjectionStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />
+        <ProjectionStack.Screen name="BalanceDeepDive" component={BalanceDeepDiveScreen} />
+        <ProjectionStack.Screen name="GoalEditor" component={GoalEditorScreen} />
+      </ProjectionStack.Navigator>
+    </ScreenPaletteProvider>
   );
 }
 
 function SettingsStackNavigator() {
   return (
-    <SettingsStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
-      <SettingsStack.Screen name="Settings" component={SettingsScreen} />
-      <SettingsStack.Screen name="A3Validation" component={A3ValidationScreen} />
-      <SettingsStack.Screen name="ProjectionRefactorValidation" component={ProjectionRefactorValidationScreen} />
-      <SettingsStack.Screen name="SnapshotDataSummary" component={SnapshotDataSummaryScreen} />
-    </SettingsStack.Navigator>
+    <ScreenPaletteProvider value={palettes.settings}>
+      <SettingsStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
+        <SettingsStack.Screen name="Settings" component={SettingsScreen} />
+        <SettingsStack.Screen name="A3Validation" component={A3ValidationScreen} />
+        <SettingsStack.Screen name="ProjectionRefactorValidation" component={ProjectionRefactorValidationScreen} />
+        <SettingsStack.Screen name="SnapshotDataSummary" component={SnapshotDataSummaryScreen} />
+      </SettingsStack.Navigator>
+    </ScreenPaletteProvider>
   );
 }
 
@@ -124,11 +144,15 @@ export default function AppNavigator() {
       screenOptions={{
         headerShown: TAB_HEADER_SHOWN,
         tabBarStyle: {
-          backgroundColor: theme.colors.bg.card,
-          borderTopColor: theme.colors.border.default,
+          backgroundColor: '#ffffff',
+          borderTopColor: '#e0e0e0',
         },
-        tabBarActiveTintColor: theme.colors.brand.primary,
-        tabBarInactiveTintColor: theme.colors.text.secondary,
+        tabBarActiveTintColor: '#1e1e1e',
+        tabBarInactiveTintColor: '#868e96',
+        tabBarLabelStyle: {
+          fontFamily: 'Virgil',
+          fontSize: 12,
+        },
       }}
     >
       <Tab.Screen

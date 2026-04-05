@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Coin, Coins, HandCoins, PiggyBank, Receipt, ShoppingCart, Target, TrendUp, TrendDown, Warning } from 'phosphor-react-native';
 
 import ScreenHeader from '../components/ScreenHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
@@ -14,10 +15,11 @@ import Row from '../components/PressableRow';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
-import ControlBar, { type ControlBarPillItem, type ControlBarIconItem } from '../components/ControlBar';
+import ControlBar from '../components/ControlBar';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import CashflowCardStack from '../components/cashflow/CashflowCardStack';
 import CashflowPrimaryCard from '../components/cashflow/CashflowPrimaryCard';
 import CashflowSubCard from '../components/cashflow/CashflowSubCard';
@@ -925,6 +927,7 @@ function AttributionCard({ title, subtitle, education, rows, showScenario, showD
 
 export default function ProjectionResultsScreen() {
   const { theme, isDark } = useTheme();
+  const palette = useScreenPalette();
   const styles = makeStyles(theme);
   const chartPalette = getChartPalette(theme);
   const { width: windowWidth } = useWindowDimensions();
@@ -1192,6 +1195,7 @@ export default function ProjectionResultsScreen() {
     state.assets,
     state.assetContributions,
     state.liabilities,
+    state.expenses,
   ]);
 
   // Extract for backward compatibility (existing code depends on these)
@@ -2450,6 +2454,7 @@ export default function ProjectionResultsScreen() {
       liquidAssets,
       currentAge,
       endAge: state.projection.endAge,
+      retirementAge: state.projection.retirementAge ?? 67,
       bridgeGap,
     };
   }, [interpretation, baselineSummary, state, baselineSeries, liquidAssetsSeries]);
@@ -3099,7 +3104,8 @@ export default function ProjectionResultsScreen() {
   }, [valuesAtAge, scenarioValuesAtAge, effectiveScenarioActive, series, selectedAge, state, activeScenario, scenarioDeltas]);
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.accent} style={styles.container}>
       <ScrollView 
         ref={scrollViewRef}
         style={styles.scrollView} 
@@ -3113,9 +3119,8 @@ export default function ProjectionResultsScreen() {
             stickyHeaderHeight.current = event.nativeEvent.layout.height;
           }}
         >
-          <ScreenHeader 
-            title="Projection" 
-            subtitle="Explore where your finances could land"
+          <ScreenHeader
+            title="Where am I going?"
             rightAccessory={
               __DEV__ ? (
                 <Pressable
@@ -3137,41 +3142,30 @@ export default function ProjectionResultsScreen() {
             }
           />
 
-          {/* Negative Surplus Banner */}
-          {isSurplusNegative && (
-            <View style={[styles.warningBanner, { backgroundColor: theme.colors.semantic.warningBg, borderColor: theme.colors.semantic.warning }]}>
-              <Text style={[styles.warningBannerText, { color: theme.colors.semantic.warningText }]}>
-                Monthly surplus is negative ({formatCurrencyFullSigned(baselineSurplus)}). Reduce allocations or expenses before running what-ifs.
-              </Text>
-            </View>
-          )}
-
           <ControlBar
-            leftItems={[
+            col1={{
+              type: 'pill',
+              title: activeScenario ? activeScenario.name : 'Baseline',
+              onPress: () => {
+                if (!isSurplusNegative) {
+                  openLater(() => setScenarioSelectorOpen(true));
+                }
+              },
+              active: activeScenarioSource === 'persisted',
+              disabled: isSurplusNegative,
+            }}
+            col2={{
+              type: 'pill',
+              title: `Age ${selectedAge}`,
+              onPress: () => openLater(() => setAgeSelectorOpen(true)),
+              emphasis: true,
+            }}
+            col3Items={[
               {
                 type: 'pill',
-                title: activeScenario ? activeScenario.name : 'Baseline',
-                onPress: () => {
-                  if (!isSurplusNegative) {
-                    openLater(() => setScenarioSelectorOpen(true));
-                  }
-                },
-                active: activeScenarioSource === 'persisted',
-                disabled: isSurplusNegative,
-              },
-            ]}
-            rightItems={[
-              {
-                type: 'pill',
-                title: `Age ${selectedAge}`,
-                onPress: () => openLater(() => setAgeSelectorOpen(true)),
-              },
-              {
-                type: 'icon',
-                icon: 'settings',
+                title: 'Settings',
+                chevron: 'right',
                 onPress: () => navigation.navigate('ProjectionSettings'),
-                accessibilityLabel: 'Projection settings',
-                variant: 'default',
               },
             ]}
           />
@@ -3186,35 +3180,27 @@ export default function ProjectionResultsScreen() {
             hasLiabilities={state.liabilities.filter(l => l.isActive !== false).some(l => l.balance > UI_TOLERANCE)}
             detectedProblems={detectedProblems}
             onSolveProblem={(problem) => setSolverModalProblem(problem)}
-            style={{ marginTop: layout.sectionGap }}
           />
-          <GoalsSection
-            goals={interpretation.goals}
-            onEditPress={() => navigation.navigate('GoalEditor')}
-          />
-
-          <SectionCard style={{ paddingBottom: spacing.sm, paddingHorizontal: spacing.sm }}>
-            {/* Section Header with Toggle */}
-            <View style={styles.sectionHeaderRow}>
-              <SectionHeader title="Projected Net Worth" />
-              <Pressable
+          <SectionCard fillColor="transparent" style={{ paddingBottom: spacing.sm, paddingHorizontal: spacing.sm }}>
+            {/* Section Header with Toggle below */}
+            <SectionHeader title="Projected Net Worth" />
+            <Pressable
+              style={[
+                styles.chartMiniToggle,
+                { backgroundColor: theme.colors.bg.subtle, alignSelf: 'center', marginBottom: spacing.sm },
+                showLiquidOnly && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
+              ]}
+              onPress={() => setShowLiquidOnly(v => !v)}
+            >
+              <Text
                 style={[
-                  styles.chartMiniToggle,
-                  { backgroundColor: theme.colors.bg.subtle },
-                  showLiquidOnly && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
+                  styles.chartMiniToggleText,
+                  showLiquidOnly && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
                 ]}
-                onPress={() => setShowLiquidOnly(v => !v)}
               >
-                <Text
-                    style={[
-                      styles.chartMiniToggleText,
-                      showLiquidOnly && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
-                    ]}
-                >
-                  {showLiquidOnly ? 'Liquid assets' : 'All assets'}
-                </Text>
-              </Pressable>
-            </View>
+                {showLiquidOnly ? 'Liquid assets' : 'All assets'}
+              </Text>
+            </Pressable>
 
             {/* Inline stats row: Net worth · Assets · Liabilities */}
             {valuesAtAge && (() => {
@@ -3412,17 +3398,19 @@ export default function ProjectionResultsScreen() {
           </SectionCard>
 
           {/* Explain My Chart Section */}
-          <SectionCard>
+          <SectionCard fillColor="transparent">
             <Pressable
               onPress={() => setChartExplainExpanded(v => !v)}
-              style={styles.sectionHeaderRow}
+              style={{ position: 'relative' }}
               accessibilityRole="button"
               accessibilityLabel={chartExplainExpanded ? 'Hide chart explanation' : 'Show chart explanation'}
             >
               <SectionHeader title="Explain my chart" />
-              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
-                {chartExplainExpanded ? 'Hide' : 'Show'}
-              </Text>
+              <View style={styles.sectionHeaderOverlay} pointerEvents="none">
+                <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                  {chartExplainExpanded ? 'Hide' : 'Show'}
+                </Text>
+              </View>
             </Pressable>
             {chartExplainExpanded && (
               <View style={{ gap: layout.lg, marginTop: layout.md }}>
@@ -3442,7 +3430,7 @@ export default function ProjectionResultsScreen() {
 
           {/* Phase Four: Scenario Impact Section (only when scenario is active and deltas are valid) */}
           {effectiveScenarioActive && scenarioDeltas && scenarioValuesAtAge && deltasValid ? (
-            <SectionCard>
+            <SectionCard fillColor="transparent">
               <SectionHeader title="Scenario Impact" />
               <View style={styles.insightsList}>
                 {(() => {
@@ -3576,17 +3564,19 @@ export default function ProjectionResultsScreen() {
           ) : null}
 
           {/* Projected Cash Flow Section (Phase 10.7: collapsed by default) */}
-          <SectionCard>
+          <SectionCard fillColor="transparent">
             <Pressable
               onPress={() => setCashflowExpanded(v => !v)}
-              style={styles.sectionHeaderRow}
+              style={{ position: 'relative' }}
               accessibilityRole="button"
               accessibilityLabel={cashflowExpanded ? 'Hide projected cash flow' : 'Show projected cash flow'}
             >
               <SectionHeader title="Projected Cash Flow" subtitle={`Age ${selectedAge}`} />
-              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
-                {cashflowExpanded ? 'Hide' : 'Show details'}
-              </Text>
+              <View style={styles.sectionHeaderOverlay} pointerEvents="none">
+                <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                  {cashflowExpanded ? 'Hide' : 'Show details'}
+                </Text>
+              </View>
             </Pressable>
             {cashflowExpanded && (() => {
               const getScenarioProps = (baselineValue: number, scenarioValue: number | undefined) => {
@@ -3760,17 +3750,19 @@ export default function ProjectionResultsScreen() {
           </SectionCard>
 
           {/* Net Worth Breakdown (Phase 10.8: collapsed by default) */}
-          <SectionCard>
+          <SectionCard fillColor="transparent">
             <Pressable
               onPress={() => setAttributionExpanded(v => !v)}
-              style={styles.sectionHeaderRow}
+              style={{ position: 'relative' }}
               accessibilityRole="button"
               accessibilityLabel={attributionExpanded ? 'Hide net worth breakdown' : 'Show net worth breakdown'}
             >
               <SectionHeader title="Net Worth Breakdown" subtitle={`Age ${selectedAge}`} />
-              <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
-                {attributionExpanded ? 'Hide' : 'Show details'}
-              </Text>
+              <View style={styles.sectionHeaderOverlay} pointerEvents="none">
+                <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
+                  {attributionExpanded ? 'Hide' : 'Show details'}
+                </Text>
+              </View>
             </Pressable>
             {attributionExpanded && (
             <>
@@ -3831,6 +3823,11 @@ export default function ProjectionResultsScreen() {
             </>
             )}
           </SectionCard>
+
+          <GoalsSection
+            goals={interpretation.goals}
+            onEditPress={() => navigation.navigate('GoalEditor')}
+          />
 
         </View>
       </ScrollView>
@@ -3978,6 +3975,7 @@ export default function ProjectionResultsScreen() {
           });
         }}
       />
+      </SketchBackground>
     </SafeAreaView>
   );
 }
@@ -4193,7 +4191,7 @@ function makeStyles(theme: Theme) {
     },
     innerContent: {
       padding: spacing.base,
-      paddingTop: spacing.base,
+      paddingTop: spacing.tiny,
     },
     educationBlock: {
       marginBottom: layout.educationBottom,
@@ -4215,6 +4213,13 @@ function makeStyles(theme: Theme) {
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: spacing.zero,
+    },
+    sectionHeaderOverlay: {
+      position: 'absolute',
+      right: spacing.sm,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
     },
     chartMiniToggle: {
       minWidth: 96,
@@ -5117,16 +5122,6 @@ function makeStyles(theme: Theme) {
     reconciliationWarningText: {
       ...theme.typography.bodySmall,
       fontFamily: 'monospace',
-    },
-    warningBanner: {
-      marginTop: layout.sectionGap,
-      marginHorizontal: layout.screenPadding,
-      padding: layout.blockPadding,
-      borderRadius: theme.radius.medium,
-      borderWidth: 1,
-    },
-    warningBannerText: {
-      ...theme.typography.bodyLarge,
     },
     modalWarningBanner: {
       marginBottom: spacing.base,

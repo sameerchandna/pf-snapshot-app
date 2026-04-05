@@ -55,6 +55,8 @@ export interface KpiData {
   currentAge: number;
   /** Projection end age */
   endAge: number;
+  /** User's target retirement age */
+  retirementAge: number;
   /** Gap between accessible-savings depletion and next locked-asset unlock post-retirement */
   bridgeGap?: { fromAge: number; toAge: number; assetName: string };
 }
@@ -124,14 +126,13 @@ export const ALL_KPI_DEFINITIONS: KpiDefinition[] = [
   },
   {
     id: 'liquid_coverage',
-    label: 'Savings last',
+    label: 'Savings can last for',
     description: 'How long your accessible savings (cash, investments, unlocked pensions) can support current costs',
     Icon: Drop,
     compute: (d) => {
       if (d.monthlyExpenses <= 0 || d.liquidAssets <= 0) return null;
       const years = d.liquidAssets / (d.monthlyExpenses * 12);
-      const tillAge = Math.round(d.currentAge + years);
-      return `${years.toFixed(1)} yrs · till ${tillAge}`;
+      return `${years.toFixed(1)} yrs`;
     },
   },
   {

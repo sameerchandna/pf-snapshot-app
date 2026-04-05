@@ -5,7 +5,8 @@ import { Swipeable, ScrollView } from 'react-native-gesture-handler';
 import { Group } from '../types';
 import { parseItemName, parseMoney } from '../domain/domainValidation';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import GroupedListSection from '../components/list/GroupedListSection';
 import Divider from '../components/Divider';
@@ -17,6 +18,7 @@ import GroupedList, { Group as GroupedListGroup } from '../components/list/Group
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { formatCurrencyFull } from '../ui/formatters';
 
 // Minimal, opinionated help content structure
@@ -263,6 +265,7 @@ export default function EditableCollectionScreen<TItem>({
   onDeleteCanceled,
 }: Props<TItem>) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   // Education cleanup (phase 1): detail/editor screens should focus purely on entry & inspection.
   // EducationBox is kept only on Snapshot / Accounts / Projection results.
   void educationLines;
@@ -979,12 +982,11 @@ export default function EditableCollectionScreen<TItem>({
     : undefined;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader
         title={title}
         totalText={totalText}
-        subtitle={subtextMain}
-        subtitleFootnote={subtextFootnote}
         rightAccessory={
           showHeaderRight ? (
             <View style={styles.headerRightRow}>
@@ -1025,7 +1027,8 @@ export default function EditableCollectionScreen<TItem>({
           {renderIntro ? <View style={styles.introBlock}>{renderIntro}</View> : null}
 
           {editorVisible ? (
-            <SectionCard style={{ marginTop: spacing.base, paddingVertical: spacing.xs }}>
+            <SectionCard fillColor="transparent" style={{ marginTop: layout.sectionGap }}>
+              <SectionHeader title="Quick Entry" />
               <ItemEditor
                 draftName={draftName}
                 draftAmount={draftAmount}
@@ -1053,23 +1056,17 @@ export default function EditableCollectionScreen<TItem>({
           ) : null}
 
           {/* Items list section */}
-          <View style={styles.firstGroupedListSection}>
-            <GroupedListSection>
-            {/* List/Table section header (kept simple; matches "two clean sections" rhythm). */}
-            {!groupsEnabled ? (
-              <>
-                <View style={styles.sectionHeaderRow}>
-                  <GroupHeader title={title} />
-                </View>
-                {editorSubtext ? (
-                  <View style={styles.editorSubtextContainer}>
-                    <Text style={[styles.editorSubtext, theme.typography.bodySmall, { color: theme.colors.text.secondary }]}>
-                      {editorSubtext}
-                    </Text>
-                  </View>
-                ) : null}
-              </>
+          <SectionCard fillColor="transparent" style={{ marginTop: layout.sectionGap }}>
+            <SectionHeader title={title} />
+            {editorSubtext ? (
+              <View style={styles.editorSubtextContainer}>
+                <Text style={[styles.editorSubtext, theme.typography.bodySmall, { color: theme.colors.text.secondary }]}>
+                  {editorSubtext}
+                </Text>
+              </View>
             ) : null}
+            <View style={styles.firstGroupedListSection}>
+            <GroupedListSection>
 
             <GroupedList
               groups={groupedListGroups}
@@ -1120,7 +1117,8 @@ export default function EditableCollectionScreen<TItem>({
               </Pressable>
             ) : null}
             </GroupedListSection>
-          </View>
+            </View>
+          </SectionCard>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -1226,6 +1224,7 @@ export default function EditableCollectionScreen<TItem>({
           </View>
         </Modal>
       ) : null}
+      </SketchBackground>
     </SafeAreaView>
   );
 }
@@ -1318,13 +1317,6 @@ const styles = StyleSheet.create({
   },
   groupWrapper: {
     marginBottom: spacing.base,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-    marginTop: spacing.xl,
   },
   editorSubtextContainer: {
     paddingHorizontal: layout.rowPaddingHorizontal,

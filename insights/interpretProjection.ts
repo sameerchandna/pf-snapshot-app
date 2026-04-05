@@ -372,38 +372,40 @@ function buildHeadlineAndSubline(
   const debtFree = keyMoments.find(m => m.type === 'DEBT_FREE');
   const nwPositive = keyMoments.find(m => m.type === 'NET_WORTH_POSITIVE');
   const fiReached = series.find(p => p.netWorth >= fiNumber);
+  const currentAge = series.length > 0 ? series[0].age : 0;
 
-  // Headline — depletion takes priority over trajectory
-  let headline: string;
+  const parts: string[] = [];
+
+  // Opening — retirement / depletion / trajectory
   if (depletionAge != null && retirementAge != null) {
     const yearsLast = Math.round(depletionAge - retirementAge);
-    headline = `Portfolio projected to last until ${formatAge(depletionAge)} — ${yearsLast} year${yearsLast !== 1 ? 's' : ''} into retirement.`;
+    parts.push(`If you retire at ${Math.round(retirementAge)}, your savings are projected to last ${yearsLast} year${yearsLast !== 1 ? 's' : ''}, until you're ${Math.round(depletionAge)}.`);
+  } else if (retirementAge != null) {
+    parts.push(`If you retire at ${Math.round(retirementAge)}, your savings look set to carry you all the way through to ${endAge}.`);
   } else if (trajectory === 'shrinking') {
     const startNW = series.length > 0 ? series[0].netWorth : 0;
-    const years = endAge - (series.length > 0 ? series[0].age : 0);
-    headline = `Net worth is projected to decline from ${formatGBP(startNW)} to ${formatGBP(summary.endNetWorth)} over ${Math.round(years)} years.`;
-  } else if (debtFree && Math.round(debtFree.age) > (series.length > 0 ? series[0].age : 0)) {
-    headline = `Debt-free by ${formatAge(debtFree.age)}. Net worth reaches ${formatGBP(summary.endNetWorth)} by ${endAge}.`;
+    parts.push(`Your net worth is on a declining path — from ${formatGBP(startNW)} today down to ${formatGBP(summary.endNetWorth)} by ${endAge}.`);
   } else {
-    headline = `Net worth reaches ${formatGBP(summary.endNetWorth)} by ${endAge}.`;
+    parts.push(`Your net worth is projected to reach ${formatGBP(summary.endNetWorth)} by ${endAge}.`);
   }
 
-  // Subline
-  const parts: string[] = [];
-  if (depletionAge == null && retirementAge != null) {
-    parts.push(`Portfolio sustains retirement spending through ${formatAge(endAge)}.`);
-  } else if (trajectory === 'growing') {
-    parts.push('Net worth is on a growing trajectory.');
-  } else if (trajectory === 'flat') {
-    parts.push('Net worth is broadly stable.');
+  // Debt-free milestone
+  if (debtFree && Math.round(debtFree.age) > currentAge) {
+    parts.push(`You'll be debt-free by ${Math.round(debtFree.age)}.`);
   }
 
-  if (nwPositive) parts.push(`Net worth turns positive at ${formatAge(nwPositive.age)}.`);
-  if (fiReached)  parts.push(`FI threshold reached at ${formatAge(fiReached.age)}.`);
+  // Net worth turns positive
+  if (nwPositive && Math.round(nwPositive.age) > currentAge) {
+    parts.push(`Your net worth turns positive at ${Math.round(nwPositive.age)}.`);
+  }
 
-  const subline = parts.join(' ') || 'Review the chart for a detailed breakdown.';
+  // FI threshold
+  if (fiReached) {
+    parts.push(`You hit your financial independence number at ${Math.round(fiReached.age)}.`);
+  }
 
-  return { headline, subline };
+  const headline = parts.join(' ');
+  return { headline, subline: '' };
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────

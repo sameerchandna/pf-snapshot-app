@@ -2,23 +2,26 @@
  * Phase 10.4 / KPI Redesign: Interpretation Card
  *
  * Hero card displayed above the projection chart.
- * Shows the projection headline, 3 user-selectable KPI tiles, and net worth milestone pills.
+ * Shows 3 user-selectable KPI circles, a merged headline, and warnings.
  *
- * KPI tiles use a tinted mini-card style (icon + value + label).
- * The user can tap the edit button to open the KPI picker and choose which 3 metrics to display.
+ * KPI circles use SketchCircle (hand-drawn style) with value + label inside.
+ * The user can tap the pencil icon to open the KPI picker and choose which 3 metrics to display.
  */
 
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Pencil, CheckCircle, CircleIcon, Warning, CaretRight } from 'phosphor-react-native';
+import { Pencil, CheckCircle, CircleIcon } from 'phosphor-react-native';
 import type { DetectedProblem } from '../projection/detectProblems';
 import { useTheme } from '../ui/theme/useTheme';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import SectionCard from './SectionCard';
+import SectionHeader from './SectionHeader';
+import SketchCircle from './SketchCircle';
 import Button from './Button';
 import { formatCurrencyCompact } from '../ui/formatters';
 import { typography, radius } from '../ui/theme/theme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import type { KpiData, KpiId, KpiDefinition } from '../domain/kpi/kpiDefinitions';
 import { ALL_KPI_DEFINITIONS } from '../domain/kpi/kpiDefinitions';
 
@@ -37,86 +40,80 @@ interface InterpretationCardProps {
   style?: object;
 }
 
-// ─── Warning Row ─────────────────────────────────────────────────────────────
+// ─── Warning paragraph ───────────────────────────────────────────────────────
 
-function WarningRow({
-  message,
-  level,
-  onPress,
-}: {
-  message: string;
-  level: 'error' | 'warning';
-  onPress?: () => void;
-}) {
-  const { theme } = useTheme();
-  const isError = level === 'error';
-  const textColor = isError ? theme.colors.semantic.errorText : theme.colors.semantic.warningText;
+function buildWarningParagraph(kpiData: KpiData): string | null {
+  const { monthlySurplus, monthlyExpenses, liquidAssets, currentAge, endAge, retirementAge, bridgeGap, interpretation } = kpiData;
 
-  const inner = (
-    <View
-      style={[
-        styles.warningRow,
-        {
-          backgroundColor: isError ? theme.colors.semantic.errorBg : theme.colors.semantic.warningBg,
-          borderRadius: theme.radius.base,
-        },
-      ]}
-    >
-      <Warning
-        size={14}
-        color={isError ? theme.colors.semantic.error : theme.colors.semantic.warning}
-        weight="fill"
-      />
-      <Text style={[styles.warningText, { color: textColor }]}>{message}</Text>
-      {onPress != null && <CaretRight size={12} color={textColor} weight="bold" />}
-    </View>
-  );
+  const hasSurplusDeficit = monthlySurplus < 0;
+  const hasBridgeGap = bridgeGap != null;
+  const hasLongevityGap = interpretation.depletionAge != null && interpretation.depletionAge < endAge;
 
-  if (onPress != null) {
-    return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => ({ backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' })}
-        accessibilityRole="button"
-        accessibilityLabel="Fix this problem"
-      >
-        {inner}
-      </Pressable>
-    );
+  if (!hasSurplusDeficit && !hasBridgeGap && !hasLongevityGap) return null;
+
+  const sentences: string[] = [];
+
+  if (hasSurplusDeficit) {
+    sentences.push(`Your expenses are more than your income by ${formatCurrencyCompact(Math.abs(monthlySurplus))} a month.`);
   }
-  return inner;
+
+  if ((hasSurplusDeficit || hasBridgeGap) && monthlyExpenses > 0 && liquidAssets > 0) {
+    const runwayYears = liquidAssets / (monthlyExpenses * 12);
+    const runwayAge = Math.round(currentAge + runwayYears);
+    const runwayText = runwayYears < 1
+      ? `${Math.round(runwayYears * 12)} months`
+      : `${runwayYears.toFixed(1)} years`;
+    sentences.push(`If your income was to suddenly stop today, your accessible savings may support you for about ${runwayText} — until around age ${runwayAge}.`);
+  }
+
+  if (hasBridgeGap) {
+    const gapYears = Math.round(bridgeGap!.toAge - bridgeGap!.fromAge);
+    sentences.push(`If you plan to retire at ${Math.round(retirementAge)}, your ${bridgeGap!.assetName} won't kick in until age ${Math.round(bridgeGap!.toAge)}, so you may have a ${gapYears}-year gap to bridge.`);
+  }
+
+  if (hasLongevityGap) {
+    const depletionAge = Math.round(interpretation.depletionAge!);
+    const gap = Math.round(endAge - interpretation.depletionAge!);
+    const opener = hasBridgeGap ? 'And even after that,' : 'At your current pace,';
+    sentences.push(`${opener} your total savings may only last to around age ${depletionAge} — ${gap} years short of your plan end at ${Math.round(endAge)}.`);
+  }
+
+  return `Be careful...! ${sentences.join(' ')}`;
 }
 
-// ─── KPI Tile ─────────────────────────────────────────────────────────────────
+// ─── KPI Circle ──────────────────────────────────────────────────────────────
 
-interface KpiTileProps {
+const CIRCLE_SIZE = 96;
+
+interface KpiCircleProps {
   definition: KpiDefinition;
   kpiData: KpiData;
 }
 
-function KpiTile({ definition, kpiData }: KpiTileProps) {
+function KpiCircle({ definition, kpiData }: KpiCircleProps) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const value = definition.compute(kpiData);
-  const IconComponent = definition.Icon;
 
   return (
-    <View
-      style={[
-        styles.tile,
-        {
-          backgroundColor: theme.colors.brand.tint,
-          borderRadius: theme.radius.medium,
-        },
-      ]}
+    <SketchCircle
+      size={CIRCLE_SIZE}
+      borderColor={palette.accent}
+      fillColor={theme.colors.bg.card}
     >
-      <IconComponent size={16} color={theme.colors.brand.primary} weight="regular" />
-      <Text style={[styles.tileValue, { color: theme.colors.text.primary }]}>
-        {value ?? '—'}
-      </Text>
-      <Text style={[styles.tileLabel, { color: theme.colors.text.muted }]}>
-        {definition.label}
-      </Text>
-    </View>
+      <View style={styles.circleInner}>
+        <Text
+          style={[styles.circleValue, { color: palette.accent }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          {value ?? '—'}
+        </Text>
+        <Text style={[styles.circleLabel, { color: theme.colors.text.secondary }]} numberOfLines={2}>
+          {definition.label}
+        </Text>
+      </View>
+    </SketchCircle>
   );
 }
 
@@ -267,114 +264,55 @@ export default function InterpretationCard({
   selectedKpiIds,
   onSaveKpis,
   detectedProblems,
-  onSolveProblem,
+  onSolveProblem: _onSolveProblem,
   style,
 }: InterpretationCardProps) {
   const { theme } = useTheme();
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const { interpretation, monthlySurplus, endAge, bridgeGap } = kpiData;
-
-  // Build ordered warning list: errors first, then warnings.
-  // Warnings that map to a DetectedProblem get an onPress handler.
-  const warnings: Array<{ message: string; level: 'error' | 'warning'; problem?: DetectedProblem }> = [];
-
-  if (monthlySurplus < 0) {
-    warnings.push({
-      level: 'error',
-      message: `Spending exceeds income by ${formatCurrencyCompact(Math.abs(monthlySurplus))}/mo`,
-    });
-  }
-
-  if (interpretation.depletionAge != null && interpretation.depletionAge < endAge) {
-    const gap = Math.round(endAge - interpretation.depletionAge);
-    warnings.push({
-      level: 'error',
-      message: `Savings run out at age ${Math.round(interpretation.depletionAge)}. Your plan runs to ${Math.round(endAge)} — a ${gap}-year gap.`,
-      problem: detectedProblems?.find(p => p.kind === 'LONGEVITY_GAP'),
-    });
-  }
-
-  if (bridgeGap != null) {
-    const gapYears = Math.round(bridgeGap.toAge - bridgeGap.fromAge);
-    warnings.push({
-      level: 'warning',
-      message: `Savings run out at age ${Math.round(bridgeGap.fromAge)} before ${bridgeGap.assetName} unlocks at ${Math.round(bridgeGap.toAge)} — a ${gapYears}-year gap.`,
-      problem: detectedProblems?.find(p => p.kind === 'BRIDGE_GAP'),
-    });
-  }
-
-  if (monthlySurplus > 100) {
-    warnings.push({
-      level: 'warning',
-      message: `${formatCurrencyCompact(monthlySurplus)}/mo unallocated — consider increasing contributions`,
-    });
-  }
+  const warningParagraph = buildWarningParagraph(kpiData);
 
   const selectedDefinitions = selectedKpiIds
     .map(id => ALL_KPI_DEFINITIONS.find(d => d.id === id))
     .filter((d): d is KpiDefinition => d != null);
 
+  const headlineText = kpiData.interpretation.headline;
+
   return (
     <>
-      <SectionCard style={[styles.card, style]}>
-        {/* Header row with title + edit button */}
-        <View style={styles.headerRow}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: theme.colors.brand.primary },
-            ]}
-          >
-            Your Projection
-          </Text>
+      <SectionCard fillColor="transparent" style={[styles.card, style]}>
+        <SectionHeader title="Your Projection" />
+
+        {/* KPI circles */}
+        <View style={{ position: 'relative' }}>
+          <View style={styles.circlesRow}>
+            {selectedDefinitions.map(def => (
+              <KpiCircle key={def.id} definition={def} kpiData={kpiData} />
+            ))}
+          </View>
+          {/* Pencil edit — absolutely positioned top-right */}
           <Pressable
             onPress={() => setPickerVisible(true)}
+            style={styles.pencilOverlay}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Edit metrics"
-            style={({ pressed }) => ({ backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' })}
           >
             <Pencil size={16} color={theme.colors.text.secondary} weight="regular" />
           </Pressable>
         </View>
 
-        {/* Headline */}
-        <Text style={[styles.headline, { color: theme.colors.text.primary }]}>
-          {interpretation.headline}
+        {/* Merged headline + subline */}
+        <Text style={[styles.headline, { color: theme.colors.text.secondary }]}>
+          {headlineText}
         </Text>
 
-        {/* Subline */}
-        {interpretation.subline ? (
-          <Text style={[styles.subline, { color: theme.colors.text.secondary }]}>
-            {interpretation.subline}
+        {/* Warning paragraph */}
+        {warningParagraph != null && (
+          <Text style={[styles.warningParagraph, { color: theme.colors.semantic.errorText }]}>
+            {warningParagraph}
           </Text>
-        ) : null}
-
-        {/* KPI tiles */}
-        <View style={styles.tilesRow}>
-          {selectedDefinitions.map(def => (
-            <KpiTile key={def.id} definition={def} kpiData={kpiData} />
-          ))}
-        </View>
-
-        {/* Actionable warnings — tappable when a DetectedProblem is attached */}
-        {warnings.length > 0 ? (
-          <View style={styles.warningsContainer}>
-            {warnings.map((w, i) => (
-              <WarningRow
-                key={i}
-                message={w.message}
-                level={w.level}
-                onPress={
-                  w.problem != null && onSolveProblem != null
-                    ? () => onSolveProblem(w.problem!)
-                    : undefined
-                }
-              />
-            ))}
-          </View>
-        ) : null}
+        )}
       </SectionCard>
 
       <KpiPickerModal
@@ -392,61 +330,45 @@ export default function InterpretationCard({
 const styles = StyleSheet.create({
   card: {},
 
-  // Header row
-  headerRow: {
+  // Pencil edit button — absolutely positioned top-right of the circles row container
+  pencilOverlay: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: spacing.xs,
+  },
+
+  // KPI circles row
+  circlesRow: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: spacing.base,
+  },
+  circleInner: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: layout.sectionTitleBottom,
+    paddingHorizontal: spacing.xs,
   },
-  sectionTitle: {
-    ...typography.sectionTitle,
-  },
-
-  // Headline / subline
-  headline: {
-    ...typography.sectionTitle,
-    marginTop: spacing.sm,
-  },
-  subline: {
-    ...typography.body,
-    marginTop: spacing.xs,
-  },
-
-  // KPI tiles
-  tilesRow: {
-    flexDirection: 'row',
-    marginTop: spacing.base,
-    gap: spacing.xs,
-  },
-  tile: {
-    flex: 1,
-    padding: spacing.sm,
-    gap: spacing.tiny,
-  },
-  tileValue: {
+  circleValue: {
     ...typography.value,
+    textAlign: 'center',
+  },
+  circleLabel: {
+    ...typography.caption,
+    textAlign: 'center',
     marginTop: spacing.tiny,
   },
-  tileLabel: {
-    ...typography.caption,
+
+  // Merged headline
+  headline: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
 
-  // Warnings
-  warningsContainer: {
+  // Warning paragraph
+  warningParagraph: {
+    ...typography.body,
+    textAlign: 'center',
     marginTop: spacing.sm,
-    gap: spacing.tiny,
-  },
-  warningRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  warningText: {
-    ...typography.caption,
-    flex: 1,
   },
 
   // Picker modal

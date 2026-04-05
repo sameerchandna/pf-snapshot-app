@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionCard from '../components/SectionCard';
 import Divider from '../components/Divider';
 import Row from '../components/PressableRow';
@@ -12,6 +12,7 @@ import { formatCurrencyFull } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
 import type { AssetItem, LiabilityItem } from '../types';
 
@@ -106,6 +107,7 @@ function buildLiabilityMetadata(liability: LiabilityItem): string {
 export default function AccountsScreen() {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state } = useSnapshot();
 
   const assetRows = useMemo(() => state.assets, [state.assets]);
@@ -138,7 +140,8 @@ export default function AccountsScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title="Accounts" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <SectionCard style={{ marginTop: layout.sectionGap }}>
@@ -234,6 +237,7 @@ export default function AccountsScreen() {
           )}
         </SectionCard>
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

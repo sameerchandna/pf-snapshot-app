@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryChart, VictoryLine, VictoryAxis } from 'victory-native';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -28,6 +29,7 @@ import { formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/format
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import CustomSlider from '../components/CustomSlider';
 
 type RouteParams = {
@@ -74,6 +76,7 @@ function generateId(): string {
 
 export default function ScenarioExplorerScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { templateId, initialValue, initialGrowthRate, initialTargetId, returnToTab } = route.params as RouteParams;
@@ -370,11 +373,13 @@ export default function ScenarioExplorerScreen() {
 
   if (!template) {
     return (
-      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <SketchBackground color={palette.bg} style={{flex:1}}>
         <ScreenHeader title="What If" />
         <View style={styles.errorState}>
           <Text style={[theme.typography.body, { color: theme.colors.text.muted }]}>Template not found.</Text>
         </View>
+        </SketchBackground>
       </SafeAreaView>
     );
   }
@@ -394,7 +399,8 @@ export default function ScenarioExplorerScreen() {
   const hasNoTargets = template.targetSelector !== null && targets.length === 0;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title={template.question} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -716,6 +722,7 @@ export default function ScenarioExplorerScreen() {
           Save scenario
         </Button>
       </View>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

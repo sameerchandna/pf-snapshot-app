@@ -4,7 +4,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SectionHeader from '../components/SectionHeader';
+import SketchBackground from '../components/SketchBackground';
 import Icon from '../components/Icon';
 import SwipeAction from '../components/SwipeAction';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -18,6 +19,7 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { getScenarios, getActiveScenarioId, setActiveScenarioId, getActiveScenario, deleteScenario } from '../scenarioState';
 import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
 
 // Generate preview text for a scenario
@@ -41,6 +43,7 @@ export default function ScenarioManagementScreen() {
   const navigation = useNavigation<any>();
   const { state } = useSnapshot();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const [savedScenarios, setSavedScenarios] = useState<Scenario[]>([]);
   const [activeScenarioId, setActiveScenarioIdLocal] = useState<ScenarioId | undefined>(undefined);
   const [pendingDeleteId, setPendingDeleteId] = useState<ScenarioId | null>(null);
@@ -184,7 +187,8 @@ export default function ScenarioManagementScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title="Scenario Management" />
       <ScrollView 
         style={styles.scrollView} 
@@ -206,7 +210,7 @@ export default function ScenarioManagementScreen() {
 
         {/* Baseline Section */}
         <View style={styles.section}>
-          <GroupHeader title="Baseline" />
+          <SectionHeader title="Baseline" />
           <View style={[styles.hr, { backgroundColor: theme.colors.border.default }]} />
           <View style={styles.list}>
             <Pressable
@@ -250,7 +254,7 @@ export default function ScenarioManagementScreen() {
 
         {/* Scenarios Section */}
         <View style={styles.section}>
-          <GroupHeader title="Scenarios" />
+          <SectionHeader title="Scenarios" />
           <View style={[styles.hr, { backgroundColor: theme.colors.border.default }]} />
           {savedScenarios.length === 0 ? (
             <View style={styles.emptyState}>
@@ -411,6 +415,7 @@ export default function ScenarioManagementScreen() {
           </View>
         </Modal>
       ) : null}
+      </SketchBackground>
     </SafeAreaView>
   );
 }

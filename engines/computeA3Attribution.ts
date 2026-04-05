@@ -264,6 +264,14 @@ export function computeA3Attribution({
   const horizonMonthsRaw = (snapshot.projection.endAge - snapshot.projection.currentAge) * 12;
   const horizonMonths = Number.isFinite(horizonMonthsRaw) ? Math.max(0, Math.floor(horizonMonthsRaw)) : 0;
 
+  // Working months = pre-retirement horizon. Income, taxes, and contributions stop at retirement
+  // (matching projection engine behaviour in runMonthlySimulation).
+  const retirementAge = projectionInputs.retirementAge;
+  const workingMonthsRaw = (retirementAge - snapshot.projection.currentAge) * 12;
+  const workingMonths = Number.isFinite(workingMonthsRaw)
+    ? Math.max(0, Math.min(Math.floor(workingMonthsRaw), horizonMonths))
+    : 0;
+
   const startingAssets = sumBalances(activeAssets);
   const startingLiabilities = sumBalances(activeLiabilities);
   const startingNetWorth = startingAssets - startingLiabilities;
@@ -316,11 +324,11 @@ export function computeA3Attribution({
 
   const inflationPct = snapshot.projection.inflationPct;
 
-  const grossIncome = pvSumConstantMonthly(grossIncomeMonthly, horizonMonths, inflationPct);
-  const pensionContributions = pvSumConstantMonthly(pensionContribMonthly, horizonMonths, inflationPct);
-  const taxes = pvSumConstantMonthly(taxesMonthly, horizonMonths, inflationPct);
+  const grossIncome = pvSumConstantMonthly(grossIncomeMonthly, workingMonths, inflationPct);
+  const pensionContributions = pvSumConstantMonthly(pensionContribMonthly, workingMonths, inflationPct);
+  const taxes = pvSumConstantMonthly(taxesMonthly, workingMonths, inflationPct);
   const baseLivingExpenses = pvSumConstantMonthly(baseLivingExpensesMonthly, horizonMonths, inflationPct);
-  const postTaxContributions = pvSumConstantMonthly(postTaxContribMonthly, horizonMonths, inflationPct);
+  const postTaxContributions = pvSumConstantMonthly(postTaxContribMonthly, workingMonths, inflationPct);
 
   // Loans only (per spec) - use active liabilities only
   const loans: LoanLike[] = activeLiabilities

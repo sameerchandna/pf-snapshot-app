@@ -23,8 +23,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Trash } from 'phosphor-react-native';
 
 import ScreenHeader from '../components/ScreenHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionCard from '../components/SectionCard';
-import GroupHeader from '../components/GroupHeader';
+import SectionHeader from '../components/SectionHeader';
 import Divider from '../components/Divider';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -33,6 +34,7 @@ import { formatCurrencyFull } from '../ui/formatters';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
 import type { GoalConfig } from '../types';
 
@@ -231,6 +233,7 @@ export default function GoalEditorScreen() {
   const navigation = useNavigation<any>();
   const { state, profilesState, setGoals } = useSnapshot();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
 
   const monthlyExpenses = selectExpenses(state);
   const defaultGoals = computeDefaultGoals(monthlyExpenses);
@@ -316,10 +319,10 @@ export default function GoalEditorScreen() {
   const existingTypes = new Set(goals.map(g => g.type));
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.bg.screen }]} edges={['top']}>
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader
         title="Edit Goals"
-        onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
@@ -330,7 +333,7 @@ export default function GoalEditorScreen() {
         {/* Current goals */}
         {goals.length > 0 ? (
           <SectionCard style={styles.card}>
-            <GroupHeader title="Your goals" />
+            <SectionHeader title="Your goals" />
             {goals.map((goal, index) => (
               <GoalRow
                 key={`${goal.type}-${index}`}
@@ -376,7 +379,7 @@ export default function GoalEditorScreen() {
 
         {/* Default goals explanation */}
         <SectionCard style={styles.card}>
-          <GroupHeader title="About defaults" />
+          <SectionHeader title="About defaults" />
           <Text style={[styles.hintText, { color: theme.colors.text.secondary }]}>
             Default goals are based on your current monthly expenses ({formatCurrencyFull(monthlyExpenses)}/mo):
           </Text>
@@ -396,6 +399,7 @@ export default function GoalEditorScreen() {
       <View style={[styles.footer, { borderTopColor: theme.colors.border.default }]}>
         <Button variant="primary" size="md" onPress={handleSave}>Save</Button>
       </View>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

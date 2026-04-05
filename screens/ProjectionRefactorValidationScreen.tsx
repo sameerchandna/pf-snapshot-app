@@ -9,7 +9,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import { useSnapshot } from '../context/SnapshotContext';
 import { 
   computeProjectionSeries, 
@@ -24,6 +25,7 @@ import { UI_TOLERANCE, ATTRIBUTION_TOLERANCE } from '../constants';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { radius } from '../ui/theme/theme';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 
@@ -50,6 +52,7 @@ function Row({ label, value, valueStyle, theme }: { label: string; value: string
 
 export default function ProjectionRefactorValidationScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state, isSwitching } = useSnapshot();
   const [validationResult, setValidationResult] = useState<ValidationResult>({
     aggregateDeterminism: 'PENDING',
@@ -326,12 +329,13 @@ export default function ProjectionRefactorValidationScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
-      <ScreenHeader title="Refactor Validation" subtitle="Projection engine refactor validation" />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <ScreenHeader title="Refactor Validation" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="Validation Results" />
+          <SectionHeader title="Validation Results" />
           <Row 
             label="Aggregate Determinism" 
             value={validationResult.aggregateDeterminism}
@@ -360,7 +364,7 @@ export default function ProjectionRefactorValidationScreen() {
 
         {validationResult.errors.length > 0 && (
           <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-            <GroupHeader title="Errors" />
+            <SectionHeader title="Errors" />
             {validationResult.errors.map((error, idx) => (
               <View key={idx} style={[styles.errorItem, { backgroundColor: theme.colors.semantic.errorBg }]}>
                 <Text style={[styles.errorTest, theme.typography.button, { color: theme.colors.semantic.errorText }]}>{error.test}</Text>
@@ -371,6 +375,7 @@ export default function ProjectionRefactorValidationScreen() {
           </View>
         )}
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

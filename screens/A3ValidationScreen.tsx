@@ -3,7 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import { useSnapshot } from '../context/SnapshotContext';
 import { computeProjectionSeries, computeProjectionSummary } from '../engines/projectionEngine';
 import { computeA3Attribution } from '../engines/computeA3Attribution';
@@ -13,6 +14,7 @@ import { buildProjectionInputsFromState } from '../projection/buildProjectionInp
 import { ATTRIBUTION_TOLERANCE } from '../constants';
 import { selectMonthlySurplus } from '../engines/selectors';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 
@@ -43,6 +45,7 @@ function Row({ label, value, valueStyle, theme }: { label: string; value: string
 
 export default function A3ValidationScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state, isSwitching } = useSnapshot();
 
   const projection = useMemo(() => {
@@ -106,18 +109,19 @@ export default function A3ValidationScreen() {
   const deltaBad: boolean = Math.abs(a3.reconciliation.delta) > ATTRIBUTION_TOLERANCE;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
-      <ScreenHeader title="A3 Validation" subtitle="Internal inspection surface" />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <ScreenHeader title="A3 Validation" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="A3 Validation" />
+          <SectionHeader title="A3 Validation" />
           <Row label="Starting Net Worth" value={fmtBalance(a3.startingNetWorth)} theme={theme} />
           <Row label="Ending Net Worth" value={fmtBalance(a3.endingNetWorth)} theme={theme} />
         </View>
 
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="Cashflow" />
+          <SectionHeader title="Cashflow" />
           <Row label="Gross income" value={fmtInflow(a3.cashflow.grossIncome)} theme={theme} />
           <Row label="Taxes" value={fmtOutflow(a3.cashflow.taxes)} theme={theme} />
           <Row label="Living expenses" value={fmtOutflow(a3.cashflow.livingExpenses)} theme={theme} />
@@ -129,14 +133,14 @@ export default function A3ValidationScreen() {
         </View>
 
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="Debt" />
+          <SectionHeader title="Debt" />
           <Row label="Interest paid" value={fmtOutflow(a3.debt.interestPaid)} theme={theme} />
           <Row label="Principal repaid" value={fmtOutflow(a3.debt.principalRepaid)} theme={theme} />
           <Row label="Remaining debt" value={fmtBalance(a3.debt.remainingDebt)} theme={theme} />
         </View>
 
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="Assets" />
+          <SectionHeader title="Assets" />
           <Row label="Starting value" value={fmtBalance(a3.assets.startingValue)} theme={theme} />
           <Row label="Contributions" value={fmtBalance(a3.assets.contributions)} theme={theme} />
           <Row label="Growth" value={fmtInflow(a3.assets.growth)} theme={theme} />
@@ -144,7 +148,7 @@ export default function A3ValidationScreen() {
         </View>
 
         <View style={[styles.section, { borderColor: theme.colors.border.subtle, backgroundColor: theme.colors.bg.subtle }]}>
-          <GroupHeader title="Reconciliation" />
+          <SectionHeader title="Reconciliation" />
           <Row label="LHS (ending net worth)" value={fmtBalance(a3.reconciliation.lhs)} theme={theme} />
           <Row label="RHS (reconstructed)" value={fmtBalance(a3.reconciliation.rhs)} theme={theme} />
           <Row
@@ -156,6 +160,7 @@ export default function A3ValidationScreen() {
           {deltaBad ? <Text style={[styles.deltaHint, theme.typography.body, { color: theme.colors.semantic.errorText }]}>Delta is outside tolerance (|delta| &gt; £1).</Text> : null}
         </View>
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

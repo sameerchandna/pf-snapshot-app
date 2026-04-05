@@ -3,7 +3,8 @@ import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import { useSnapshot } from '../context/SnapshotContext';
 import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import type { LiabilityItem } from '../types';
@@ -11,6 +12,7 @@ import { parseItemName } from '../domain/domainValidation';
 import { formatCurrencyFull, formatPercent } from '../ui/formatters';
 import { deriveLoanStateAsOfToday } from '../engines/loanDerivation';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 
@@ -62,10 +64,10 @@ function parseDdMmmYyyy(input: string): Date | null {
 
 export default function LoanDetailScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.bg.card,
     },
     content: {
       flex: 1,
@@ -412,9 +414,9 @@ export default function LoanDetailScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader
         title={title}
-        subtitle="Enter the required loan details"
         rightAccessory={
           <Pressable
             onPress={() => navigation.goBack()}
@@ -499,7 +501,7 @@ export default function LoanDetailScreen() {
 
         {derived ? (
           <View style={styles.card}>
-            <GroupHeader title="Derived (monthly)" />
+            <SectionHeader title="Derived (monthly)" />
             <View style={styles.readRow}>
               <Text style={styles.readLabel}>Monthly payment</Text>
               <Text style={styles.readValue}>{formatCurrencyFull(derived.monthlyPayment)}</Text>
@@ -527,9 +529,7 @@ export default function LoanDetailScreen() {
           </View>
         ) : null}
       </View>
+      </SketchBackground>
     </SafeAreaView>
   );
 }
-
-
-

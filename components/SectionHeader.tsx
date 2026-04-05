@@ -1,43 +1,39 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { layout } from '../ui/layout';
-import { useTheme } from '../ui/theme/useTheme';
+import { StyleSheet, Text } from 'react-native';
 import { typography } from '../ui/theme/theme';
+import { useScreenPalette } from '../ui/theme/palettes';
+import { layout } from '../ui/layout';
+import SketchCard from './SketchCard';
 
 type Props = {
   title: string;
   subtitle?: string;
 };
 
-/**
- * Section header for primary financial sections.
- * Used in Snapshot and Projection-style screens for main content sections.
- * 
- * Style: 16px, bold, blue (#2F5BEA)
- * Matches existing styles in SnapshotScreen, ProjectionResultsScreen.
- */
-export default function SectionHeader({ title, subtitle }: Props) {
-  const { theme } = useTheme();
+export default function SectionHeader({ title }: Props) {
+  const palette = useScreenPalette();
   return (
-    <View style={styles.container}>
-      <Text style={[styles.sectionTitle, theme.typography.sectionTitle, { color: theme.colors.brand.primary }]}>{title}</Text>
-      {subtitle ? <Text style={[styles.sectionSubtext, { color: theme.colors.text.muted }]}>{subtitle}</Text> : null}
-    </View>
+    <SketchCard
+      fillColor={palette.sectionHeaderBg}
+      borderColor={palette.sectionHeaderBg}
+      fillOpacity={0.5}
+      strokeOpacity={0.1}
+      borderRadius={4}
+      style={styles.bar}
+    >
+      <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
+    </SketchCard>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // Snapshot uses tight vertical rhythm: a little separation before blocks.
+  bar: {
+    height: 33,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: layout.sectionTitleBottom,
   },
-  sectionTitle: {
-    // Typography via theme.typography.sectionTitle
-    marginBottom: layout.sectionTitleBottom, // 4 - matches SnapshotScreen pattern
-  },
-  sectionSubtext: {
-    ...typography.body,
-    marginBottom: layout.sectionSubtextBottom, // 12 - matches SnapshotScreen pattern
+  title: {
+    ...typography.medium,
   },
 });
-
-

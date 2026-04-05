@@ -20,7 +20,7 @@ export const layout = {
 
   // Section spacing
   sectionGap: spacing.section,             // 20 - gap between major sections
-  sectionTitleBottom: spacing.tiny,        // 4 - margin below section titles
+  sectionTitleBottom: spacing.xl,           // 16 - margin below section titles
   sectionSubtextBottom: spacing.base,      // 12 - margin below section subtext
 
   // Education/Info blocks

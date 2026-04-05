@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './navigation';
 import { SnapshotProvider } from './context/SnapshotContext';
 import { ThemeProvider } from './ui/theme/ThemeContext';
 import { useTheme } from './ui/theme/useTheme';
 
+SplashScreen.preventAutoHideAsync();
+
 function AppContent() {
   const { theme, isDark } = useTheme();
+  const [fontsLoaded] = useFonts({
+    Virgil: require('./assets/fonts/Virgil-Regular.ttf'),
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   const navigationTheme = {
     dark: isDark,
@@ -21,30 +39,32 @@ function AppContent() {
     },
     fonts: {
       regular: {
-        fontFamily: 'System',
+        fontFamily: 'Virgil',
         fontWeight: '400' as const,
       },
       medium: {
-        fontFamily: 'System',
-        fontWeight: '500' as const,
+        fontFamily: 'Virgil',
+        fontWeight: '400' as const,
       },
       bold: {
-        fontFamily: 'System',
-        fontWeight: '700' as const,
+        fontFamily: 'Virgil',
+        fontWeight: '400' as const,
       },
       heavy: {
-        fontFamily: 'System',
-        fontWeight: '800' as const,
+        fontFamily: 'Virgil',
+        fontWeight: '400' as const,
       },
     },
   };
 
   return (
-    <SnapshotProvider>
-      <NavigationContainer theme={navigationTheme}>
-        <AppNavigator />
-      </NavigationContainer>
-    </SnapshotProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <SnapshotProvider>
+        <NavigationContainer theme={navigationTheme}>
+          <AppNavigator />
+        </NavigationContainer>
+      </SnapshotProvider>
+    </View>
   );
 }
 

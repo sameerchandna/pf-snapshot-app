@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 
 import ScreenHeader from '../components/ScreenHeader';
+import SketchBackground from '../components/SketchBackground';
 import { useSnapshot } from '../context/SnapshotContext';
 import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import { formatCurrencyFull, formatPercent } from '../ui/formatters';
@@ -13,6 +14,7 @@ import { computeProjectionSummary, computeProjectionSeries, type ProjectionEngin
 import { computeA3Attribution } from '../engines/computeA3Attribution';
 import { serializeDebugState } from '../debug/serializeDebugState';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { typography } from '../ui/theme/theme';
@@ -28,6 +30,7 @@ function formatSnapshotDate(): string {
 
 export default function SnapshotDataSummaryScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state, isSwitching } = useSnapshot();
   const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
 
@@ -244,10 +247,10 @@ export default function SnapshotDataSummaryScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader
         title="Snapshot Data Summary"
-        subtitle="View raw financial inputs (read-only)"
         rightAccessory={
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {__DEV__ && (
@@ -379,6 +382,7 @@ export default function SnapshotDataSummaryScreen() {
           <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Monthly surplus: {formatCurrencyFull(totals.monthlySurplus)}</Text>
         </View>
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

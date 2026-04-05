@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -16,6 +17,7 @@ import {
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 
 type QuestionId = 'EARLIEST_RETIREMENT' | 'ASSETS_LONGEVITY';
 
@@ -36,6 +38,7 @@ const QUESTION_META: Record<QuestionId, { title: string; subtitle: string }> = {
 
 export default function QuestionAnswerScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { questionId } = route.params as RouteParams;
@@ -110,8 +113,9 @@ export default function QuestionAnswerScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
-      <ScreenHeader title={meta.title} subtitle={meta.subtitle} />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <ScreenHeader title={meta.title} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Hero answer */}
@@ -171,6 +175,7 @@ export default function QuestionAnswerScreen() {
           </View>
         )}
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

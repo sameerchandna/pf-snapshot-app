@@ -5,14 +5,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { VictoryArea, VictoryAxis, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryStack } from 'victory-native';
 
 import ScreenHeader from '../components/ScreenHeader';
+import SketchBackground from '../components/SketchBackground';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import Icon from '../components/Icon';
 import IconButton from '../components/IconButton';
-import ControlBar, { type ControlBarItemButton, type ControlBarPillItem, type ControlBarIconItem } from '../components/ControlBar';
+import ControlBar from '../components/ControlBar';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { useSnapshot } from '../context/SnapshotContext';
 import { buildProjectionInputsFromState } from '../projection/buildProjectionInputs';
 import { applyScenarioToProjectionInputs } from '../projection/applyScenarioToInputs';
@@ -63,6 +65,7 @@ function getChartPalette(theme: Theme) {
 
 export default function BalanceDeepDiveScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { state } = useSnapshot();
@@ -774,21 +777,26 @@ export default function BalanceDeepDiveScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title="Balance Deep Dive" />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Toolbar */}
         <ControlBar
-          leftItems={[
-            {
-              type: 'itemButton',
-              title: itemName,
-              subtitle: itemMetadata ?? undefined,
-              onPress: () => setItemPickerOpen(true),
-            },
-          ]}
-          rightItems={[
+          col1={{
+            type: 'itemButton',
+            title: itemName,
+            subtitle: itemMetadata ?? undefined,
+            onPress: () => setItemPickerOpen(true),
+          }}
+          col2={{
+            type: 'pill',
+            title: `Age ${selectedAge}`,
+            onPress: () => setAgeSelectorOpen(true),
+            emphasis: true,
+          }}
+          col3Items={[
             ...(isSavingsAsset
               ? [
                   {
@@ -811,11 +819,6 @@ export default function BalanceDeepDiveScreen() {
                   },
                 ]
               : []),
-            {
-              type: 'pill',
-              title: `Age ${selectedAge}`,
-              onPress: () => setAgeSelectorOpen(true),
-            },
           ]}
         />
 
@@ -1314,6 +1317,7 @@ export default function BalanceDeepDiveScreen() {
           </View>
         </Pressable>
       </Modal>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

@@ -4,7 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
 import SwipeAction from '../components/SwipeAction';
@@ -13,6 +14,7 @@ import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useSnapshot } from '../context/SnapshotContext';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius } from '../ui/theme/theme';
 import type { ProfileId, ProfileState, ProfilesState } from '../types';
 
@@ -21,6 +23,7 @@ const ROW_HEIGHT = 44;
 export default function ProfilesManagementScreen() {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { 
     profilesState,
     switchProfile: switchProfileFromContext, 
@@ -223,11 +226,13 @@ export default function ProfilesManagementScreen() {
 
   if (!profilesState) {
     return (
-      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <SketchBackground color={palette.bg} style={{flex:1}}>
         <ScreenHeader title="Profiles" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, theme.typography.bodyLarge, { color: theme.colors.text.muted }]}>Loading...</Text>
         </View>
+        </SketchBackground>
       </SafeAreaView>
     );
   }
@@ -235,9 +240,10 @@ export default function ProfilesManagementScreen() {
   const activeProfileId = profilesState.activeProfileId;
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title="Profiles" />
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollContent}
         scrollEnabled={openSwipeableId === null}
@@ -247,7 +253,7 @@ export default function ProfilesManagementScreen() {
         }}
       >
         <View style={styles.section}>
-          <GroupHeader title="Profiles" />
+          <SectionHeader title="Profiles" />
           <View style={{ marginTop: layout.sectionTitleBottom, marginBottom: layout.componentGap }}>
             <Divider />
           </View>
@@ -534,6 +540,7 @@ export default function ProfilesManagementScreen() {
           </View>
         </Modal>
       ) : null}
+      </SketchBackground>
     </SafeAreaView>
   );
 }

@@ -3,7 +3,8 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SectionHeader from '../components/SectionHeader';
+import SketchBackground from '../components/SketchBackground';
 import EducationBox from '../components/EducationBox';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -17,6 +18,7 @@ import { BASELINE_SCENARIO_ID } from '../domain/scenario/types';
 import { validateScenario } from '../domain/scenario/validation';
 import { getScenarios, saveScenario, setActiveScenarioId } from '../scenarioState';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
 
 type RouteParams = {
@@ -54,6 +56,7 @@ export default function ScenarioEditorScreen() {
   const route = useRoute();
   const { state } = useSnapshot();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const params = (route.params as RouteParams) || {};
   const isEdit = params.scenarioId !== undefined;
 
@@ -198,7 +201,8 @@ export default function ScenarioEditorScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
       <ScreenHeader title={isEdit ? 'Edit Scenario' : 'New Scenario'} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <EducationBox
@@ -219,7 +223,7 @@ export default function ScenarioEditorScreen() {
 
         {/* Scenario Type Selection */}
         <View style={styles.section}>
-          <GroupHeader title="Scenario Type" />
+          <SectionHeader title="Scenario Type" />
           {kindLocked ? (
             <View style={styles.lockedTypeRow}>
               <Text style={[styles.lockedTypeText, { color: theme.colors.text.secondary, fontSize: theme.typography.value.fontSize }]}>
@@ -281,7 +285,7 @@ export default function ScenarioEditorScreen() {
         {/* Scenario Details */}
         {scenarioKind && (
           <View style={styles.section}>
-            <GroupHeader title="Scenario Details" />
+            <SectionHeader title="Scenario Details" />
 
             {/* Error Message */}
             {errorMessage ? (
@@ -446,6 +450,7 @@ export default function ScenarioEditorScreen() {
           </View>
         </View>
       </Modal>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

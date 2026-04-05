@@ -12,12 +12,14 @@ import {
   ChartLineUp,
 } from 'phosphor-react-native';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SectionHeader from '../components/SectionHeader';
+import SketchBackground from '../components/SketchBackground';
 import { SCENARIO_TEMPLATES } from '../domain/scenario/templates';
 import type { ScenarioCategory, ScenarioTemplate } from '../domain/scenario/templates';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 
 // ── Find Out questions (back-solve analytical questions) ──────────────────────
 
@@ -106,6 +108,7 @@ function TemplateIcon({ name, color, size }: { name: string; color: string; size
 
 export default function WhatIfPickerScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const navigation = useNavigation<any>();
 
   const displayGroups = [
@@ -236,13 +239,14 @@ export default function WhatIfPickerScreen() {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.app }]}>
-      <ScreenHeader title="What If" subtitle="Explore your financial scenarios" />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <ScreenHeader title="What If... ?" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {displayGroups.filter(g => g.label !== 'Coming Soon').map(group => (
           <View key={group.label} style={styles.section}>
-            <GroupHeader title={group.label} />
+            <SectionHeader title={group.label} />
             <View style={styles.grid}>
               {renderTilePairs(group.templates)}
             </View>
@@ -250,7 +254,7 @@ export default function WhatIfPickerScreen() {
         ))}
 
         <View style={styles.section}>
-          <GroupHeader title="Questions" />
+          <SectionHeader title="Questions" />
           <View style={styles.grid}>
             {renderQuestionPairs()}
           </View>
@@ -258,13 +262,14 @@ export default function WhatIfPickerScreen() {
 
         {displayGroups.filter(g => g.label === 'Coming Soon').map(group => (
           <View key={group.label} style={styles.section}>
-            <GroupHeader title={group.label} />
+            <SectionHeader title={group.label} />
             <View style={styles.grid}>
               {renderTilePairs(group.templates)}
             </View>
           </View>
         ))}
       </ScrollView>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

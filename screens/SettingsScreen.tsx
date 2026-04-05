@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import ScreenHeader from '../components/ScreenHeader';
-import GroupHeader from '../components/GroupHeader';
+import SketchBackground from '../components/SketchBackground';
+import SectionHeader from '../components/SectionHeader';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useThemeContext, type ThemeOverride } from '../ui/theme/ThemeContext';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
 import { useSnapshot } from '../context/SnapshotContext';
 import { exportData, importData } from '../persistence/exportImport';
@@ -19,6 +21,7 @@ export default function SettingsScreen() {
   const navigation = useNavigation<any>();
   const { themeOverride, setThemeOverride } = useThemeContext();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { profilesState, reloadFromStorage } = useSnapshot();
 
   const handleExport = async () => {
@@ -85,11 +88,12 @@ export default function SettingsScreen() {
   const themeSelectedIndex = themeOverride === 'light' ? 0 : themeOverride === 'dark' ? 1 : 2;
   
   return (
-    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.bg.card }]}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <SketchBackground color={palette.bg} style={styles.container}>
       <ScreenHeader title="Settings" />
       <View style={styles.content}>
         <View style={styles.section}>
-          <GroupHeader title="Appearance (Testing)" />
+          <SectionHeader title="Appearance (Testing)" />
           <View style={styles.themeToggleContainer}>
             <Text style={[styles.themeToggleLabel, { color: theme.colors.text.secondary }]}>
               Theme override for testing dark mode
@@ -105,7 +109,7 @@ export default function SettingsScreen() {
           </View>
         </View>
         <View style={styles.section}>
-          <GroupHeader title="Data" />
+          <SectionHeader title="Data" />
           <Pressable
             onPress={handleExport}
             style={({ pressed }) => [
@@ -159,7 +163,7 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
         <View style={styles.section}>
-          <GroupHeader title="Advanced" />
+          <SectionHeader title="Advanced" />
           <Pressable
             onPress={() => navigation.navigate('A3Validation')}
             style={({ pressed }) => [
@@ -222,6 +226,7 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
       </View>
+      </SketchBackground>
     </SafeAreaView>
   );
 }

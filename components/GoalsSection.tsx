@@ -54,12 +54,12 @@ export default function GoalsSection({ goals, onEditPress, style }: GoalsSection
   if (goals.length === 0) return null;
 
   return (
-    <SectionCard style={[styles.card, style]}>
-      {/* Header row with Edit affordance */}
+    <SectionCard fillColor="transparent" style={[styles.card, style]}>
+      {/* SectionHeader with Edit affordance as absolute overlay */}
       <View style={styles.headerRow}>
         <SectionHeader title="Goals" />
         {onEditPress ? (
-          <Pressable onPress={onEditPress} hitSlop={8}>
+          <Pressable onPress={onEditPress} hitSlop={8} style={styles.editOverlay}>
             <Text style={[styles.editText, { color: theme.colors.brand.primary }]}>
               Edit
             </Text>
@@ -106,9 +106,14 @@ const styles = StyleSheet.create({
   card: {
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    position: 'relative',
+  },
+  editOverlay: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   editText: {
     ...typography.label,
