@@ -11,9 +11,12 @@ import React, { useRef, useMemo, useState } from 'react';
 import { LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { spacing } from '../ui/spacing';
 import { typography } from '../ui/theme/theme';
-import { useTheme } from '../ui/theme/useTheme';
+import SketchCircle from './SketchCircle';
+import SketchLine from './SketchLine';
 
-const PADDING_H = 11; // half of thumb width — geometric alignment
+const PADDING_H = 11;  // half of thumb width — geometric alignment
+const THUMB_SIZE = 22;
+const TRACK_H = 16;    // SketchLine perpendicular height (CROSS constant)
 
 export type CustomSliderProps = {
   min: number;
@@ -42,7 +45,6 @@ export default function CustomSlider({
   showSteppers = false,
   stepperColor,
 }: CustomSliderProps) {
-  const { theme } = useTheme();
   const trackWidthRef = useRef<number>(0);
   const [trackWidth, setTrackWidth] = useState<number>(0);
 
@@ -72,7 +74,7 @@ export default function CustomSlider({
   };
 
   const thumbPos = trackWidth === 0 ? 0 : ((value - min) / (max - min)) * trackWidth;
-  const fillPct = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  const fillWidth = thumbPos; // same as thumbPos in px
 
   // Created once — all mutable state accessed via refs.
   const panResponder = useMemo(
@@ -135,22 +137,27 @@ export default function CustomSlider({
       style={[styles.container, showSteppers && styles.containerFlex]}
       {...panResponder.panHandlers}
     >
-      <View
-        style={[styles.track, { backgroundColor: trackBgColor }]}
-        onLayout={handleTrackLayout}
-      >
-        <View
-          style={[
-            styles.fill,
-            { width: `${fillPct}%` as any, backgroundColor: trackColor },
-          ]}
-        />
-        <View
-          style={[
-            styles.thumb,
-            { left: thumbPos - PADDING_H, backgroundColor: thumbColor, borderColor: trackColor, shadowColor: theme.colors.shadow.color, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 2 },
-          ]}
-        />
+      <View style={styles.trackArea} onLayout={handleTrackLayout}>
+        {trackWidth > 0 && (
+          <>
+            <SketchLine length={trackWidth} color={trackBgColor} strokeWidth={2} orientation="horizontal" />
+            {fillWidth > 2 && (
+              <SketchLine
+                length={fillWidth}
+                color={trackColor}
+                strokeWidth={2.5}
+                orientation="horizontal"
+                style={styles.trackFill}
+              />
+            )}
+            <SketchCircle
+              size={THUMB_SIZE}
+              borderColor={trackColor}
+              fillColor={thumbColor}
+              style={[styles.thumbSketch, { left: thumbPos - THUMB_SIZE / 2 }]}
+            />
+          </>
+        )}
       </View>
     </View>
   );
@@ -159,34 +166,32 @@ export default function CustomSlider({
 
   return (
     <View style={styles.stepperRow}>
-      <Pressable
-        onPress={handleDecrement}
-        disabled={value <= min}
-        style={[
-          styles.stepperBtn,
-          { borderColor: trackBgColor },
-        ]}
-        hitSlop={8}
-      >
-        <Text style={[styles.stepperSymbol, { color: value <= min ? trackBgColor : activeStepperColor }]}>
-          −
-        </Text>
+      <Pressable onPress={handleDecrement} disabled={value <= min} hitSlop={8}>
+        <SketchCircle
+          size={24}
+          borderColor={activeStepperColor}
+          fillColor="transparent"
+          strokeOpacity={value <= min ? 0.2 : 1}
+        >
+          <Text style={[styles.stepperSymbol, { color: value <= min ? trackBgColor : activeStepperColor }]}>
+            −
+          </Text>
+        </SketchCircle>
       </Pressable>
 
       {track}
 
-      <Pressable
-        onPress={handleIncrement}
-        disabled={value >= max}
-        style={[
-          styles.stepperBtn,
-          { borderColor: trackBgColor },
-        ]}
-        hitSlop={8}
-      >
-        <Text style={[styles.stepperSymbol, { color: value >= max ? trackBgColor : activeStepperColor }]}>
-          +
-        </Text>
+      <Pressable onPress={handleIncrement} disabled={value >= max} hitSlop={8}>
+        <SketchCircle
+          size={24}
+          borderColor={activeStepperColor}
+          fillColor="transparent"
+          strokeOpacity={value >= max ? 0.2 : 1}
+        >
+          <Text style={[styles.stepperSymbol, { color: value >= max ? trackBgColor : activeStepperColor }]}>
+            +
+          </Text>
+        </SketchCircle>
       </Pressable>
     </View>
   );
@@ -201,41 +206,27 @@ const styles = StyleSheet.create({
   containerFlex: {
     flex: 1,
   },
-  track: {
-    height: 4,
-    borderRadius: 2, // geometric: height / 2
+  trackArea: {
+    height: TRACK_H,
     position: 'relative',
   },
-  fill: {
-    height: 4,
-    borderRadius: 2, // geometric: height / 2
-  },
-  thumb: {
+  trackFill: {
     position: 'absolute',
-    top: -9,
-    width: 22,
-    height: 22,
-    borderRadius: 11, // geometric: width / 2
-    borderWidth: 2,
-    // Shadow applied dynamically via inline style (needs theme token)
-    elevation: 2,
+    top: 0,
+    left: 0,
+  },
+  thumbSketch: {
+    position: 'absolute',
+    top: -(THUMB_SIZE - TRACK_H) / 2, // = -3, centres thumb on line
   },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
-  stepperBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16, // geometric: width / 2
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   stepperSymbol: {
-    ...typography.valueLarge,
-    fontWeight: '400',
+    ...typography.value,
+    lineHeight: typography.value.fontSize,
     includeFontPadding: false,
   },
 });

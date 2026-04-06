@@ -110,7 +110,7 @@ function WhatIfStackNavigator() {
     <ScreenPaletteProvider value={palettes.whatIf}>
       <WhatIfStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
         <WhatIfStack.Screen name="WhatIfPicker" component={WhatIfPickerScreen} />
-        <WhatIfStack.Screen name="ScenarioExplorer" component={ScenarioExplorerScreen} />
+        <WhatIfStack.Screen name="ScenarioExplorer" component={withTealPalette(ScenarioExplorerScreen)} />
         <WhatIfStack.Screen name="QuestionAnswer" component={QuestionAnswerScreen} />
         <WhatIfStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
         <WhatIfStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />

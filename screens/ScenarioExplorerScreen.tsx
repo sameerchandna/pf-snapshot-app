@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,7 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryChart, VictoryLine, VictoryAxis } from 'victory-native';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
+import Icon from '../components/Icon';
 import SketchBackground from '../components/SketchBackground';
+import SketchCard from '../components/SketchCard';
 import Divider from '../components/Divider';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
@@ -31,6 +34,7 @@ import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
+import { typography, radius } from '../ui/theme/theme';
 import CustomSlider from '../components/CustomSlider';
 
 type RouteParams = {
@@ -71,6 +75,34 @@ type TargetItem = {
   name: string;
 };
 
+function buildTargetLabel(
+  targetSelector: string | null,
+  targetId: string,
+  assets: import('../types').AssetItem[],
+  liabilities: import('../types').LiabilityItem[],
+): string {
+  if (!targetId) return '';
+  if (targetSelector === 'asset') {
+    const a = assets.find(x => x.id === targetId);
+    if (!a) return '';
+    const parts: string[] = [a.name];
+    if (typeof a.annualGrowthRatePct === 'number') parts.push(`${a.annualGrowthRatePct}%`);
+    const avail = a.availability?.type;
+    if (!avail || avail === 'immediate') parts.push('Liquid');
+    else if (avail === 'locked') parts.push('Locked');
+    else if (avail === 'illiquid') parts.push('Illiquid');
+    return parts.join(' · ');
+  }
+  if (targetSelector === 'loan') {
+    const l = liabilities.find(x => x.id === targetId);
+    if (!l) return '';
+    const parts: string[] = [l.name];
+    if (typeof l.annualInterestRatePct === 'number') parts.push(`${l.annualInterestRatePct}%`);
+    return parts.join(' · ');
+  }
+  return '';
+}
+
 function generateId(): string {
   return `scenario_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 }
@@ -107,6 +139,7 @@ export default function ScenarioExplorerScreen() {
   }, [template, state]);
 
   const [selectedTargetId, setSelectedTargetId] = useState<string>(() => initialTargetId ?? targets[0]?.id ?? '');
+  const [targetPickerOpen, setTargetPickerOpen] = useState(false);
 
   // Auto-select first target when targets load
   useEffect(() => {
@@ -321,7 +354,7 @@ export default function ScenarioExplorerScreen() {
 
   // --- Chart data ---
   const chartWidth = 380;
-  const chartHeight = 210;
+  const chartHeight = 240;
 
   // --- Save ---
   const handleSave = async () => {
@@ -433,7 +466,7 @@ export default function ScenarioExplorerScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title={template.question} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -477,156 +510,111 @@ export default function ScenarioExplorerScreen() {
           </SectionCard>
         ) : null}
 
-        {/* Target picker (only shown if multiple targets) */}
-        {!hasNoTargets && targets.length > 1 ? (
-          <SectionCard>
-            <SectionHeader title={template.targetSelector === 'asset' ? 'Which asset?' : 'Which loan?'} />
-            <View style={styles.targetList}>
-              {targets.map(target => {
-                const isSelected = target.id === selectedTargetId;
-                return (
+        {/* Controls: asset picker + sliders merged */}
+        {!hasNoTargets ? (
+          <SectionCard fillColor="transparent" style={{ marginBottom: spacing.sm }}>
+            <View style={styles.controlsWrapper}>
+
+              {/* Target selector */}
+              {template.targetSelector !== null && targets.length > 0 ? (
+                <View style={styles.targetSelectorRow}>
+                  <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
+                    {template.targetSelector === 'asset' ? 'Which Asset' : 'Which Loan'}
+                  </Text>
                   <Pressable
-                    key={target.id}
-                    onPress={() => {
-                      setSelectedTargetId(target.id);
-                      recomputeScenario(sliderValue, target.id);
-                    }}
-                    style={({ pressed }) => [
-                      styles.targetRow,
-                      {
-                        backgroundColor: pressed
-                          ? theme.colors.bg.subtlePressed
-                          : isSelected
-                          ? theme.colors.brand.tint
-                          : theme.colors.bg.card,
-                        borderColor: isSelected ? theme.colors.brand.primary : theme.colors.border.subtle,
-                        borderRadius: theme.radius.medium,
-                      },
-                    ]}
+                    onPress={() => setTargetPickerOpen(true)}
+                    style={styles.targetValueRow}
+                    accessibilityRole="button"
+                    accessibilityLabel={template.targetSelector === 'asset' ? 'Select asset' : 'Select loan'}
                   >
-                    <View style={[styles.targetDot, { borderColor: isSelected ? theme.colors.brand.primary : theme.colors.border.default, backgroundColor: isSelected ? theme.colors.brand.primary : 'transparent' }]} />
-                    <Text style={[theme.typography.body, { color: isSelected ? theme.colors.brand.primary : theme.colors.text.primary }]}>
-                      {target.name}
+                    <Text
+                      style={[theme.typography.body, { color: palette.accent, textDecorationLine: 'underline', flexShrink: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {buildTargetLabel(template.targetSelector, selectedTargetId, state.assets, state.liabilities)
+                        || (template.targetSelector === 'asset' ? 'Select asset' : 'Select loan')}
                     </Text>
+                    <Icon name="chevron-forward-outline" size="small" color={palette.accent} />
                   </Pressable>
-                );
-              })}
-            </View>
-          </SectionCard>
-        ) : null}
+                </View>
+              ) : null}
 
-        {/* Slider(s) */}
-        {!hasNoTargets && !isMultiSlider ? (
-          <SectionCard>
-            <View style={styles.sliderLabelRow}>
-              <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
-                {getSliderSectionTitle(template.scenarioKind)}
-                {selectedTargetName ? ` → ${selectedTargetName}` : ''}
-              </Text>
-              <Text style={[theme.typography.value, { color: theme.colors.brand.primary }]}>
-                {formatSliderValue(template.scenarioKind, sliderValue)}
-              </Text>
-            </View>
-
-            <CustomSlider
-              min={defaults?.min ?? 50}
-              max={effectiveMax}
-              step={defaults?.step ?? 50}
-              value={sliderValue}
-              onValueChange={handleSliderChange}
-              trackColor={theme.colors.brand.primary}
-              thumbColor={theme.colors.bg.card}
-              trackBgColor={theme.colors.border.default}
-              showSteppers
-              stepperColor={theme.colors.brand.primary}
-            />
-
-            <View style={styles.sliderRangeRow}>
-              <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-                {formatSliderValue(template.scenarioKind, defaults?.min ?? 50)}
-              </Text>
-              <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-                {formatSliderValue(template.scenarioKind, effectiveMax)}
-              </Text>
-            </View>
-
-            {isClamped ? (
-              <Text style={[styles.clampWarning, theme.typography.caption, { color: theme.colors.semantic.warning }]}>
-                Limited by your available surplus of {formatCurrencyCompact(monthlySurplus)}/month
-              </Text>
-            ) : null}
-          </SectionCard>
-        ) : null}
-
-        {/* Multi-slider mode */}
-        {!hasNoTargets && isMultiSlider ? (
-          <SectionCard>
-            {template.sliders!.map((sc, index) => {
-              const val = sliderValues[sc.id] ?? sc.defaultValue;
-              const max = sliderEffectiveMax[sc.id] ?? sc.max;
-              const isSliderClamped = sc.affordabilityClamped && max < sc.max;
-              return (
-                <View key={sc.id}>
-                  {index > 0 && (
-                    <View style={[styles.sliderDivider, { backgroundColor: theme.colors.border.subtle }]} />
-                  )}
+              {/* Single slider */}
+              {!isMultiSlider ? (
+                <View>
                   <View style={styles.sliderLabelRow}>
                     <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
-                      {sc.label}
-                      {selectedTargetName ? ` → ${selectedTargetName}` : ''}
+                      {getSliderSectionTitle(template.scenarioKind)}
                     </Text>
-                    <Text style={[theme.typography.value, { color: theme.colors.brand.primary }]}>
-                      {formatSliderConfigValue(sc.format, val)}
+                    <Text style={[theme.typography.body, { color: palette.accent }]}>
+                      {formatSliderValue(template.scenarioKind, sliderValue)}
                     </Text>
                   </View>
-
                   <CustomSlider
-                    min={sc.min}
-                    max={max}
-                    step={sc.step}
-                    value={val}
-                    onValueChange={(v: number) => handleMultiSliderChange(sc.id, v, sc.step)}
-                    trackColor={theme.colors.brand.primary}
+                    min={defaults?.min ?? 50}
+                    max={effectiveMax}
+                    step={defaults?.step ?? 50}
+                    value={sliderValue}
+                    onValueChange={handleSliderChange}
+                    trackColor={palette.accent}
                     thumbColor={theme.colors.bg.card}
                     trackBgColor={theme.colors.border.default}
                     showSteppers
-                    stepperColor={theme.colors.brand.primary}
+                    stepperColor={theme.colors.text.primary}
                   />
-
-                  <View style={styles.sliderRangeRow}>
-                    <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-                      {formatSliderConfigValue(sc.format, sc.min)}
-                    </Text>
-                    <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>
-                      {formatSliderConfigValue(sc.format, max)}
-                    </Text>
-                  </View>
-
-                  {isSliderClamped ? (
-                    <Text style={[styles.clampWarning, theme.typography.caption, { color: theme.colors.semantic.warning }]}>
-                      Limited by your available surplus of {formatCurrencyCompact(monthlySurplus)}/month
-                    </Text>
-                  ) : null}
                 </View>
-              );
-            })}
+              ) : null}
+
+              {/* Multi sliders */}
+              {isMultiSlider ? template.sliders!.map(sc => {
+                const val = sliderValues[sc.id] ?? sc.defaultValue;
+                const max = sliderEffectiveMax[sc.id] ?? sc.max;
+                const isSliderClamped = sc.affordabilityClamped && max < sc.max;
+                const label = sc.id === 'contribution' ? 'Extra monthly contributions'
+                            : sc.id === 'growthRate' ? 'Annual Growth Rate'
+                            : sc.label;
+                return (
+                  <View key={sc.id}>
+                    <View style={styles.sliderLabelRow}>
+                      <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]}>
+                        {label}
+                      </Text>
+                      <Text style={[theme.typography.body, { color: palette.accent }]}>
+                        {formatSliderConfigValue(sc.format, val)}
+                      </Text>
+                    </View>
+                    <CustomSlider
+                      min={sc.min}
+                      max={max}
+                      step={sc.step}
+                      value={val}
+                      onValueChange={(v: number) => handleMultiSliderChange(sc.id, v, sc.step)}
+                      trackColor={palette.accent}
+                      thumbColor={theme.colors.bg.card}
+                      trackBgColor={theme.colors.border.default}
+                      showSteppers
+                      stepperColor={theme.colors.text.primary}
+                    />
+                  </View>
+                );
+              }) : null}
+
+            </View>
           </SectionCard>
         ) : null}
 
         {/* Mini projection chart */}
         {scenarioSeries.length > 0 ? (
-          <SectionCard>
-            <View style={styles.chartHeaderRow}>
-              <SectionHeader title="Projected net worth" />
-              <View style={styles.legendRow}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendLine, { backgroundColor: theme.colors.text.disabled }]} />
-                  <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>Baseline</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendLine, { backgroundColor: theme.colors.brand.primary }]} />
-                  <Text style={[theme.typography.caption, { color: theme.colors.text.secondary }]}>Scenario</Text>
-                </View>
+          <SectionCard fillColor="transparent">
+            <SectionHeader title="What difference does it make?" />
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendLine, { backgroundColor: theme.colors.text.disabled }]} />
+                <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>Baseline</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendLine, { backgroundColor: palette.accent }]} />
+                <Text style={[theme.typography.caption, { color: theme.colors.text.secondary }]}>Scenario</Text>
               </View>
             </View>
 
@@ -634,8 +622,9 @@ export default function ScenarioExplorerScreen() {
               <VictoryChart
                 width={chartWidth}
                 height={chartHeight}
-                padding={layout.chartInsetPadding}
+                padding={{ ...layout.chartInsetPadding, left: 64 }}
                 domainPadding={{ y: [0, 40] }}
+                style={{ background: { fill: theme.colors.bg.app } }}
               >
                 <VictoryAxis
                   tickFormat={(age: number) => `${age}`}
@@ -659,10 +648,10 @@ export default function ScenarioExplorerScreen() {
                   data={baselineSeries.map(p => ({ x: p.age, y: p.netWorth }))}
                   style={{ data: { stroke: theme.colors.text.disabled, strokeWidth: 1.5 } }}
                 />
-                {/* Scenario (brand primary) */}
+                {/* Scenario (accent) */}
                 <VictoryLine
                   data={scenarioSeries.map(p => ({ x: p.age, y: p.netWorth }))}
-                  style={{ data: { stroke: theme.colors.brand.primary, strokeWidth: 2 } }}
+                  style={{ data: { stroke: palette.accent, strokeWidth: 2 } }}
                 />
               </VictoryChart>
             </View>
@@ -671,65 +660,70 @@ export default function ScenarioExplorerScreen() {
 
         {/* Comparison panel */}
         {scenarioSummary ? (
-          <SectionCard>
-            <SectionHeader title="Projected outcome" />
+          <SectionCard fillColor="transparent">
+            <SectionHeader title="Here's the bottom line" />
             <Text style={[styles.comparisonSubtext, theme.typography.caption, { color: theme.colors.text.muted }]}>
               At age {baselineInputs.endAge} — projected, in today's money
             </Text>
 
-            <View style={styles.comparisonTable}>
+            <SketchCard
+              borderColor={theme.colors.border.default}
+              fillColor="transparent"
+              style={styles.sketchTable}
+            >
+              {/* Header row */}
+              <View style={[styles.tableRow, styles.tableHeaderRow]}>
+                <Text style={[theme.typography.label, { color: theme.colors.text.muted, flex: 1 }]}> </Text>
+                <Text style={[theme.typography.label, { color: theme.colors.text.muted, width: 68, textAlign: 'right' }]}>Baseline</Text>
+                <Text style={[theme.typography.label, { color: theme.colors.text.secondary, width: 68, textAlign: 'right' }]}>Scenario</Text>
+                <Text style={[theme.typography.label, { color: theme.colors.text.muted, width: 58, textAlign: 'right' }]}>Change</Text>
+              </View>
+              <Divider />
+
               {/* Net worth row */}
-              <View style={styles.comparisonRow}>
+              <View style={styles.tableRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Net worth</Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.muted, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(baselineSummary.endNetWorth)}
                 </Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.primary, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.primary, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(scenarioSummary.endNetWorth)}
                 </Text>
-                <Text style={[theme.typography.value, { color: deltaColor(netWorthDelta, true), minWidth: 60, textAlign: 'right' }]}>
+                <Text style={[theme.typography.valueSmall, { color: deltaColor(netWorthDelta, true), width: 58, textAlign: 'right' }]}>
                   {formatCurrencyCompactSigned(netWorthDelta)}
                 </Text>
               </View>
               <Divider variant="subtle" />
 
               {/* Assets row */}
-              <View style={styles.comparisonRow}>
+              <View style={styles.tableRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Assets</Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.muted, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(baselineSummary.endAssets)}
                 </Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.primary, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.primary, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(scenarioSummary.endAssets)}
                 </Text>
-                <Text style={[theme.typography.value, { color: deltaColor(assetsDelta, true), minWidth: 60, textAlign: 'right' }]}>
+                <Text style={[theme.typography.valueSmall, { color: deltaColor(assetsDelta, true), width: 58, textAlign: 'right' }]}>
                   {formatCurrencyCompactSigned(assetsDelta)}
                 </Text>
               </View>
               <Divider variant="subtle" />
 
               {/* Liabilities row */}
-              <View style={styles.comparisonRow}>
+              <View style={styles.tableRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Liabilities</Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.muted, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(baselineSummary.endLiabilities)}
                 </Text>
-                <Text style={[theme.typography.value, { color: theme.colors.text.primary, marginRight: spacing.sm }]}>
+                <Text style={[theme.typography.valueSmall, { color: theme.colors.text.primary, width: 68, textAlign: 'right' }]}>
                   {formatCurrencyCompact(scenarioSummary.endLiabilities)}
                 </Text>
-                <Text style={[theme.typography.value, { color: deltaColor(liabilitiesDelta, false), minWidth: 60, textAlign: 'right' }]}>
+                <Text style={[theme.typography.valueSmall, { color: deltaColor(liabilitiesDelta, false), width: 58, textAlign: 'right' }]}>
                   {formatCurrencyCompactSigned(liabilitiesDelta)}
                 </Text>
               </View>
-            </View>
-
-            {/* Column labels */}
-            <View style={styles.comparisonLabels}>
-              <View style={{ flex: 1 }} />
-              <Text style={[theme.typography.caption, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>Baseline</Text>
-              <Text style={[theme.typography.caption, { color: theme.colors.text.secondary, marginRight: spacing.sm }]}>Scenario</Text>
-              <Text style={[theme.typography.caption, { color: theme.colors.text.muted, minWidth: 60, textAlign: 'right' }]}>Change</Text>
-            </View>
+            </SketchCard>
           </SectionCard>
         ) : null}
 
@@ -738,25 +732,73 @@ export default function ScenarioExplorerScreen() {
       </ScrollView>
 
       {/* Fixed action bar */}
-      <View style={[styles.actionBar, { backgroundColor: theme.colors.bg.card, borderTopColor: theme.colors.border.default }]}>
-        <Button
-          variant="secondary"
-          size="md"
-          onPress={handleDiscard}
-          style={styles.actionButton}
-        >
-          Discard
-        </Button>
-        <Button
-          variant="primary"
-          size="md"
-          onPress={handleSave}
-          disabled={(template?.targetSelector !== null && !selectedTargetId) || (isMultiSlider ? (template?.scenarioKind === 'MORTGAGE_WHAT_IF' ? false : (sliderValues.contribution ?? 0) <= 0) : sliderValue <= 0)}
-          style={styles.actionButton}
-        >
-          Save scenario
-        </Button>
-      </View>
+      {(() => {
+        const isSaveDisabled = (template?.targetSelector !== null && !selectedTargetId) || (isMultiSlider ? (template?.scenarioKind === 'MORTGAGE_WHAT_IF' ? false : (sliderValues.contribution ?? 0) <= 0) : sliderValue <= 0);
+        return (
+          <View style={[styles.actionBar, { backgroundColor: theme.colors.bg.card, borderTopColor: theme.colors.border.default }]}>
+            <Pressable onPress={handleDiscard} style={styles.actionButton} accessibilityRole="button">
+              {({ pressed }) => (
+                <SketchCard
+                  borderColor={theme.colors.border.default}
+                  fillColor={pressed ? theme.colors.bg.subtlePressed : theme.colors.bg.subtle}
+                  style={styles.sketchButton}
+                >
+                  <Text style={[theme.typography.button, { color: theme.colors.text.secondary, textAlign: 'center' }]}>
+                    Discard
+                  </Text>
+                </SketchCard>
+              )}
+            </Pressable>
+            <Pressable onPress={handleSave} disabled={isSaveDisabled} style={styles.actionButton} accessibilityRole="button">
+              {({ pressed }) => (
+                <SketchCard
+                  borderColor={isSaveDisabled ? theme.colors.border.subtle : palette.accent}
+                  fillColor={isSaveDisabled ? theme.colors.bg.subtle : palette.accent}
+                  fillOpacity={pressed ? 0.8 : 1}
+                  style={styles.sketchButton}
+                >
+                  <Text style={[theme.typography.button, { color: isSaveDisabled ? theme.colors.text.disabled : '#ffffff', textAlign: 'center' }]}>
+                    Save scenario
+                  </Text>
+                </SketchCard>
+              )}
+            </Pressable>
+          </View>
+        );
+      })()}
+      {/* Target picker modal */}
+      {template.targetSelector !== null ? (
+        <Modal transparent visible={targetPickerOpen} animationType="slide" onRequestClose={() => setTargetPickerOpen(false)}>
+          <View style={styles.modalRoot}>
+            <Pressable style={[styles.modalBackdropFlex, { backgroundColor: theme.colors.overlay.scrim25 }]} onPress={() => setTargetPickerOpen(false)} />
+            <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
+                {template.targetSelector === 'asset' ? 'Select asset' : 'Select loan'}
+              </Text>
+              <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
+                {targets.map(target => (
+                  <React.Fragment key={target.id}>
+                    <Pressable
+                      onPress={() => {
+                        setSelectedTargetId(target.id);
+                        recomputeScenario(sliderValue, target.id, isMultiSlider ? sliderValues : undefined);
+                        setTargetPickerOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                      ]}
+                    >
+                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{target.name}</Text>
+                    </Pressable>
+                    <Divider variant="subtle" />
+                  </React.Fragment>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
       </SketchBackground>
     </SafeAreaView>
   );
@@ -779,27 +821,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  targetList: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  targetRow: {
+  targetSelectorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    gap: spacing.base,
+    paddingBottom: spacing.md,
   },
-  targetDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5, // geometric: width / 2
-    borderWidth: 1.5,
+  targetValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 1,
   },
-  sliderDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: spacing.base,
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdropFlex: {
+    flex: 1,
+  },
+  modalSheet: {
+    borderTopLeftRadius: radius.modal,
+    borderTopRightRadius: radius.modal,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: layout.modalPaddingTop,
+    paddingBottom: layout.modalPaddingBottom,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    ...typography.sectionTitle,
+    marginBottom: layout.inputPadding,
+  },
+  modalList: {
+    flexGrow: 0,
+  },
+  modalListContent: {
+    paddingBottom: spacing.base,
+  },
+  modalOption: {
+    paddingVertical: spacing.base,
+  },
+  modalOptionText: {
+    ...typography.button,
+  },
+  controlsWrapper: {
+    gap: spacing.base,
   },
   sliderLabelRow: {
     flexDirection: 'row',
@@ -807,19 +874,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  sliderRangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
   clampWarning: {
     marginTop: spacing.sm,
     textAlign: 'center',
-  },
-  chartHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   chartContainer: {
     alignItems: 'center',
@@ -830,6 +887,8 @@ const styles = StyleSheet.create({
   legendRow: {
     flexDirection: 'row',
     gap: spacing.base,
+    marginBottom: -spacing.base,
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
@@ -845,17 +904,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     marginBottom: spacing.base,
   },
-  comparisonLabels: {
-    flexDirection: 'row',
-    marginTop: spacing.xs,
+  sketchTable: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.xs,
   },
-  comparisonTable: {
-    gap: spacing.zero,
-  },
-  comparisonRow: {
+  tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
+  },
+  tableHeaderRow: {
+    paddingBottom: spacing.xs,
   },
   actionBarSpacer: {
     height: 80,
@@ -873,5 +932,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  sketchButton: {
+    paddingVertical: layout.inputPadding,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
