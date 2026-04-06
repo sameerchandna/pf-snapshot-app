@@ -6,6 +6,7 @@ import { Group } from '../types';
 import { parseItemName, parseMoney } from '../domain/domainValidation';
 import ScreenHeader from '../components/ScreenHeader';
 import SketchBackground from '../components/SketchBackground';
+import SketchCircle from '../components/SketchCircle';
 import SectionHeader from '../components/SectionHeader';
 import SectionCard from '../components/SectionCard';
 import GroupedListSection from '../components/list/GroupedListSection';
@@ -15,6 +16,7 @@ import SwipeAction from '../components/SwipeAction';
 import EditorActionGroup from '../components/EditorActionGroup';
 import ItemEditor from '../components/ItemEditor';
 import GroupedList, { Group as GroupedListGroup } from '../components/list/GroupedList';
+import InlineRowEditor from '../components/rows/InlineRowEditor';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
@@ -121,6 +123,13 @@ type Props<TItem> = {
   // Optional: hide the editor entirely (useful for guided flows that provide their own entry UI).
   showEditor?: boolean;
 
+  // Optional: dynamic title for the editor panel. Receives whether an item is being edited and its current draft name.
+  getEditorTitle?: (isEditing: boolean, editingName: string) => string;
+
+  // Optional: replace top-panel Quick Entry with inline row expansion.
+  // When true, the ItemEditor panel is hidden and edit/add actions expand the row in-place.
+  inlineEditorMode?: boolean;
+
   // Optional secondary numeric field in the editor (e.g. Growth Rate % for assets).
   // Only applies to the top editor placement.
   secondaryNumberField?: {
@@ -197,6 +206,15 @@ type Props<TItem> = {
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => React.ReactNode;
 
@@ -254,6 +272,7 @@ export default function EditableCollectionScreen<TItem>({
   secondaryNumberField,
   liquidityField,
   showEditor,
+  getEditorTitle,
   renderCustomNameField,
   upsertKey,
   findExistingByKey,
@@ -263,6 +282,7 @@ export default function EditableCollectionScreen<TItem>({
   swipeRevealMode = 'replace',
   renderRow: renderRowOverride,
   onDeleteCanceled,
+  inlineEditorMode,
 }: Props<TItem>) {
   const { theme } = useTheme();
   const palette = useScreenPalette();
@@ -274,7 +294,6 @@ export default function EditableCollectionScreen<TItem>({
   const implicitGroupId: string = 'general';
   const implicitGroupName: string = 'General';
 
-  const editorVisible: boolean = showEditor !== false;
   const scrollRef = useRef<any>(null);
   const [openSwipeableId, setOpenSwipeableId] = useState<string | null>(null);
 
@@ -295,6 +314,10 @@ export default function EditableCollectionScreen<TItem>({
   const [pendingDeleteItemId, setPendingDeleteItemId] = useState<string | null>(null);
   const [focusedInput, setFocusedInput] = useState<'name' | 'amount' | null>(null);
   const swipeableRefs = useRef<Map<string, Swipeable | null>>(new Map());
+
+  const inlineMode = inlineEditorMode === true;
+  const editorVisible: boolean = showEditor !== false && !inlineMode;
+  const [phantomGroupId, setPhantomGroupId] = useState<string | null>(null);
 
   const maxValue: number = 1_000_000_000;
   const autoFocus: boolean = false;
@@ -319,6 +342,7 @@ export default function EditableCollectionScreen<TItem>({
     setDraftUnlockAge('');
     setEditingItemId(null);
     setFocusedInput(null);
+    if (inlineMode) setPhantomGroupId(null);
   };
 
   const activeEditingMeta: { groupId: string; name: string } | null = useMemo(() => {
@@ -473,8 +497,12 @@ export default function EditableCollectionScreen<TItem>({
 
   const saveEditor = () => {
     const editingItem: TItem | undefined = editingItemId ? items.find(it => getItemId(it) === editingItemId) : undefined;
+    // In inline add mode (editingItemId null, inlineMode, phantomGroupId set), use phantom group id
+    const resolvedPhantomGroupId = (inlineMode && !editingItemId && phantomGroupId !== null)
+      ? (phantomGroupId === '' ? implicitGroupId : phantomGroupId)
+      : null;
     const targetGroupId: string | null =
-      groupsEnabled ? (editingItem ? getItemGroupId(editingItem) : expandedGroupId) : implicitGroupId;
+      resolvedPhantomGroupId ?? (groupsEnabled ? (editingItem ? getItemGroupId(editingItem) : expandedGroupId) : implicitGroupId);
     if (!targetGroupId) return;
     if (shouldDismissKeyboardOnAction) Keyboard.dismiss();
 
@@ -523,6 +551,7 @@ export default function EditableCollectionScreen<TItem>({
       
       const newItem = makeNewItem(targetGroupId, validated.name, validated.amount, { secondaryNumber: validated.secondaryNumber, liquidity: validated.liquidity ?? undefined });
       setItems([...items, newItem]);
+      if (inlineMode) setPhantomGroupId(null);
     }
 
     setDraftName('');
@@ -616,8 +645,18 @@ export default function EditableCollectionScreen<TItem>({
       setDraftUnlockAge('');
     }
     setEditingItemId(getItemId(item));
-    // Ensure the active entry block is visible when editing.
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    if (inlineMode) {
+      setPhantomGroupId(null);
+    } else {
+      // Ensure the active entry block is visible when editing.
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  };
+
+  const startAddInline = (groupId: string | null) => {
+    cancelEditor(); // clears any in-progress edit and phantom
+    setPhantomGroupId(groupId ?? '');
+    // editingItemId stays null → saveEditor's add-new path handles it
   };
 
   const deleteItem = (itemId: string) => {
@@ -799,6 +838,7 @@ export default function EditableCollectionScreen<TItem>({
     };
 
     const handleEdit = () => {
+      if (inlineMode && locked) return; // locked rows have no inline editor
       if (canExternalEdit && !inlineEditable) {
         onExternalEditItem?.(item);
       } else {
@@ -809,6 +849,16 @@ export default function EditableCollectionScreen<TItem>({
     const handleDelete = () => {
       deleteItem(id);
     };
+
+    const inlineBag = (inlineMode && isCurrentlyEditing) ? {
+      draftName,
+      draftAmount,
+      errorMessage,
+      onDraftNameChange: setDraftName,
+      onDraftAmountChange: setDraftAmount,
+      onSave: saveEditor,
+      onCancel: cancelEditor,
+    } : undefined;
 
     return renderRowOverride(
       item,
@@ -834,6 +884,7 @@ export default function EditableCollectionScreen<TItem>({
         name,
         amountText,
         metaText,
+        inline: inlineBag,
       },
     );
   };
@@ -856,7 +907,7 @@ export default function EditableCollectionScreen<TItem>({
             {isRenamingThisGroup ? (
               <>
                 <IconButton
-                  icon="check"
+                  icon="checkmark-outline"
                   size="md"
                   variant="success"
                   onPress={() => saveGroupName(group.id)}
@@ -864,7 +915,7 @@ export default function EditableCollectionScreen<TItem>({
                   accessibilityLabel="Save"
                 />
                 <IconButton
-                  icon="x"
+                  icon="close-outline"
                   size="md"
                   variant="neutral"
                   onPress={cancelEditGroupName}
@@ -875,7 +926,7 @@ export default function EditableCollectionScreen<TItem>({
             ) : (
               <>
                 <IconButton
-                  icon="edit-2"
+                  icon="create-outline"
                   size="md"
                   variant="neutral"
                   onPress={() => startEditGroupName(group)}
@@ -884,7 +935,7 @@ export default function EditableCollectionScreen<TItem>({
                 />
                 {groupItems.length === 0 ? (
                   <IconButton
-                    icon="trash-2"
+                    icon="trash-outline"
                     size="md"
                     variant="destructive"
                     onPress={() => deleteGroup(group.id)}
@@ -946,6 +997,18 @@ export default function EditableCollectionScreen<TItem>({
             )}
 
             <View style={styles.groupHeaderRight}>
+              {inlineMode && canAddItems && groupExpanded && phantomGroupId === null ? (
+                <Pressable
+                  onPress={() => startAddInline(group.id)}
+                  style={({ pressed }) => [
+                    styles.groupAddInlineButton,
+                    { backgroundColor: pressed ? theme.colors.bg.subtlePressed : 'transparent' },
+                  ]}
+                  accessibilityLabel="Add item"
+                >
+                  <Text style={[theme.typography.button, { color: theme.colors.brand.primary }]}>+</Text>
+                </Pressable>
+              ) : null}
               {canCollapseGroups ? (
                 <Pressable
                   onPress={() => toggleGroup(group.id)}
@@ -992,7 +1055,7 @@ export default function EditableCollectionScreen<TItem>({
             <View style={styles.headerRightRow}>
               {hasHints ? (
                 <IconButton
-                  icon="help-circle"
+                  icon="help-circle-outline"
                   size="md"
                   variant="neutral"
                   onPress={() => setIsHintOpen(true)}
@@ -1028,7 +1091,7 @@ export default function EditableCollectionScreen<TItem>({
 
           {editorVisible ? (
             <SectionCard fillColor="transparent" style={{ marginTop: layout.sectionGap }}>
-              <SectionHeader title="Quick Entry" />
+              <SectionHeader title={getEditorTitle ? getEditorTitle(editingItemId !== null, draftName) : 'Quick Entry'} />
               <ItemEditor
                 draftName={draftName}
                 draftAmount={draftAmount}
@@ -1057,10 +1120,30 @@ export default function EditableCollectionScreen<TItem>({
 
           {/* Items list section */}
           <SectionCard fillColor="transparent" style={{ marginTop: layout.sectionGap }}>
-            <SectionHeader title={title} />
+            <SectionHeader
+              title={title}
+              rightAccessory={
+                inlineMode && !groupsEnabled && canAddItems && phantomGroupId === null ? (
+                  <SketchCircle
+                    size={36}
+                    borderColor={palette.accent}
+                    fillColor={palette.sectionHeaderBg}
+                    fillOpacity={0.6}
+                    strokeOpacity={0.8}
+                  >
+                    <Text
+                      onPress={() => startAddInline(null)}
+                      style={[theme.typography.valueLarge, { color: palette.accent, lineHeight: 36, textAlign: 'center', includeFontPadding: false }]}
+                    >
+                      +
+                    </Text>
+                  </SketchCircle>
+                ) : undefined
+              }
+            />
             {editorSubtext ? (
               <View style={styles.editorSubtextContainer}>
-                <Text style={[styles.editorSubtext, theme.typography.bodySmall, { color: theme.colors.text.secondary }]}>
+                <Text style={[styles.editorSubtext, theme.typography.body, { color: theme.colors.text.secondary, textAlign: 'center' }]}>
                   {editorSubtext}
                 </Text>
               </View>
@@ -1097,6 +1180,24 @@ export default function EditableCollectionScreen<TItem>({
                 const groupId = groupsEnabled ? getItemGroupId(item) : undefined;
                 return getSwipeableEnabled(itemId, groupId);
               }}
+              showAddItemTrigger={false}
+              renderTrailingRow={inlineMode ? (groupId) => {
+                const isTarget = groupId === phantomGroupId || (groupId === null && phantomGroupId === '');
+                if (phantomGroupId === null || !isTarget) return null;
+                return (
+                  <InlineRowEditor
+                    isLastInGroup={true}
+                    draftName={draftName}
+                    draftAmount={draftAmount}
+                    errorMessage={errorMessage}
+                    onDraftNameChange={setDraftName}
+                    onDraftAmountChange={setDraftAmount}
+                    onSave={saveEditor}
+                    onCancel={() => { cancelEditor(); }}
+                    nameSlot={renderCustomNameField ? renderCustomNameField({ value: draftName, onChange: setDraftName, editingItemId: null }) : undefined}
+                  />
+                );
+              } : undefined}
             />
 
             {groupsEnabled && canEditGroups && canAddGroups ? (
@@ -1356,6 +1457,11 @@ const styles = StyleSheet.create({
   groupTotalPressable: {
     paddingVertical: spacing.tiny,
     paddingHorizontal: layout.micro,
+  },
+  groupAddInlineButton: {
+    paddingVertical: spacing.tiny,
+    paddingHorizontal: spacing.sm,
+    marginRight: spacing.xs,
   },
   groupTitle: {
     // Typography via theme.typography.sectionTitle

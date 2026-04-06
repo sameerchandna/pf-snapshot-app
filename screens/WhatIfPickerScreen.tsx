@@ -14,8 +14,9 @@ import {
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SketchBackground from '../components/SketchBackground';
+import SketchCard from '../components/SketchCard';
 import { SCENARIO_TEMPLATES } from '../domain/scenario/templates';
-import type { ScenarioCategory, ScenarioTemplate } from '../domain/scenario/templates';
+import type { ScenarioTemplate } from '../domain/scenario/templates';
 import { layout } from '../ui/layout';
 import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
@@ -23,7 +24,7 @@ import { useScreenPalette } from '../ui/theme/palettes';
 
 // ── Find Out questions (back-solve analytical questions) ──────────────────────
 
-type FindOutQuestionId = 'EARLIEST_RETIREMENT' | 'ASSETS_LONGEVITY';
+type FindOutQuestionId = 'ASSETS_LONGEVITY';
 type FindOutQuestion = {
   id: FindOutQuestionId;
   question: string;
@@ -33,60 +34,26 @@ type FindOutQuestion = {
 
 const FIND_OUT_QUESTIONS: FindOutQuestion[] = [
   {
-    id: 'EARLIEST_RETIREMENT',
-    question: "What's the earliest age I can retire?",
-    description: 'Find the earliest age you could stop working based on your current finances.',
-    icon: 'Clock',
-  },
-  {
     id: 'ASSETS_LONGEVITY',
     question: 'How long will my liquid assets last?',
-    description: 'See how long your savings and investments would last if you stopped earning today.',
+    description: 'If you stopped working today, how long before the money runs out?',
     icon: 'Hourglass',
   },
 ];
 
-// ── Category-derived colour logic ─────────────────────────────────────────────
-
-type WhatifColorKey = 'sage' | 'teal' | 'rose' | 'amber' | 'periwinkle' | 'lavender' | 'mint' | 'grey';
-
-const CATEGORY_PALETTES: Record<ScenarioCategory, WhatifColorKey[]> = {
-  assets:      ['sage', 'teal'],
-  liabilities: ['rose', 'amber'],
-  events:      ['periwinkle', 'lavender', 'mint'],
-};
-
-// Derived once at module level — no runtime cost, zero config for new templates
-const COLOR_MAP: Map<string, WhatifColorKey> = (() => {
-  const counters: Partial<Record<ScenarioCategory, number>> = {};
-  const map = new Map<string, WhatifColorKey>();
-  for (const t of SCENARIO_TEMPLATES) {
-    if (!t.enabled) { map.set(t.id, 'grey'); continue; }
-    const idx = counters[t.category] ?? 0;
-    counters[t.category] = idx + 1;
-    const palette = CATEGORY_PALETTES[t.category];
-    map.set(t.id, palette[idx % palette.length]);
-  }
-  return map;
-})();
-
 const SHORT_LABELS: Record<string, string> = {
   'savings-what-if':  'Save & Grow',
-  'mortgage-what-if': 'My Mortgage',
-  'retire-at-age':    'Retire Age',
+  'mortgage-what-if': 'Overpay your mortgage',
+  'retire-at-age':    'When can I retire?',
   'spend-less':       'Spend Less',
   'go-part-time':     'Part Time',
   'have-a-baby':      'Have a Baby',
-};
-
-const FIND_OUT_COLORS: Record<FindOutQuestionId, WhatifColorKey> = {
-  EARLIEST_RETIREMENT: 'mint',
-  ASSETS_LONGEVITY:    'amber',
+  'increase-income':  'Increase Income',
+  'income-reduces':   'Income stops or reduces',
 };
 
 const FIND_OUT_LABELS: Record<FindOutQuestionId, string> = {
-  EARLIEST_RETIREMENT: 'Retire Early',
-  ASSETS_LONGEVITY:    'Asset Runway',
+  ASSETS_LONGEVITY: 'Asset Runway',
 };
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
@@ -113,66 +80,63 @@ export default function WhatIfPickerScreen() {
 
   const displayGroups = [
     {
-      label: 'Assets & Liabilities',
+      label: 'What you can do...',
       templates: SCENARIO_TEMPLATES.filter(
-        t => t.enabled && (t.category === 'assets' || t.category === 'liabilities'),
+        t => t.category === 'assets' || t.category === 'liabilities',
       ),
     },
     {
-      label: 'Events',
-      templates: SCENARIO_TEMPLATES.filter(t => t.enabled && t.category === 'events'),
-    },
-    {
-      label: 'Coming Soon',
-      templates: SCENARIO_TEMPLATES.filter(t => !t.enabled),
+      label: 'What can happen to you...',
+      templates: SCENARIO_TEMPLATES.filter(t => t.category === 'events'),
     },
   ].filter(g => g.templates.length > 0);
+
+  const wonderTemplates = SCENARIO_TEMPLATES.filter(t => t.category === 'wonder');
 
   // ── Grid tile card (scenario templates) ──
 
   const renderTile = (template: ScenarioTemplate) => {
-    const colorKey = COLOR_MAP.get(template.id) ?? 'grey';
-    const colors = theme.colors.whatif[colorKey];
     const isEnabled = template.enabled;
     const label = SHORT_LABELS[template.id] ?? template.question;
+    const accentColor = isEnabled ? palette.accent : theme.colors.text.muted;
+    const bodyColor = isEnabled ? theme.colors.text.secondary : theme.colors.text.disabled;
 
     return (
       <Pressable
         key={template.id}
         onPress={() => { if (isEnabled) navigation.navigate('ScenarioExplorer', { templateId: template.id }); }}
         disabled={!isEnabled}
-        style={({ pressed }) => [
-          styles.tile,
-          {
-            backgroundColor: pressed && isEnabled ? colors.cardBgPressed : colors.cardBg,
-            borderRadius: theme.radius.rounded,
-          },
-        ]}
+        style={{ flex: 1 }}
         accessibilityRole="button"
         accessibilityState={{ disabled: !isEnabled }}
       >
-        <View style={[styles.tileIcon, { backgroundColor: colors.iconBg, borderRadius: theme.radius.large }]}>
-          <TemplateIcon name={template.icon} color={colors.title} size={22} />
-        </View>
-
-        <Text style={[theme.typography.label, { color: colors.title }]} numberOfLines={2}>
-          {label}
-        </Text>
-        <Text style={[theme.typography.bodySmall, { color: colors.body }]} numberOfLines={3}>
-          {template.description}
-        </Text>
-
-        {!isEnabled && (
-          <View style={[
-            styles.soonBadge,
-            {
-              backgroundColor: theme.colors.bg.subtle,
-              borderColor: theme.colors.border.default,
-              borderRadius: theme.radius.pill,
-            },
-          ]}>
-            <Text style={[theme.typography.caption, { color: theme.colors.text.muted }]}>Soon</Text>
-          </View>
+        {({ pressed }) => (
+          <SketchCard
+            borderColor={accentColor}
+            fillColor={pressed && isEnabled ? accentColor : theme.colors.bg.default}
+            fillOpacity={pressed && isEnabled ? 0.15 : 1}
+            borderRadius={theme.radius.rounded}
+            style={styles.tile}
+          >
+            <View style={styles.tileHeader}>
+              <SketchCard
+                fillColor={isEnabled ? palette.sectionHeaderBg : theme.colors.bg.subtle}
+                borderColor={isEnabled ? palette.sectionHeaderBg : theme.colors.bg.subtle}
+                fillOpacity={isEnabled ? 0.7 : 0.5}
+                strokeOpacity={0.1}
+                borderRadius={theme.radius.large}
+                style={{ width: 46, height: 46, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <TemplateIcon name={template.icon} color={isEnabled ? theme.colors.bg.default : theme.colors.text.disabled} size={22} />
+              </SketchCard>
+              <Text style={[theme.typography.bodyLarge, { color: isEnabled ? theme.colors.bg.default : theme.colors.text.disabled, fontWeight: '700', flex: 1 }]} numberOfLines={2}>
+                {label}
+              </Text>
+            </View>
+            <Text style={[theme.typography.body, { color: bodyColor }]} numberOfLines={3}>
+              {template.description}
+            </Text>
+          </SketchCard>
         )}
       </Pressable>
     );
@@ -194,31 +158,42 @@ export default function WhatIfPickerScreen() {
   // ── Grid tile (Find Out analytical questions) ──
 
   const renderQuestionTile = (question: FindOutQuestion) => {
-    const colors = theme.colors.whatif[FIND_OUT_COLORS[question.id]];
     const label = FIND_OUT_LABELS[question.id];
     return (
       <Pressable
         key={question.id}
         onPress={() => navigation.navigate('QuestionAnswer', { questionId: question.id })}
-        style={({ pressed }) => [
-          styles.tile,
-          {
-            backgroundColor: pressed ? colors.cardBgPressed : colors.cardBg,
-            borderRadius: theme.radius.rounded,
-          },
-        ]}
+        style={{ flex: 1 }}
         accessibilityRole="button"
       >
-        <View style={[styles.tileIcon, { backgroundColor: colors.iconBg, borderRadius: theme.radius.large }]}>
-          <TemplateIcon name={question.icon} color={colors.title} size={22} />
-        </View>
-
-        <Text style={[theme.typography.label, { color: colors.title }]} numberOfLines={2}>
-          {label}
-        </Text>
-        <Text style={[theme.typography.bodySmall, { color: colors.body }]} numberOfLines={3}>
-          {question.description}
-        </Text>
+        {({ pressed }) => (
+          <SketchCard
+            borderColor={palette.accent}
+            fillColor={palette.accent}
+            fillOpacity={pressed ? 0.15 : 0}
+            borderRadius={theme.radius.rounded}
+            style={styles.tile}
+          >
+            <View style={styles.tileHeader}>
+              <SketchCard
+                fillColor={palette.sectionHeaderBg}
+                borderColor={palette.sectionHeaderBg}
+                fillOpacity={0.7}
+                strokeOpacity={0.1}
+                borderRadius={theme.radius.large}
+                style={{ width: 46, height: 46, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <TemplateIcon name={question.icon} color={theme.colors.bg.default} size={22} />
+              </SketchCard>
+              <Text style={[theme.typography.bodyLarge, { color: theme.colors.bg.default, fontWeight: '700', flex: 1 }]} numberOfLines={2}>
+                {label}
+              </Text>
+            </View>
+            <Text style={[theme.typography.body, { color: theme.colors.text.secondary }]} numberOfLines={3}>
+              {question.description}
+            </Text>
+          </SketchCard>
+        )}
       </Pressable>
     );
   };
@@ -240,11 +215,11 @@ export default function WhatIfPickerScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title="What If... ?" />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {displayGroups.filter(g => g.label !== 'Coming Soon').map(group => (
+        {displayGroups.map(group => (
           <View key={group.label} style={styles.section}>
             <SectionHeader title={group.label} />
             <View style={styles.grid}>
@@ -254,20 +229,12 @@ export default function WhatIfPickerScreen() {
         ))}
 
         <View style={styles.section}>
-          <SectionHeader title="Questions" />
+          <SectionHeader title="You might wonder..." />
           <View style={styles.grid}>
             {renderQuestionPairs()}
+            {renderTilePairs(wonderTemplates)}
           </View>
         </View>
-
-        {displayGroups.filter(g => g.label === 'Coming Soon').map(group => (
-          <View key={group.label} style={styles.section}>
-            <SectionHeader title={group.label} />
-            <View style={styles.grid}>
-              {renderTilePairs(group.templates)}
-            </View>
-          </View>
-        ))}
       </ScrollView>
       </SketchBackground>
     </SafeAreaView>
@@ -292,17 +259,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 150,
   },
-  tileIcon: {
-    width: 46,
-    height: 46,
+  tileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  soonBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
+    gap: spacing.sm,
   },
   gridSpacer: { flex: 1 },
 });

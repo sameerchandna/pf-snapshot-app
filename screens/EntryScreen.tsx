@@ -156,7 +156,7 @@ export default function EntryScreen() {
   // Chart dimensions (reused from ProjectionResultsScreen)
   const chartWidth: number = Math.max(320, windowWidth - 24);
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
-  const chartPadding = { top: 8, bottom: 48, left: 44, right: 16 } as const;
+  const chartPadding = { top: 8, bottom: 48, left: 52, right: 16 } as const;
 
   // Phase 10.1: Interpretation engine (replaces Phase 6.8 key moment text)
   const interpretation = useMemo(() => {
@@ -308,7 +308,7 @@ export default function EntryScreen() {
                     tickFormat={t => `${Number(t)}`}
                     tickLabelComponent={<VictoryLabel dy={6} />}
                     label="Age"
-                    axisLabelComponent={<VictoryLabel dy={24} style={{ fontSize: 10, fill: chartPalette.tickLabels }} />}
+                    axisLabelComponent={<VictoryLabel dy={24} style={{ fontSize: 10, fill: chartPalette.tickLabels, fontFamily: 'Virgil' }} />}
                     style={{
                       axis: { stroke: chartPalette.axis },
                       tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
@@ -320,7 +320,7 @@ export default function EntryScreen() {
                     tickFormat={t => formatCurrencyCompact(Number(t))}
                     style={{
                       axis: { stroke: chartPalette.axis },
-                      tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                      tickLabels: { fontSize: 10, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                       grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
                     }}
                   />

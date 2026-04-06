@@ -9,7 +9,9 @@ import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { parseItemName } from '../domain/domainValidation';
 import EducationBox from '../components/EducationBox';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
+import SketchCard from '../components/SketchCard';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -64,6 +66,7 @@ export default function AssetsDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state, setAssetGroups, setAssets } = useSnapshot();
 
   const createForContribution: boolean = Boolean(route?.params?.createForContribution);
@@ -157,19 +160,19 @@ export default function AssetsDetailScreen() {
         name={state.name}
         amountText={state.amountText}
         subtitle={state.metaText}
+        subtitleVariant="caption"
         locked={state.locked}
         isActive={state.isActive}
         onToggleActive={callbacks.onToggleActive}
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={true}
-        onPress={() => {
-          navigation.navigate('BalanceDeepDive', { itemId: item.id });
-        }}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -205,25 +208,25 @@ export default function AssetsDetailScreen() {
             <Text style={[styles.quickHint, { color: theme.colors.text.secondary }]}>Name only. Balance will start at £0.</Text>
             {quickError ? <Text style={[styles.quickError, { color: theme.colors.semantic.errorText }]}>{quickError}</Text> : null}
             <View style={styles.quickRow}>
-              <TextInput
-                style={[
-                  styles.quickInput,
-                  {
-                    backgroundColor: theme.colors.bg.card,
-                    borderColor: theme.colors.border.default,
-                    color: theme.colors.text.primary,
-                  }
-                ]}
-                value={quickName}
-                onChangeText={t => {
-                  setQuickError('');
-                  setQuickName(t);
-                }}
-                placeholder="e.g. Stocks ISA"
-                returnKeyType="done"
-                onSubmitEditing={quickCreate}
-                autoFocus={true}
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.medium}
+                style={styles.quickInputWrapper}
+              >
+                <TextInput
+                  style={[styles.quickInputInner, { color: theme.colors.text.primary }]}
+                  value={quickName}
+                  onChangeText={t => {
+                    setQuickError('');
+                    setQuickName(t);
+                  }}
+                  placeholder="e.g. Stocks ISA"
+                  returnKeyType="done"
+                  onSubmitEditing={quickCreate}
+                  autoFocus={true}
+                />
+              </SketchCard>
               <Pressable
                 onPress={quickCreate}
                 style={({ pressed }) => [
@@ -260,19 +263,15 @@ export default function AssetsDetailScreen() {
       }}
       formatItemMetaText={item => {
         const parts: string[] = [];
-        
-        // Growth rate
         if (typeof item.annualGrowthRatePct === 'number' && Number.isFinite(item.annualGrowthRatePct)) {
           parts.push(`${item.annualGrowthRatePct.toLocaleString('en-GB', { maximumFractionDigits: 2 })}%`);
         }
-        
-        // Liquidity
         const avail = item.availability ?? { type: 'immediate' };
         const liquidityLabel = avail.type === 'immediate' ? 'Liquid' : avail.type === 'locked' ? 'Locked' : 'Illiquid';
         parts.push(liquidityLabel);
-        
         return parts.length > 0 ? parts.join(' • ') : null;
       }}
+      getEditorTitle={(isEditing, name) => isEditing ? `Edit your ${name}` : 'Add a new Asset'}
       helpContent={assetsHelpContent}
       emptyStateText="No assets yet."
       groups={state.assetGroups}
@@ -360,13 +359,14 @@ const styles = StyleSheet.create({
   quickHint: { ...typography.body, marginBottom: spacing.sm },
   quickError: { ...typography.body, marginBottom: spacing.sm },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  quickInput: {
+  quickInputWrapper: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: radius.medium,
+  },
+  quickInputInner: {
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
     ...typography.input,
+    alignSelf: 'stretch',
   },
   quickButton: {
     paddingVertical: layout.inputPadding,

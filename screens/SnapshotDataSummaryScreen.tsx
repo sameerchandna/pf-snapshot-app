@@ -18,6 +18,7 @@ import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { typography } from '../ui/theme/theme';
+import Divider from '../components/Divider';
 
 function formatLiquidity(asset: AssetItem): string {
   if (!asset.availability) return 'immediate';
@@ -248,7 +249,7 @@ export default function SnapshotDataSummaryScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader
         title="Snapshot Data Summary"
         rightAccessory={
@@ -311,17 +312,21 @@ export default function SnapshotDataSummaryScreen() {
           ) : (
             state.assets.map((asset, index) => {
               const monthlyContribution = assetContributionsMap.get(asset.id) ?? 0;
+              const isLast = index === state.assets.length - 1;
               return (
-                <View key={asset.id} style={[styles.assetBlock, { borderBottomColor: theme.colors.border.default }]}>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Asset ID: {asset.id}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {asset.name}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Balance: {formatCurrencyFull(asset.balance)}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
-                    Growth rate: {formatPercent(asset.annualGrowthRatePct, { decimals: 2 })} per year
-                  </Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Liquidity: {formatLiquidity(asset)}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Monthly contribution: {formatCurrencyFull(monthlyContribution)}</Text>
-                </View>
+                <React.Fragment key={asset.id}>
+                  <View style={styles.assetBlock}>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Asset ID: {asset.id}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {asset.name}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Balance: {formatCurrencyFull(asset.balance)}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
+                      Growth rate: {formatPercent(asset.annualGrowthRatePct, { decimals: 2 })} per year
+                    </Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Liquidity: {formatLiquidity(asset)}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Monthly contribution: {formatCurrencyFull(monthlyContribution)}</Text>
+                  </View>
+                  {!isLast && <Divider variant="subtle" />}
+                </React.Fragment>
               );
             })
           )}
@@ -333,36 +338,40 @@ export default function SnapshotDataSummaryScreen() {
           {state.liabilities.length === 0 ? (
             <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>(no liabilities)</Text>
           ) : (
-            state.liabilities.map(liability => {
+            state.liabilities.map((liability, index) => {
               const derived = loanDerived.get(liability.id);
               const isLoan = liability.kind === 'loan';
+              const isLast = index === state.liabilities.length - 1;
               return (
-                <View key={liability.id} style={[styles.loanBlock, { borderBottomColor: theme.colors.border.default }]}>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan ID: {liability.id}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {liability.name}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Outstanding balance: {formatCurrencyFull(liability.balance)}</Text>
-                  <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
-                    Interest rate: {formatPercent(liability.annualInterestRatePct, { decimals: 2 })} per year
-                  </Text>
-                  {isLoan && typeof liability.remainingTermYears === 'number' ? (
-                    <>
-                      <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Remaining term: {liability.remainingTermYears} years</Text>
-                      <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan start date: null</Text>
-                      {derived ? (
-                        <>
-                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Derived (monthly):</Text>
-                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>- Monthly payment: {formatCurrencyFull(derived.monthlyPayment)}</Text>
-                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
-                            - Monthly interest (initial): {formatCurrencyFull(derived.monthlyInterest)}
-                          </Text>
-                          <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
-                            - Monthly principal (initial): {formatCurrencyFull(derived.monthlyPrincipal)}
-                          </Text>
-                        </>
-                      ) : null}
-                    </>
-                  ) : null}
-                </View>
+                <React.Fragment key={liability.id}>
+                  <View style={styles.loanBlock}>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan ID: {liability.id}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Name: {liability.name}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Outstanding balance: {formatCurrencyFull(liability.balance)}</Text>
+                    <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
+                      Interest rate: {formatPercent(liability.annualInterestRatePct, { decimals: 2 })} per year
+                    </Text>
+                    {isLoan && typeof liability.remainingTermYears === 'number' ? (
+                      <>
+                        <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Remaining term: {liability.remainingTermYears} years</Text>
+                        <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Loan start date: null</Text>
+                        {derived ? (
+                          <>
+                            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>Derived (monthly):</Text>
+                            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>- Monthly payment: {formatCurrencyFull(derived.monthlyPayment)}</Text>
+                            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
+                              - Monthly interest (initial): {formatCurrencyFull(derived.monthlyInterest)}
+                            </Text>
+                            <Text style={[styles.monoText, { color: theme.colors.text.tertiary }]}>
+                              - Monthly principal (initial): {formatCurrencyFull(derived.monthlyPrincipal)}
+                            </Text>
+                          </>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </View>
+                  {!isLast && <Divider variant="subtle" />}
+                </React.Fragment>
               );
             })
           )}
@@ -421,14 +430,10 @@ const styles = StyleSheet.create({
   assetBlock: {
     marginBottom: spacing.base,
     paddingBottom: spacing.base,
-    borderBottomWidth: 1,
-    // borderBottomColor moved to inline style with theme.colors.border.default
   },
   loanBlock: {
     marginBottom: spacing.base,
     paddingBottom: spacing.base,
-    borderBottomWidth: 1,
-    // borderBottomColor moved to inline style with theme.colors.border.default
   },
   copyButton: {
     paddingHorizontal: spacing.base,

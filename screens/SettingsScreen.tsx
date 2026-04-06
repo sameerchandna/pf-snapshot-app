@@ -89,7 +89,7 @@ export default function SettingsScreen() {
   
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={styles.container}>
+      <SketchBackground color={palette.accent} style={styles.container}>
       <ScreenHeader title="Settings" />
       <View style={styles.content}>
         <View style={styles.section}>

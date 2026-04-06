@@ -7,7 +7,7 @@ import type { ScenarioKind } from './types';
 
 export type ScenarioTemplateId = string;
 
-export type ScenarioCategory = 'assets' | 'liabilities' | 'events';
+export type ScenarioCategory = 'assets' | 'liabilities' | 'events' | 'wonder';
 
 export interface SliderConfig {
   id: string;             // unique key within template (e.g. 'contribution', 'growthRate')
@@ -44,7 +44,7 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'savings-what-if',
     question: 'What if I saved and grew more?',
-    description: 'Adjust your monthly contributions and expected growth rate together',
+    description: 'Put a bit more away each month and watch how it adds up over time.',
     scenarioKind: 'SAVINGS_WHAT_IF',
     icon: 'TrendUp',
     category: 'assets',
@@ -73,11 +73,22 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     ],
     enabled: true,
   },
+  {
+    id: 'increase-income',
+    question: 'What if I increased my income?',
+    description: 'Pay rise or side income? See what more coming in really means.',
+    scenarioKind: null,
+    icon: 'ChartLineUp',
+    category: 'assets',
+    targetSelector: null,
+    defaults: null,
+    enabled: false,
+  },
   // --- Liabilities ---
   {
     id: 'mortgage-what-if',
     question: 'What if I changed my mortgage terms?',
-    description: 'Adjust overpayments, interest rate, and remaining term together',
+    description: 'Overpay a little or tweak your rate — see how soon you could be done.',
     scenarioKind: 'MORTGAGE_WHAT_IF',
     icon: 'HouseSimple',
     category: 'liabilities',
@@ -119,10 +130,10 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'retire-at-age',
     question: 'What if I retired at a different age?',
-    description: 'See how retiring earlier or later changes your long-term picture',
+    description: 'Curious what stopping at 55 looks like vs 65? Slide it and see.',
     scenarioKind: 'CHANGE_RETIREMENT_AGE',
     icon: 'Hourglass',
-    category: 'events',
+    category: 'wonder',
     targetSelector: null,
     defaults: {
       amountMonthly: 60,
@@ -135,10 +146,10 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'spend-less',
     question: 'What if I spent less each month?',
-    description: 'See how reducing your expenses changes your financial outlook',
+    description: 'Spend a bit less each month — see the difference it makes.',
     scenarioKind: 'REDUCE_EXPENSES',
     icon: 'PiggyBank',
-    category: 'events',
+    category: 'assets',
     targetSelector: null,
     defaults: {
       amountMonthly: 200,
@@ -148,13 +159,23 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     },
     enabled: true,
   },
-  // --- Coming soon ---
   {
-    id: 'go-part-time',
-    question: 'What if I went part-time?',
-    description: 'See how reduced income would affect your financial trajectory',
+    id: 'income-reduces',
+    question: 'What if my income stopped or reduced?',
+    description: 'Lost your job or went part-time? See how long you could keep things afloat.',
     scenarioKind: null,
-    icon: 'Clock',
+    icon: 'ChartLineUp',
+    category: 'events',
+    targetSelector: null,
+    defaults: null,
+    enabled: false,
+  },
+  {
+    id: 'markets-crash',
+    question: 'What if markets crashed?',
+    description: 'Markets tank 30%. How bad does it get, and how long to recover?',
+    scenarioKind: null,
+    icon: 'TrendUp',
     category: 'events',
     targetSelector: null,
     defaults: null,
@@ -163,10 +184,10 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'have-a-baby',
     question: 'What if I had a baby?',
-    description: 'See how parental leave and childcare costs change your picture',
+    description: 'Parental leave, childcare, the lot — see what a baby really costs your finances.',
     scenarioKind: null,
     icon: 'Baby',
-    category: 'events',
+    category: 'wonder',
     targetSelector: null,
     defaults: null,
     enabled: false,

@@ -142,19 +142,19 @@ export default function LiabilitiesDetailScreen() {
         name={state.name}
         amountText={state.amountText}
         subtitle={state.metaText}
+        subtitleVariant="caption"
         locked={state.locked}
         isActive={state.isActive}
         onToggleActive={callbacks.onToggleActive}
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={true}
-        onPress={() => {
-          navigation.navigate('BalanceDeepDive', { itemId: item.id });
-        }}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -221,6 +221,7 @@ export default function LiabilitiesDetailScreen() {
           </View>
         </View>
       }
+      getEditorTitle={(isEditing, name) => isEditing ? `Edit your ${name}` : 'Add a new Liability'}
       helpContent={liabilitiesHelpContent}
       emptyStateText="No liabilities yet."
       groups={state.liabilityGroups}

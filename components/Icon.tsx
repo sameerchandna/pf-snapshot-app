@@ -1,10 +1,10 @@
 import React from 'react';
 import { StyleProp, TextStyle } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ui/theme/useTheme';
 
 type IconSize = 'tiny' | 'small' | 'base' | 'medium' | 'large';
-export type IconName = React.ComponentProps<typeof Feather>['name'];
+export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 type Props = {
   name: IconName;
@@ -37,9 +37,9 @@ export default function Icon({ name, size = 'base', color, style }: Props) {
   const iconColor = color ?? theme.colors.text.secondary;
   
   return (
-    <Feather 
-      name={name} 
-      size={iconSize} 
+    <Ionicons
+      name={name}
+      size={iconSize}
       color={iconColor}
       style={style}
     />

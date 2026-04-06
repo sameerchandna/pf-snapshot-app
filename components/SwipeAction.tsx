@@ -1,7 +1,9 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
+import SketchCircle from './SketchCircle';
 
 type SwipeActionVariant = 'edit' | 'delete' | 'rename' | 'reset';
 
@@ -28,41 +30,27 @@ export default function SwipeAction({
   style,
 }: Props) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
 
-  // Get icon name based on variant
-  const getIconName = (): React.ComponentProps<typeof Feather>['name'] => {
+  const getIconName = (): React.ComponentProps<typeof Ionicons>['name'] => {
     switch (variant) {
       case 'edit':
       case 'rename':
-        return 'edit-2';
+        return 'create-outline';
       case 'delete':
-        return 'trash-2';
+        return 'trash-outline';
       case 'reset':
-        return 'refresh-cw';
+        return 'refresh-outline';
     }
   };
 
   // Determine if this is a delete action
   const isDelete = variant === 'delete';
 
-  // Get background color from theme
-  const backgroundColor = isDelete
-    ? theme.colors.actions.delete.bg
-    : theme.colors.actions.edit.bg;
-
-  // Get icon color from theme
+  // Delete stays destructive red; edit uses the screen's accent colour
   const iconColor = isDelete
     ? theme.colors.actions.delete.icon
-    : theme.colors.actions.edit.icon;
-
-  // Pressed background from theme tokens
-  const pressedBackground = isDelete
-    ? theme.colors.actions.delete.bgPressed
-    : theme.colors.actions.edit.bgPressed;
-
-  const getPressedBackground = (pressed: boolean): string => {
-    return pressed ? pressedBackground : backgroundColor;
-  };
+    : palette.accent;
 
   return (
     <Pressable
@@ -71,17 +59,19 @@ export default function SwipeAction({
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.container,
-        {
-          backgroundColor: getPressedBackground(pressed),
-        },
+        { opacity: pressed ? 0.6 : 1 },
         style,
       ]}
     >
-      <Feather
-        name={getIconName()}
-        size={18}
-        color={iconColor}
-      />
+      <SketchCircle
+        size={34}
+        borderColor={iconColor}
+        fillColor="transparent"
+        fillOpacity={0}
+        strokeOpacity={0.7}
+      >
+        <Ionicons name={getIconName()} size={16} color={iconColor} />
+      </SketchCircle>
     </Pressable>
   );
 }
@@ -89,8 +79,9 @@ export default function SwipeAction({
 const styles = StyleSheet.create({
   container: {
     height: 44,
-    width: 60,
+    width: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
+
 });

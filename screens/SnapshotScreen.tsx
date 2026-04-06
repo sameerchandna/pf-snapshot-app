@@ -20,7 +20,9 @@ import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
 import CashflowFlowchart from '../components/cashflow/CashflowFlowchart';
 import SketchBranch from '../components/SketchBranch';
+import SketchHighlight from '../components/SketchHighlight';
 import Button from '../components/Button';
+import Icon from '../components/Icon';
 
 export default function SnapshotScreen() {
   const { theme } = useTheme();
@@ -176,6 +178,9 @@ export default function SnapshotScreen() {
                   >
                     <Text style={[theme.typography.value, { color: theme.colors.domain.asset, textAlign: 'center' }]}>{totalAssetsText}</Text>
                     <Text style={[theme.typography.bodySmall, { color: theme.colors.text.secondary, textAlign: 'center' }]}>Assets</Text>
+                    <View style={styles.balanceNodeChevron}>
+                      <Icon name="chevron-forward-outline" size="small" color={theme.colors.text.muted} />
+                    </View>
                   </SketchCard>
                 </Pressable>
               </View>
@@ -189,6 +194,9 @@ export default function SnapshotScreen() {
                   >
                     <Text style={[theme.typography.value, { color: theme.colors.domain.liability, textAlign: 'center' }]}>{totalLiabilitiesText}</Text>
                     <Text style={[theme.typography.bodySmall, { color: theme.colors.text.secondary, textAlign: 'center' }]}>Liabilities</Text>
+                    <View style={styles.balanceNodeChevron}>
+                      <Icon name="chevron-forward-outline" size="small" color={theme.colors.text.muted} />
+                    </View>
                   </SketchCard>
                 </Pressable>
               </View>
@@ -201,7 +209,9 @@ export default function SnapshotScreen() {
                 fillColor={theme.colors.bg.card}
                 style={styles.balanceNetWorthNode}
               >
-                <Text style={[theme.typography.value, { color: theme.colors.brand.primary, textAlign: 'center' }]}>{netWorthText}</Text>
+                <SketchHighlight color={`${palette.sectionHeaderBg}30`}>
+                  <Text style={[theme.typography.value, { color: theme.colors.brand.primary, textAlign: 'center' }]}>{netWorthText}</Text>
+                </SketchHighlight>
                 <Text style={[theme.typography.bodySmall, { color: theme.colors.text.secondary, textAlign: 'center' }]}>Net Worth</Text>
               </SketchCard>
             </View>
@@ -270,6 +280,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
+  },
+  balanceNodeChevron: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   balanceNetWorthRow: {
     alignItems: 'center',

@@ -266,10 +266,13 @@ export function computeA3Attribution({
 
   // Working months = pre-retirement horizon. Income, taxes, and contributions stop at retirement
   // (matching projection engine behaviour in runMonthlySimulation).
+  // The projection engine retires when ageAtMonth >= retirementAge (monthIndex starts at 1),
+  // so the number of contributing months is the count of positive integers m where
+  // m < workingMonthsRaw, which equals ceil(workingMonthsRaw) - 1.
   const retirementAge = projectionInputs.retirementAge;
   const workingMonthsRaw = (retirementAge - snapshot.projection.currentAge) * 12;
-  const workingMonths = Number.isFinite(workingMonthsRaw)
-    ? Math.max(0, Math.min(Math.floor(workingMonthsRaw), horizonMonths))
+  const workingMonths = Number.isFinite(workingMonthsRaw) && workingMonthsRaw > 0
+    ? Math.max(0, Math.min(Math.ceil(workingMonthsRaw) - 1, horizonMonths))
     : 0;
 
   const startingAssets = sumBalances(activeAssets);

@@ -16,6 +16,7 @@ export const palettes = {
   entry:      { bg: '#f8f0fc', accent: '#9c36b5', sectionHeaderBg: '#eebefa', cardBg: '#ffffff', cardBorder: '#1e1e1e', text: '#1e1e1e', textSecondary: '#868e96' },
   whatIf:     { bg: '#ebfbee', accent: '#2f9e44', sectionHeaderBg: '#b2f2bb', cardBg: '#ffffff', cardBorder: '#1e1e1e', text: '#1e1e1e', textSecondary: '#868e96' },
   settings:   { bg: '#e9ecef', accent: '#868e96', sectionHeaderBg: '#e9ecef', cardBg: '#ffffff', cardBorder: '#1e1e1e', text: '#1e1e1e', textSecondary: '#868e96' },
+  teal:       { bg: '#e6fcf5', accent: '#0ca678', sectionHeaderBg: '#96f2d7', cardBg: '#ffffff', cardBorder: '#1e1e1e', text: '#1e1e1e', textSecondary: '#868e96' },
 } as const;
 
 const ScreenPaletteContext = createContext<ScreenPalette>(palettes.snapshot);

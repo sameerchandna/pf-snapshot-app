@@ -9,11 +9,15 @@ import { ContributionItem } from '../types';
 import { formatCurrencyFullSigned } from '../ui/formatters';
 import { parseMoney } from '../domain/domainValidation';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { typography, radius } from '../ui/theme/theme';
+import SketchCard from '../components/SketchCard';
 import Icon from '../components/Icon';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
+import InlineRowEditor from '../components/rows/InlineRowEditor';
+import Divider from '../components/Divider';
 
 type RouteParams = {
   preselectAssetId?: string;
@@ -70,6 +74,7 @@ export default function ContributionsDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const { state, setAssetContributions } = useSnapshot();
   const params = (route.params as RouteParams) || {};
 
@@ -123,39 +128,41 @@ export default function ContributionsDetailScreen() {
 
     return (
       <>
-        <Pressable
-          onPress={() => {
-            if (state.assets.length === 0) {
-              navigation.navigate('AssetsDetail', { createForContribution: true, returnRouteKey: route.key, returnRouteName: 'AssetContributionDetail' });
-              return;
-            }
-            setAssetPickerOpen(true);
-          }}
-          style={({ pressed }) => [
-            styles.selector,
-            {
-              backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.input,
-              borderColor: 'transparent',
-              borderRadius: theme.radius.medium,
-            }
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Select asset"
+        <SketchCard
+          borderColor={palette.accent}
+          fillColor={theme.colors.bg.input}
+          borderRadius={theme.radius.medium}
         >
-          <View style={styles.selectorRow}>
-            <Text
-              style={[
-                styles.selectorValue,
-                { color: theme.colors.text.primary },
-                !props.value ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
-              ]}
-              numberOfLines={1}
-            >
-              {props.value ? getAssetName(props.value) : 'Select asset'}
-            </Text>
-            <Icon name="chevron-down" size="small" color={theme.colors.text.muted} />
-          </View>
-        </Pressable>
+          <Pressable
+            onPress={() => {
+              if (state.assets.length === 0) {
+                navigation.navigate('AssetsDetail', { createForContribution: true, returnRouteKey: route.key, returnRouteName: 'AssetContributionDetail' });
+                return;
+              }
+              setAssetPickerOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.selectorInner,
+              { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Select asset"
+          >
+            <View style={styles.selectorRow}>
+              <Text
+                style={[
+                  styles.selectorValue,
+                  { color: theme.colors.text.primary },
+                  !props.value ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
+                ]}
+                numberOfLines={1}
+              >
+                {props.value ? getAssetName(props.value) : 'Select asset'}
+              </Text>
+              <Icon name="chevron-down-outline" size="small" color={theme.colors.text.muted} />
+            </View>
+          </Pressable>
+        </SketchCard>
 
         {/* Asset picker modal */}
         <Modal transparent={true} visible={assetPickerOpen} animationType="slide" onRequestClose={() => setAssetPickerOpen(false)}>
@@ -164,20 +171,21 @@ export default function ContributionsDetailScreen() {
             <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
               <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-                {state.assets.map(a => (
-                  <Pressable
-                    key={a.id}
-                    onPress={() => handleSelectAsset(a.id)}
-                    style={({ pressed }) => [
-                      styles.modalOption,
-                      {
-                        backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-                        borderBottomColor: theme.colors.border.subtle,
-                      }
-                    ]}
-                  >
-                    <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{a.name}</Text>
-                  </Pressable>
+                {state.assets.map((a, index) => (
+                  <React.Fragment key={a.id}>
+                    <Pressable
+                      onPress={() => handleSelectAsset(a.id)}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        {
+                          backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                        }
+                      ]}
+                    >
+                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{a.name}</Text>
+                    </Pressable>
+                    <Divider variant="subtle" />
+                  </React.Fragment>
                 ))}
                 <Pressable
                   onPress={() => {
@@ -188,7 +196,6 @@ export default function ContributionsDetailScreen() {
                     styles.modalOption,
                     {
                       backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-                      borderBottomColor: theme.colors.border.subtle,
                     }
                   ]}
                 >
@@ -227,14 +234,38 @@ export default function ContributionsDetailScreen() {
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => {
-    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
-    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
-    // For Contributions:
-    // - allowGroups={false}, so groupsEnabled = false
-    // - allowDeleteItems not set, so canDeleteItems = true (default)
-    // - Therefore: disableDelete = locked || false || false = locked
+    if (state.inline) {
+      return (
+        <InlineRowEditor
+          key={item.id}
+          isLastInGroup={isLastInGroup}
+          draftName={state.inline.draftName}
+          draftAmount={state.inline.draftAmount}
+          errorMessage={state.inline.errorMessage}
+          onDraftNameChange={state.inline.onDraftNameChange}
+          onDraftAmountChange={state.inline.onDraftAmountChange}
+          onSave={state.inline.onSave}
+          onCancel={state.inline.onCancel}
+          nameSlot={renderAssetPicker({
+            value: state.inline.draftName,
+            onChange: state.inline.onDraftNameChange,
+            editingItemId: item.id,
+          })}
+        />
+      );
+    }
+
     const disableDelete = state.locked;
 
     return (
@@ -247,10 +278,12 @@ export default function ContributionsDetailScreen() {
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={false}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -326,16 +359,17 @@ export default function ContributionsDetailScreen() {
         // Only look for postTax contributions with this assetId
         return postTaxContributions.find(c => c.assetId === key) || null;
       }}
+      inlineEditorMode={true}
       renderRow={renderContributionsRow}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  selector: {
-    borderWidth: 1,
+  selectorInner: {
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
+    alignSelf: 'stretch',
   },
   selectorRow: {
     flexDirection: 'row',
@@ -377,7 +411,6 @@ const styles = StyleSheet.create({
   },
   modalOption: {
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
   },
   modalOptionText: {
     ...typography.button,

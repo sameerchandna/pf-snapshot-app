@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import ScreenHeader from '../components/ScreenHeader';
 import SketchBackground from '../components/SketchBackground';
+import SketchCard from '../components/SketchCard';
 import SectionHeader from '../components/SectionHeader';
 import Divider from '../components/Divider';
 import Icon from '../components/Icon';
@@ -227,7 +228,7 @@ export default function ProfilesManagementScreen() {
   if (!profilesState) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
-        <SketchBackground color={palette.bg} style={{flex:1}}>
+        <SketchBackground color={palette.accent} style={{flex:1}}>
         <ScreenHeader title="Profiles" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, theme.typography.bodyLarge, { color: theme.colors.text.muted }]}>Loading...</Text>
@@ -334,13 +335,13 @@ export default function ProfilesManagementScreen() {
           )}
 
           {/* Create Profile Row */}
+          <Divider variant="subtle" />
           <Pressable
             onPress={handleCreateRequest}
             style={({ pressed }) => [
               styles.createRow,
               {
                 backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-                borderTopColor: theme.colors.border.subtle,
               }
             ]}
           >
@@ -355,22 +356,21 @@ export default function ProfilesManagementScreen() {
           <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
             <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
               <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>Rename profile</Text>
-              <TextInput
-                style={[
-                  styles.modalInput,
-                  theme.typography.input,
-                  {
-                    borderColor: theme.colors.border.default,
-                    color: theme.colors.text.primary,
-                    backgroundColor: theme.colors.bg.card,
-                  }
-                ]}
-                value={pendingRenameName}
-                onChangeText={setPendingRenameName}
-                placeholder="Profile name"
-                autoFocus={true}
-                maxLength={50}
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.medium}
+                style={styles.modalInputWrapper}
+              >
+                <TextInput
+                  style={[styles.modalInputInner, theme.typography.input, { color: theme.colors.text.primary }]}
+                  value={pendingRenameName}
+                  onChangeText={setPendingRenameName}
+                  placeholder="Profile name"
+                  autoFocus={true}
+                  maxLength={50}
+                />
+              </SketchCard>
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelRename}
@@ -490,22 +490,21 @@ export default function ProfilesManagementScreen() {
           <View style={[styles.modalBackdrop, { backgroundColor: theme.colors.overlay.scrim50 }]}>
             <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
               <Text style={[styles.modalTitle, theme.typography.valueLarge, { color: theme.colors.text.primary }]}>New profile</Text>
-              <TextInput
-                style={[
-                  styles.modalInput,
-                  theme.typography.input,
-                  {
-                    borderColor: theme.colors.border.default,
-                    color: theme.colors.text.primary,
-                    backgroundColor: theme.colors.bg.card,
-                  }
-                ]}
-                value={pendingCreateName}
-                onChangeText={setPendingCreateName}
-                placeholder="Profile name"
-                autoFocus={true}
-                maxLength={50}
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.medium}
+                style={styles.modalInputWrapper}
+              >
+                <TextInput
+                  style={[styles.modalInputInner, theme.typography.input, { color: theme.colors.text.primary }]}
+                  value={pendingCreateName}
+                  onChangeText={setPendingCreateName}
+                  placeholder="Profile name"
+                  autoFocus={true}
+                  maxLength={50}
+                />
+              </SketchCard>
               <View style={styles.modalActions}>
                 <Pressable
                   onPress={cancelCreate}
@@ -605,7 +604,6 @@ const styles = StyleSheet.create({
     paddingVertical: layout.rowPaddingVertical,
     paddingHorizontal: layout.rowPaddingHorizontal,
     marginTop: layout.componentGap,
-    borderTopWidth: 1,
   },
   createRowText: {
     // Typography moved to inline style with theme token
@@ -668,12 +666,12 @@ const styles = StyleSheet.create({
     // Typography moved to inline style with theme token
     marginBottom: layout.sectionGap,
   },
-  modalInput: {
-    borderWidth: 1,
-    borderRadius: radius.medium,
-    padding: spacing.base,
-    // Typography moved to inline style with theme token
+  modalInputWrapper: {
     marginBottom: layout.sectionGap,
+  },
+  modalInputInner: {
+    padding: spacing.base,
+    alignSelf: 'stretch',
   },
   modalActions: {
     flexDirection: 'row',

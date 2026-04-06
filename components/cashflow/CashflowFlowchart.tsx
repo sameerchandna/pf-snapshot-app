@@ -5,6 +5,7 @@ import SketchLine from '../SketchLine';
 import SketchBranch from '../SketchBranch';
 import SketchHighlight from '../SketchHighlight';
 import SketchCurvedArrow from '../SketchCurvedArrow';
+import Icon from '../Icon';
 import { useTheme } from '../../ui/theme/useTheme';
 import { useScreenPalette } from '../../ui/theme/palettes';
 import { spacing } from '../../ui/spacing';
@@ -78,6 +79,11 @@ function FlowNode({
       <Text style={[styles.nodeTitle, theme.typography.small, { color: theme.colors.text.secondary }]}>
         {title}
       </Text>
+      {onPress && (
+        <View style={styles.nodeChevron}>
+          <Icon name="chevron-forward-outline" size="small" color={theme.colors.text.muted} />
+        </View>
+      )}
     </SketchCard>
   );
 
@@ -170,7 +176,7 @@ export default function CashflowFlowchart(props: CashflowFlowchartProps) {
 
       {/* Curved arrow: left of Gross Income → top of Deductions */}
       {grossIncomeRowBottom > 0 && deductionsRowTop > 0 && arrowHeight > 0 && containerWidth > 0 && (
-        <View style={{ position: 'absolute', left: 0, top: grossIncomeRowTop, zIndex: 2 }}>
+        <View style={{ position: 'absolute', left: 0, top: grossIncomeRowTop, zIndex: 2 }} pointerEvents="none">
           <SketchCurvedArrow
             width={containerWidth * 0.5}
             height={arrowHeight}
@@ -186,7 +192,7 @@ export default function CashflowFlowchart(props: CashflowFlowchartProps) {
 
       {/* Curved arrow: right of Gross Income → top of Pension */}
       {grossIncomeRowBottom > 0 && deductionsRowTop > 0 && arrowHeight > 0 && containerWidth > 0 && (
-        <View style={{ position: 'absolute', left: arrowRhsSvgLeft, top: grossIncomeRowTop, zIndex: 2 }}>
+        <View style={{ position: 'absolute', left: arrowRhsSvgLeft, top: grossIncomeRowTop, zIndex: 2 }} pointerEvents="none">
           <SketchCurvedArrow
             width={containerWidth * 0.5}
             height={arrowHeight}
@@ -434,5 +440,12 @@ const styles = StyleSheet.create({
   nodeValue: {
     textAlign: 'center',
     marginTop: spacing.tiny,
+  },
+  nodeChevron: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
 });

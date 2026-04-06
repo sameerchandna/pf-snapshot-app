@@ -46,6 +46,10 @@ type GroupedListProps<TItem> = {
   onAddItemPress?: () => void;
   addItemTriggerLabel?: string;
 
+  // Optional trailing row renderer (e.g. inline phantom add row)
+  // Called with groupId (grouped mode) or null (flat mode)
+  renderTrailingRow?: (groupId: string | null) => ReactNode;
+
   // Swipeable coordination (all decisions made by parent, GroupedList just wires through)
   swipeableRefs: React.MutableRefObject<Map<string, Swipeable | null>>;
   onSwipeableWillOpen: (itemId: string) => void;
@@ -88,6 +92,7 @@ export default function GroupedList<TItem>({
   showAddItemTrigger = false,
   onAddItemPress,
   addItemTriggerLabel = '+ Add item',
+  renderTrailingRow,
   swipeableRefs,
   onSwipeableWillOpen,
   onSwipeableOpen,
@@ -145,13 +150,22 @@ export default function GroupedList<TItem>({
                   ) : null}
 
                   {/* Items */}
-                  {group.items.map((item, index) => {
-                    const itemId = getItemId(item);
-                    const swipeableCallbacks = createSwipeableCallbacks(itemId);
-                    // isLastInGroup: true if this is the last data item
-                    const isLastInGroup = index === group.items.length - 1;
-                    return <React.Fragment key={itemId}>{renderRow(item, index, group.id, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
-                  })}
+                  {(() => {
+                    const trailingRow = renderTrailingRow ? renderTrailingRow(group.id) : null;
+                    const hasTrailing = Boolean(trailingRow);
+                    return (
+                      <>
+                        {group.items.map((item, index) => {
+                          const itemId = getItemId(item);
+                          const swipeableCallbacks = createSwipeableCallbacks(itemId);
+                          const isLastInGroup = index === group.items.length - 1 && !hasTrailing;
+                          return <React.Fragment key={itemId}>{renderRow(item, index, group.id, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
+                        })}
+                        {/* Trailing row (e.g. phantom inline add row) */}
+                        {trailingRow}
+                      </>
+                    );
+                  })()}
                 </View>
               ) : null}
             </View>
@@ -192,16 +206,34 @@ export default function GroupedList<TItem>({
             ) : null}
 
             {/* Items */}
-            {items?.map((item, index) => {
-              const itemId = getItemId(item);
-              const swipeableCallbacks = createSwipeableCallbacks(itemId);
-              // isLastInGroup: true if this is the last data item
-              const isLastInGroup = index === (items.length - 1);
-              return <React.Fragment key={itemId}>{renderRow(item, index, undefined, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
-            })}
+            {(() => {
+              const trailingRow = renderTrailingRow ? renderTrailingRow(null) : null;
+              const hasTrailing = Boolean(trailingRow);
+              return (
+                <>
+                  {items?.map((item, index) => {
+                    const itemId = getItemId(item);
+                    const swipeableCallbacks = createSwipeableCallbacks(itemId);
+                    const isLastInGroup = index === (items.length - 1) && !hasTrailing;
+                    return <React.Fragment key={itemId}>{renderRow(item, index, undefined, isLastInGroup, swipeableCallbacks)}</React.Fragment>;
+                  })}
+                  {/* Trailing row (e.g. phantom inline add row) */}
+                  {trailingRow}
+                </>
+              );
+            })()}
           </View>
         </View>
       </View>
+
+      {/* Add item trigger (flat mode) */}
+      {showAddItemTrigger && onAddItemPress ? (
+        <AddEntry
+          onPress={onAddItemPress}
+          label={addItemTriggerLabel}
+          variant="button"
+        />
+      ) : null}
     </View>
   );
 }

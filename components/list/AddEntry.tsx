@@ -4,6 +4,7 @@ import { useTheme } from '../../ui/theme/useTheme';
 import { layout } from '../../ui/layout';
 import { spacing } from '../../ui/spacing';
 import IconButton from '../IconButton';
+import Divider from '../Divider';
 
 type AddEntryVariant = 'icon' | 'row' | 'button';
 
@@ -42,7 +43,7 @@ export default function AddEntry({
     // Header icon variant (matches CashflowCardWrapper)
     return (
       <IconButton
-        icon="plus"
+        icon="add-outline"
         size="md"
         variant="default"
         onPress={onPress}
@@ -95,6 +96,8 @@ export default function AddEntry({
 
   // Row variant (default, matches Profiles/Scenarios pattern)
   return (
+    <View style={{ marginTop: spacing.base }}>
+      <Divider variant="subtle" />
     <Pressable
       onPress={onPress}
       disabled={disabled}
@@ -102,9 +105,6 @@ export default function AddEntry({
         {
           paddingHorizontal: layout.rowPaddingHorizontal,
           paddingVertical: layout.rowPaddingVertical,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border.subtle,
-          marginTop: spacing.base,
           backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
         },
         style,
@@ -122,5 +122,6 @@ export default function AddEntry({
         {label}
       </Text>
     </Pressable>
+    </View>
   );
 }

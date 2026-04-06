@@ -13,6 +13,7 @@ import { VictoryChart, VictoryLine, VictoryAxis } from 'victory-native';
 import ScreenHeader from '../components/ScreenHeader';
 import SectionHeader from '../components/SectionHeader';
 import SketchBackground from '../components/SketchBackground';
+import Divider from '../components/Divider';
 import SectionCard from '../components/SectionCard';
 import Button from '../components/Button';
 import { useSnapshot } from '../context/SnapshotContext';
@@ -132,11 +133,15 @@ export default function ScenarioExplorerScreen() {
   const [sliderValues, setSliderValues] = useState<Record<string, number>>(() => {
     if (!template?.sliders) return {};
     const init: Record<string, number> = {};
+    const initialAssetId = initialTargetId ?? state.assets.filter(a => a.isActive !== false)[0]?.id;
     for (const sc of template.sliders) {
       if (sc.id === 'contribution' && initialValue !== undefined) {
         init[sc.id] = initialValue;
       } else if (sc.id === 'growthRate' && initialGrowthRate !== undefined) {
         init[sc.id] = initialGrowthRate;
+      } else if (sc.id === 'growthRate' && template.scenarioKind === 'SAVINGS_WHAT_IF') {
+        const asset = state.assets.find(a => a.id === initialAssetId);
+        init[sc.id] = asset?.annualGrowthRatePct ?? sc.defaultValue;
       } else {
         init[sc.id] = sc.defaultValue;
       }
@@ -159,6 +164,19 @@ export default function ScenarioExplorerScreen() {
       setSliderValues(prev => ({ ...prev, growthRate: initialGrowthRate }));
     }
   }, [initialGrowthRate]);
+
+  // Dynamic defaults for SAVINGS_WHAT_IF: sync growth rate slider to selected asset
+  // Only when not navigated from Problem Fixer (which provides its own initialGrowthRate)
+  useEffect(() => {
+    if (template?.scenarioKind !== 'SAVINGS_WHAT_IF' || !selectedTargetId) return;
+    if (initialGrowthRate !== undefined) return;
+    const asset = state.assets.find(a => a.id === selectedTargetId);
+    if (!asset) return;
+    setSliderValues(prev => ({
+      ...prev,
+      growthRate: asset.annualGrowthRatePct ?? prev.growthRate,
+    }));
+  }, [selectedTargetId, template?.scenarioKind]);
 
   // Dynamic defaults for MORTGAGE_WHAT_IF: sync rate/term sliders to selected liability
   useEffect(() => {
@@ -257,13 +275,28 @@ export default function ScenarioExplorerScreen() {
     [template, baselineInputs, state]
   );
 
-  // Trigger on mount / target change
+  // Trigger on mount / target change / nav-param change (e.g. arriving from Problem Fixer)
+  // We merge initialValue/initialGrowthRate directly here instead of relying on the slider-sync
+  // effects, because those effects schedule a setState which hasn't committed yet when this effect
+  // runs in the same render cycle.
   useEffect(() => {
     const needsTarget = template?.targetSelector !== null;
     if (!needsTarget || selectedTargetId) {
-      recomputeScenario(sliderValue, selectedTargetId, isMultiSlider ? sliderValues : undefined);
+      const effectiveMultiValues: Record<string, number> | undefined = isMultiSlider
+        ? {
+            ...sliderValues,
+            ...(initialValue !== undefined ? { contribution: initialValue } : {}),
+            ...(initialGrowthRate !== undefined ? { growthRate: initialGrowthRate } : {}),
+          }
+        : undefined;
+      recomputeScenario(
+        initialValue ?? sliderValue,
+        selectedTargetId,
+        effectiveMultiValues,
+      );
     }
-  }, [selectedTargetId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTargetId, initialValue, initialGrowthRate, recomputeScenario]);
 
   const handleSliderChange = (value: number) => {
     const snapped = Math.round(value / (defaults?.step ?? 50)) * (defaults?.step ?? 50);
@@ -374,7 +407,7 @@ export default function ScenarioExplorerScreen() {
   if (!template) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
-        <SketchBackground color={palette.bg} style={{flex:1}}>
+        <SketchBackground color={palette.accent} style={{flex:1}}>
         <ScreenHeader title="What If" />
         <View style={styles.errorState}>
           <Text style={[theme.typography.body, { color: theme.colors.text.muted }]}>Template not found.</Text>
@@ -608,7 +641,7 @@ export default function ScenarioExplorerScreen() {
                   tickFormat={(age: number) => `${age}`}
                   style={{
                     axis: { stroke: theme.colors.border.default },
-                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: theme.colors.text.muted },
+                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: theme.colors.text.muted, fontFamily: 'Virgil' },
                     grid: { stroke: 'transparent' },
                   }}
                 />
@@ -617,7 +650,7 @@ export default function ScenarioExplorerScreen() {
                   tickFormat={(v: number) => formatCurrencyCompact(v)}
                   style={{
                     axis: { stroke: theme.colors.border.default },
-                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: theme.colors.text.muted },
+                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: theme.colors.text.muted, fontFamily: 'Virgil' },
                     grid: { stroke: theme.colors.border.subtle, strokeDasharray: '4,4' },
                   }}
                 />
@@ -646,7 +679,7 @@ export default function ScenarioExplorerScreen() {
 
             <View style={styles.comparisonTable}>
               {/* Net worth row */}
-              <View style={[styles.comparisonRow, { borderBottomColor: theme.colors.border.subtle }]}>
+              <View style={styles.comparisonRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Net worth</Text>
                 <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
                   {formatCurrencyCompact(baselineSummary.endNetWorth)}
@@ -658,9 +691,10 @@ export default function ScenarioExplorerScreen() {
                   {formatCurrencyCompactSigned(netWorthDelta)}
                 </Text>
               </View>
+              <Divider variant="subtle" />
 
               {/* Assets row */}
-              <View style={[styles.comparisonRow, { borderBottomColor: theme.colors.border.subtle }]}>
+              <View style={styles.comparisonRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Assets</Text>
                 <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
                   {formatCurrencyCompact(baselineSummary.endAssets)}
@@ -672,9 +706,10 @@ export default function ScenarioExplorerScreen() {
                   {formatCurrencyCompactSigned(assetsDelta)}
                 </Text>
               </View>
+              <Divider variant="subtle" />
 
               {/* Liabilities row */}
-              <View style={[styles.comparisonRow, { borderBottomColor: 'transparent' }]}>
+              <View style={styles.comparisonRow}>
                 <Text style={[theme.typography.body, { color: theme.colors.text.secondary, flex: 1 }]}>Liabilities</Text>
                 <Text style={[theme.typography.value, { color: theme.colors.text.muted, marginRight: spacing.sm }]}>
                   {formatCurrencyCompact(baselineSummary.endLiabilities)}
@@ -821,7 +856,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
   },
   actionBarSpacer: {
     height: 80,

@@ -5,7 +5,9 @@ import EditableCollectionScreen, { HelpContent } from './EditableCollectionScree
 import { Group, IncomeItem } from '../types';
 import { selectNetIncome } from '../engines/selectors';
 import { formatCurrencyFull } from '../ui/formatters';
+import { parseItemName, parseMoney } from '../domain/domainValidation';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
+import InlineRowEditor from '../components/rows/InlineRowEditor';
 
 const netIncomeHelpContent: HelpContent = {
   title: 'Net Income',
@@ -62,6 +64,17 @@ export default function NetIncomeDetailScreen() {
 
   const totalText: string = useMemo(() => formatCurrencyFull(totalValue), [totalValue]);
 
+  const maxValue: number = 1_000_000_000;
+
+  const validateEditedItem = (ctx: { itemId: string | null; name: string; amount: number }): string | null => {
+    const name = parseItemName(ctx.name);
+    if (!name) return 'Name is required.';
+    const parsed = parseMoney(String(ctx.amount));
+    if (parsed === null) return 'Please enter a valid number for the amount.';
+    if (parsed > maxValue) return `That value is too large. Max allowed is ${formatCurrencyFull(maxValue)}.`;
+    return null;
+  };
+
   const createId = (prefix: string): string => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
   const dummyGroups: Group[] = [];
   const noopSetGroups = (_groups: Group[]) => {};
@@ -91,14 +104,33 @@ export default function NetIncomeDetailScreen() {
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => {
-    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
-    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
-    // For NetIncome:
-    // - allowGroups={false}, so groupsEnabled = false
-    // - allowDeleteItems not set, so canDeleteItems = true (default)
-    // - Therefore: disableDelete = locked || false || false = locked
+    if (state.inline) {
+      return (
+        <InlineRowEditor
+          key={item.id}
+          isLastInGroup={isLastInGroup}
+          draftName={state.inline.draftName}
+          draftAmount={state.inline.draftAmount}
+          errorMessage={state.inline.errorMessage}
+          onDraftNameChange={state.inline.onDraftNameChange}
+          onDraftAmountChange={state.inline.onDraftAmountChange}
+          onSave={state.inline.onSave}
+          onCancel={state.inline.onCancel}
+        />
+      );
+    }
+
     const disableDelete = state.locked;
 
     return (
@@ -111,10 +143,12 @@ export default function NetIncomeDetailScreen() {
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={false}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -154,6 +188,8 @@ export default function NetIncomeDetailScreen() {
       formatGroupTotalText={total => formatCurrencyFull(total)}
       createNewGroup={() => ({ id: createId('group'), name: 'New Group' })}
       autoExpandSingleGroup={true}
+      validateEditedItem={validateEditedItem}
+      inlineEditorMode={true}
       renderRow={renderNetIncomeRow}
     />
   );

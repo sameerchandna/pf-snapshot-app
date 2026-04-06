@@ -27,6 +27,7 @@ import { radius, typography } from '../ui/theme/theme';
 import { generateSavingsInsights, generateMortgageInsights, type BalanceInsight } from '../engines/balanceInsights';
 import SavingsEducationOverlay from '../components/SavingsEducationOverlay';
 import MortgageEducationOverlay from '../components/MortgageEducationOverlay';
+import Divider from '../components/Divider';
 
 type RouteParams = {
   itemId?: string;
@@ -778,7 +779,7 @@ export default function BalanceDeepDiveScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title="Balance Deep Dive" />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -848,7 +849,7 @@ export default function BalanceDeepDiveScreen() {
                       tickLabelComponent={<VictoryLabel dy={6} />}
                       style={{
                         axis: { stroke: chartPalette.axis },
-                        tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
+                        tickLabels: { fontSize: 11, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                         grid: { stroke: 'transparent' },
                       }}
                     />
@@ -857,7 +858,7 @@ export default function BalanceDeepDiveScreen() {
                       tickFormat={t => formatCurrencyCompact(Number(t))}
                       style={{
                         axis: { stroke: chartPalette.axis },
-                        tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                        tickLabels: { fontSize: 10, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                         grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
                       }}
                     />
@@ -941,7 +942,7 @@ export default function BalanceDeepDiveScreen() {
                       tickLabelComponent={<VictoryLabel dy={6} />}
                       style={{
                         axis: { stroke: chartPalette.axis },
-                        tickLabels: { fontSize: 11, fill: chartPalette.tickLabels },
+                        tickLabels: { fontSize: 11, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                         grid: { stroke: 'transparent' },
                       }}
                     />
@@ -950,7 +951,7 @@ export default function BalanceDeepDiveScreen() {
                       tickFormat={t => formatCurrencyCompact(Number(t))}
                       style={{
                         axis: { stroke: chartPalette.axis },
-                        tickLabels: { fontSize: 10, fill: chartPalette.tickLabels },
+                        tickLabels: { fontSize: 10, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                         grid: { stroke: chartPalette.grid, strokeDasharray: '2,4' },
                       }}
                     />
@@ -1088,7 +1089,7 @@ export default function BalanceDeepDiveScreen() {
               {/* Phase 5.9: Individual insight elements for tap-to-highlight */}
               {savingsInsights.length > 0 && (
                 <>
-                  <View style={[styles.insightsDivider, { borderColor: theme.colors.border.subtle }]} />
+                  <Divider variant="subtle" />
                   <View style={styles.insightsContainer}>
                     {savingsInsights.map((insight, idx) => (
                       <Pressable
@@ -1156,7 +1157,7 @@ export default function BalanceDeepDiveScreen() {
               {/* Phase 5.9: Individual insight elements for tap-to-highlight */}
               {mortgageInsights.length > 0 && (
                 <>
-                  <View style={[styles.insightsDivider, { borderColor: theme.colors.border.subtle }]} />
+                  <Divider variant="subtle" />
                   <View style={styles.insightsContainer}>
                     {mortgageInsights.map((insight, idx) => (
                       <Pressable
@@ -1199,38 +1200,43 @@ export default function BalanceDeepDiveScreen() {
           onPress={() => setItemPickerOpen(false)}
         >
           <View style={[styles.modalContent, { backgroundColor: theme.colors.bg.card }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border.subtle }]}>
+            <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Item</Text>
               <IconButton
-                icon="x"
+                icon="close-outline"
                 size="md"
                 onPress={() => setItemPickerOpen(false)}
                 accessibilityLabel="Close"
               />
             </View>
+            <Divider variant="subtle" />
             
             <ScrollView style={styles.modalList}>
-              {allItems.map((item, index) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => handleSelectItem(item.id)}
-                  style={({ pressed }) => [
-                    styles.modalItem,
-                    { 
-                      backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-                      borderBottomColor: index < allItems.length - 1 ? theme.colors.border.subtle : 'transparent',
-                    },
-                    selectedItemId === item.id && { backgroundColor: theme.colors.bg.subtle },
-                  ]}
-                >
-                  <Text style={[styles.modalItemText, { color: theme.colors.text.primary }]}>
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.modalItemType, { color: theme.colors.text.muted }]}>
-                    {item.type === 'asset' ? 'Asset' : 'Liability'}
-                  </Text>
-                </Pressable>
-              ))}
+              {allItems.map((item, index) => {
+                const isLast = index === allItems.length - 1;
+                return (
+                  <React.Fragment key={item.id}>
+                    <Pressable
+                      onPress={() => handleSelectItem(item.id)}
+                      style={({ pressed }) => [
+                        styles.modalItem,
+                        {
+                          backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
+                        },
+                        selectedItemId === item.id && { backgroundColor: theme.colors.bg.subtle },
+                      ]}
+                    >
+                      <Text style={[styles.modalItemText, { color: theme.colors.text.primary }]}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.modalItemType, { color: theme.colors.text.muted }]}>
+                        {item.type === 'asset' ? 'Asset' : 'Liability'}
+                      </Text>
+                    </Pressable>
+                    {!isLast && <Divider variant="subtle" />}
+                  </React.Fragment>
+                );
+              })}
             </ScrollView>
           </View>
         </Pressable>
@@ -1250,27 +1256,30 @@ export default function BalanceDeepDiveScreen() {
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
               {Array.from({ length: (state.projection.endAge ?? 100) - (state.projection.currentAge ?? 30) + 1 }, (_, i) => {
                 const age = (state.projection.currentAge ?? 30) + i;
+                const totalAges = (state.projection.endAge ?? 100) - (state.projection.currentAge ?? 30) + 1;
+                const isLast = i === totalAges - 1;
                 return (
-                  <Pressable
-                    key={age}
-                    onPress={() => {
-                      setSelectedAge(age);
-                      setAgeSelectorOpen(false);
-                      // Phase 5.9: Clear highlight on age selector change
-                      setActiveHighlight(null);
-                    }}
-                    style={({ pressed }) => [
-                      styles.modalOption,
-                      {
-                        backgroundColor: pressed ? theme.colors.bg.subtle : (selectedAge === age ? theme.colors.bg.subtle : 'transparent'),
-                        borderBottomColor: theme.colors.border.subtle,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.modalOptionText, { color: selectedAge === age ? theme.colors.brand.primary : theme.colors.text.primary }]}>
-                      Age {age}
-                    </Text>
-                  </Pressable>
+                  <React.Fragment key={age}>
+                    <Pressable
+                      onPress={() => {
+                        setSelectedAge(age);
+                        setAgeSelectorOpen(false);
+                        // Phase 5.9: Clear highlight on age selector change
+                        setActiveHighlight(null);
+                      }}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        {
+                          backgroundColor: pressed ? theme.colors.bg.subtle : (selectedAge === age ? theme.colors.bg.subtle : 'transparent'),
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.modalOptionText, { color: selectedAge === age ? theme.colors.brand.primary : theme.colors.text.primary }]}>
+                        Age {age}
+                      </Text>
+                    </Pressable>
+                    {!isLast && <Divider variant="subtle" />}
+                  </React.Fragment>
                 );
               })}
             </ScrollView>
@@ -1360,7 +1369,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
   },
   modalTitle: {
     ...typography.valueLarge,
@@ -1388,7 +1396,6 @@ const styles = StyleSheet.create({
   },
   modalOption: {
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
   },
   modalOptionText: {
     ...typography.button,
@@ -1399,7 +1406,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
   },
   modalItemText: {
     ...typography.valueSmall,
@@ -1466,11 +1472,6 @@ const styles = StyleSheet.create({
     ...typography.body,
   },
   // Balance insights styles (matching ProjectionResultsScreen pattern)
-  insightsDivider: {
-    borderTopWidth: 1,
-    marginTop: spacing.xs,
-    paddingTop: spacing.zero,
-  },
   insightsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',

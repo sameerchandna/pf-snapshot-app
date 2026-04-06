@@ -75,6 +75,7 @@ When building a new screen, follow this pattern:
 8. Follow existing navigation patterns: stack navigator inside the relevant tab
 9. All text styles via `...theme.typography.*` spreads — no bare `fontSize`/`fontWeight` numbers
 10. All corner radii via `theme.radius.*` — no bare `borderRadius` numbers
+11. For screens not using `DetailScreenShell`, wrap in `<SketchBackground color={palette.accent}>` (not `palette.bg`) — this gives the correct hatched look with the tab's accent colour
 
 ---
 

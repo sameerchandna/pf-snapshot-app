@@ -21,6 +21,7 @@ import { isScenarioTargetValid } from '../domain/scenario/validation';
 import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
+import Divider from '../components/Divider';
 
 // Generate preview text for a scenario
 function getScenarioPreviewText(scenario: Scenario, assets: Array<{ id: string; name: string }>, liabilities: Array<{ id: string; name: string }>): string {
@@ -188,7 +189,7 @@ export default function ScenarioManagementScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title="Scenario Management" />
       <ScrollView 
         style={styles.scrollView} 
@@ -335,6 +336,7 @@ export default function ScenarioManagementScreen() {
           )}
 
           {/* Create Scenario Row */}
+          <Divider variant="subtle" />
           <Pressable
             onPress={() => {
               if (!isSurplusNegative) {
@@ -344,7 +346,6 @@ export default function ScenarioManagementScreen() {
             disabled={isSurplusNegative}
             style={({ pressed }) => [
               styles.createRow,
-              { borderTopColor: theme.colors.border.subtle },
               pressed ? { backgroundColor: theme.colors.bg.subtle } : null,
               isSurplusNegative ? styles.createRowDisabled : null
             ]}
@@ -493,7 +494,6 @@ const styles = StyleSheet.create({
     paddingVertical: layout.rowPaddingVertical,
     paddingHorizontal: layout.rowPaddingHorizontal,
     marginTop: layout.componentGap,
-    borderTopWidth: 1,
   },
   createRowText: {
     ...typography.value,

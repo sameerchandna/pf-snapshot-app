@@ -4,6 +4,7 @@ import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { spacing } from '../ui/spacing';
 import { typography } from '../ui/theme/theme';
 import { useScreenPalette } from '../ui/theme/palettes';
+import Divider from './Divider';
 
 type Props = {
   title: string;
@@ -39,7 +40,7 @@ export default function ScreenHeader({ title, rightAccessory }: Props) {
           </View>
         )}
       </View>
-      <View style={[styles.separator, { backgroundColor: palette.text }]} />
+      <Divider color={palette.text} />
     </View>
   );
 }
@@ -64,9 +65,5 @@ const styles = StyleSheet.create({
   },
   aiBadge: {
     marginLeft: spacing.sm,
-  },
-  separator: {
-    height: 1,
-    width: '100%',
   },
 });

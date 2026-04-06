@@ -6,6 +6,7 @@ import { Group, IncomeItem } from '../types';
 import { selectGrossIncome } from '../engines/selectors';
 import { formatCurrencyFull } from '../ui/formatters';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
+import InlineRowEditor from '../components/rows/InlineRowEditor';
 
 const grossIncomeHelpContent: HelpContent = {
   title: 'Gross Income',
@@ -98,14 +99,33 @@ export default function GrossIncomeDetailScreen() {
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => {
-    // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
-    // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
-    // For GrossIncome:
-    // - allowGroups={false}, so groupsEnabled = false
-    // - allowDeleteItems not set, so canDeleteItems = true (default)
-    // - Therefore: disableDelete = locked || false || false = locked
+    if (state.inline) {
+      return (
+        <InlineRowEditor
+          key={item.id}
+          isLastInGroup={isLastInGroup}
+          draftName={state.inline.draftName}
+          draftAmount={state.inline.draftAmount}
+          errorMessage={state.inline.errorMessage}
+          onDraftNameChange={state.inline.onDraftNameChange}
+          onDraftAmountChange={state.inline.onDraftAmountChange}
+          onSave={state.inline.onSave}
+          onCancel={state.inline.onCancel}
+        />
+      );
+    }
+
     const disableDelete = state.locked;
 
     return (
@@ -118,10 +138,12 @@ export default function GrossIncomeDetailScreen() {
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={false}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -161,6 +183,7 @@ export default function GrossIncomeDetailScreen() {
       formatGroupTotalText={total => formatCurrencyFull(total)}
       createNewGroup={() => ({ id: createId('group'), name: 'New Group' })}
       autoExpandSingleGroup={true}
+      inlineEditorMode={true}
       renderRow={renderGrossIncomeRow}
     />
   );

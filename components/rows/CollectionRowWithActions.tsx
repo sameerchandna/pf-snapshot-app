@@ -17,11 +17,13 @@ import SemanticRow from './SemanticRow';
 import RowVisual from './RowVisual';
 import SwipeAction from '../SwipeAction';
 import ItemActiveCheckbox from '../ItemActiveCheckbox';
+import { useScreenPalette } from '../../ui/theme/palettes';
 
 type CollectionRowWithActionsProps = {
   name: string;
   amountText: string;
   subtitle?: string | null;
+  subtitleVariant?: 'valueSmall' | 'caption';
 
   locked: boolean;
   isActive?: boolean;              // optional: if provided AND onToggleActive provided, show checkbox
@@ -37,6 +39,7 @@ type CollectionRowWithActionsProps = {
   onEdit: () => void;
   onDelete: () => void;
   disableDelete: boolean;
+  disableEdit?: boolean;
 
   swipeableRef?: (ref: any | null) => void;
   onSwipeableWillOpen?: () => void;
@@ -48,6 +51,7 @@ export default function CollectionRowWithActions({
   name,
   amountText,
   subtitle,
+  subtitleVariant,
   locked,
   isActive,
   onToggleActive,
@@ -59,11 +63,13 @@ export default function CollectionRowWithActions({
   onEdit,
   onDelete,
   disableDelete,
+  disableEdit = false,
   swipeableRef,
   onSwipeableWillOpen,
   onSwipeableOpen,
   onSwipeableClose,
 }: CollectionRowWithActionsProps) {
+  const palette = useScreenPalette();
   // Track swipe state for visual feedback
   const [isSwiping, setIsSwiping] = useState(false);
 
@@ -88,14 +94,16 @@ export default function CollectionRowWithActions({
   // Determine inactive state from isActive
   const isInactive = isActive === false;
 
-  // Right swipe actions: Edit then Delete (Delete only when not disabled)
+  // Right swipe actions: Edit then Delete (Edit hidden when disableEdit; Delete hidden when disableDelete)
   const rightActions = (
     <View style={{ flexDirection: 'row' }}>
-      <SwipeAction
-        variant="edit"
-        onPress={onEdit}
-        accessibilityLabel="Edit"
-      />
+      {!disableEdit && (
+        <SwipeAction
+          variant="edit"
+          onPress={onEdit}
+          accessibilityLabel="Edit"
+        />
+      )}
       {!disableDelete && (
         <SwipeAction
           variant="delete"
@@ -124,6 +132,7 @@ export default function CollectionRowWithActions({
       <RowVisual
         title={name}
         subtitle={subtitle}
+        subtitleVariant={subtitleVariant}
         trailingText={amountText}
         leading={
           shouldShowCheckbox ? (
@@ -139,6 +148,7 @@ export default function CollectionRowWithActions({
         dimmed={dimRow}
         swipeActive={isSwiping}
         isLastInGroup={isLastInGroup}
+        highlightColor={isCurrentlyEditing ? palette.accent : undefined}
       />
     </SemanticRow>
   );

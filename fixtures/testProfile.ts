@@ -83,7 +83,14 @@ export const testProfile: ProfilesState = {
         ],
 
         // --- Contributions & Reductions ---
-        assetContributions: [],
+        assetContributions: [
+          {
+            id: 'tp-contrib-isa',
+            assetId: 'tp-asset-isa',
+            amountMonthly: 1600,
+            contributionType: 'postTax',
+          },
+        ],
         liabilityReductions: [],
 
         // --- Projection ---

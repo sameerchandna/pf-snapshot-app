@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { radius, typography } from '../ui/theme/theme';
+import SketchCard from '../components/SketchCard';
 
 type Props = {
   title: string;
@@ -27,6 +29,7 @@ export default function SingleValueDetailScreen({
   validate,
 }: Props) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [draft, setDraft] = useState<string>(value.toString());
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -111,19 +114,20 @@ export default function SingleValueDetailScreen({
                   <Text style={[styles.errorText, { color: theme.colors.semantic.errorText }]}>{errorMessage}</Text>
                 </View>
               ) : null}
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.colors.bg.card,
-                    borderColor: theme.colors.border.default,
-                  }
-                ]}
-                value={draft}
-                onChangeText={setDraft}
-                keyboardType="numeric"
-                autoFocus={true}
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.base}
+                style={styles.inputWrapper}
+              >
+                <TextInput
+                  style={styles.inputInner}
+                  value={draft}
+                  onChangeText={setDraft}
+                  keyboardType="numeric"
+                  autoFocus={true}
+                />
+              </SketchCard>
               <View style={styles.actionsRow}>
                 <Pressable
                   onPress={save}
@@ -192,11 +196,13 @@ const styles = StyleSheet.create({
     ...typography.body,
     marginTop: spacing.tiny,
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: radius.base,
+  inputWrapper: {
+    alignSelf: 'stretch',
+  },
+  inputInner: {
     padding: layout.inputPadding,
     ...typography.valueLarge,
+    alignSelf: 'stretch',
   },
   errorCard: {
     borderWidth: 1,

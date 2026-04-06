@@ -15,6 +15,7 @@ import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
+import SketchCard from '../components/SketchCard';
 
 type RouteParams = {
   template: 'mortgage' | 'loan';
@@ -122,15 +123,12 @@ export default function LoanDetailScreen() {
     fieldSpacing: {
       marginTop: layout.inputPadding,
     },
-    input: {
-      backgroundColor: theme.colors.bg.card,
-      borderWidth: 1,
-      borderColor: theme.colors.border.default,
-      borderRadius: theme.radius.medium,
+    inputInner: {
       paddingVertical: layout.inputPadding,
       paddingHorizontal: spacing.base,
       ...theme.typography.input,
       color: theme.colors.text.primary,
+      alignSelf: 'stretch',
     },
     actionsRow: {
       flexDirection: 'row' as const,
@@ -443,54 +441,64 @@ export default function LoanDetailScreen() {
 
         <View style={styles.card}>
           <Text style={styles.label}>Name (optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={draftName}
-            onChangeText={onChangeAny(setDraftName)}
-            placeholder={title}
-            autoCapitalize="sentences"
-            autoCorrect={false}
-          />
+          <SketchCard borderColor={palette.accent} fillColor={theme.colors.bg.card} borderRadius={theme.radius.medium}>
+            <TextInput
+              style={styles.inputInner}
+              value={draftName}
+              onChangeText={onChangeAny(setDraftName)}
+              placeholder={title}
+              autoCapitalize="sentences"
+              autoCorrect={false}
+            />
+          </SketchCard>
 
           <Text style={styles.label}>Outstanding balance (£)</Text>
-          <TextInput
-            style={styles.input}
-            value={draftBalance}
-            onChangeText={onChangeAny(setDraftBalance)}
-            placeholder="e.g. 250000"
-            keyboardType="numeric"
-          />
+          <SketchCard borderColor={palette.accent} fillColor={theme.colors.bg.card} borderRadius={theme.radius.medium}>
+            <TextInput
+              style={styles.inputInner}
+              value={draftBalance}
+              onChangeText={onChangeAny(setDraftBalance)}
+              placeholder="e.g. 250000"
+              keyboardType="numeric"
+            />
+          </SketchCard>
 
           <Text style={[styles.label, styles.fieldSpacing]}>Interest rate (% per year)</Text>
-          <TextInput
-            style={styles.input}
-            value={draftRatePct}
-            onChangeText={onChangeAny(setDraftRatePct)}
-            placeholder="e.g. 4.25"
-            keyboardType="numeric"
-          />
+          <SketchCard borderColor={palette.accent} fillColor={theme.colors.bg.card} borderRadius={theme.radius.medium}>
+            <TextInput
+              style={styles.inputInner}
+              value={draftRatePct}
+              onChangeText={onChangeAny(setDraftRatePct)}
+              placeholder="e.g. 4.25"
+              keyboardType="numeric"
+            />
+          </SketchCard>
 
           <Text style={[styles.label, styles.fieldSpacing]}>Remaining term (years)</Text>
-          <TextInput
-            style={styles.input}
-            value={draftTermYears}
-            onChangeText={onChangeAny(setDraftTermYears)}
-            placeholder="e.g. 25"
-            keyboardType="numeric"
-          />
+          <SketchCard borderColor={palette.accent} fillColor={theme.colors.bg.card} borderRadius={theme.radius.medium}>
+            <TextInput
+              style={styles.inputInner}
+              value={draftTermYears}
+              onChangeText={onChangeAny(setDraftTermYears)}
+              placeholder="e.g. 25"
+              keyboardType="numeric"
+            />
+          </SketchCard>
 
           <Text style={[styles.label, styles.fieldSpacing]}>Loan start date (optional)</Text>
           <Text style={styles.helperText}>
             If provided, the app estimates your loan’s current balance based on the original contract.
           </Text>
-          <TextInput
-            style={styles.input}
-            value={draftStartDate}
-            onChangeText={onChangeAny(setDraftStartDate)}
-            placeholder="e.g. 05-Jan-2018"
-            autoCapitalize="words"
-            autoCorrect={false}
-          />
+          <SketchCard borderColor={palette.accent} fillColor={theme.colors.bg.card} borderRadius={theme.radius.medium}>
+            <TextInput
+              style={styles.inputInner}
+              value={draftStartDate}
+              onChangeText={onChangeAny(setDraftStartDate)}
+              placeholder="e.g. 05-Jan-2018"
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+          </SketchCard>
 
           <View style={styles.actionsRow}>
             <Pressable onPress={calculate} style={({ pressed }) => [styles.actionButton, { backgroundColor: pressed ? theme.colors.bg.subtle : undefined }]}>

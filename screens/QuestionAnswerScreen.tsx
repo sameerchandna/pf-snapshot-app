@@ -114,7 +114,7 @@ export default function QuestionAnswerScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title={meta.title} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>

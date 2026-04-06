@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useSnapshot } from '../context/SnapshotContext';
 import { ExpenseItem, Group } from '../types';
-import { selectSnapshotExpenses } from '../engines/selectors';
+import { selectSnapshotExpenses, selectLoanDerivedRows } from '../engines/selectors';
 import { formatCurrencyFull, formatCurrencyFullSigned } from '../ui/formatters';
 import { parseItemName, parseMoney } from '../domain/domainValidation';
 import EditableCollectionScreen, { HelpContent } from './EditableCollectionScreen';
@@ -11,6 +11,7 @@ import SemanticRow from '../components/rows/SemanticRow';
 import RowVisual from '../components/rows/RowVisual';
 import ItemActiveCheckbox from '../components/ItemActiveCheckbox';
 import SwipeAction from '../components/SwipeAction';
+import InlineRowEditor from '../components/rows/InlineRowEditor';
 
 function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
@@ -147,6 +148,25 @@ export default function ExpensesDetailScreen() {
     return formatCurrencyFullSigned(-totalExpensesValue);
   }, [totalExpensesValue]);
 
+  // Inject virtual locked expense items for loan-derived P&I rows not yet materialised in state.expenses.
+  // Keeps the display list in sync with what selectSnapshotExpenses counts in the total.
+  const displayItems: ExpenseItem[] = useMemo(() => {
+    const materializedIds = new Set(state.expenses.map(e => e.id));
+    const fallbackGroupId = state.expenseGroups[0]?.id ?? 'general';
+    const virtual: ExpenseItem[] = [];
+    for (const row of selectLoanDerivedRows(state)) {
+      const interestId = `loan-interest:${row.liabilityId}`;
+      const principalId = `loan-principal:${row.liabilityId}`;
+      if (!materializedIds.has(interestId)) {
+        virtual.push({ id: interestId, name: `${row.name} – Interest`, monthlyAmount: row.monthlyInterest, groupId: fallbackGroupId });
+      }
+      if (!materializedIds.has(principalId)) {
+        virtual.push({ id: principalId, name: `${row.name} – Principal`, monthlyAmount: row.monthlyPrincipal, groupId: fallbackGroupId });
+      }
+    }
+    return [...virtual, ...state.expenses];
+  }, [state.expenses, state.liabilities, state.expenseGroups]);
+
   const maxValue: number = 1_000_000_000;
 
   const isItemLocked = (item: ExpenseItem): boolean => {
@@ -179,10 +199,9 @@ export default function ExpensesDetailScreen() {
 
   // Local component: ExpenseRowWithActions
   // Uses SemanticRow directly to control row interactions:
-  // - Swipe reveals Edit + Delete actions (onRevealRight is no-op)
-  // - Tapping Edit button opens editor (SwipeAction onPress)
+  // - Tap row opens inline editor (pressEnabled, non-locked rows only)
+  // - Swipe reveals Delete action only
   // - Tapping Delete button opens confirmation modal (SwipeAction onPress)
-  // - Row press is disabled (pressEnabled=false)
   // - Swipe coordination handled by EditableCollectionScreen
   type ExpenseRowWithActionsProps = {
     item: ExpenseItem;
@@ -240,14 +259,9 @@ export default function ExpensesDetailScreen() {
       onSwipeableClose?.();
     };
 
-    // Two swipe actions: Edit and Delete
+    // Swipe action: Delete only (edit is via tap)
     const rightActions = (
       <View style={{ flexDirection: 'row' }}>
-        <SwipeAction
-          variant="edit"
-          onPress={onEdit}
-          accessibilityLabel="Edit"
-        />
         <SwipeAction
           variant="delete"
           onPress={onRequestDelete}
@@ -258,17 +272,15 @@ export default function ExpensesDetailScreen() {
 
     return (
       <SemanticRow
-        onRevealRight={() => {
-          // No-op: swipe only reveals actions, doesn't trigger any action
-          // Actions are triggered by tapping the SwipeAction buttons
-        }}
+        onRevealRight={() => {}}
         swipeableRef={swipeableRef}
         onSwipeableWillOpen={handleSwipeableWillOpen}
         onSwipeableOpen={onSwipeableOpen}
         onSwipeableClose={handleSwipeableClose}
         rightActions={rightActions}
         swipeEnabled={!isCurrentlyEditing}
-        pressEnabled={false}
+        pressEnabled={!locked}
+        onPress={onEdit}
       >
         <RowVisual
           title={name}
@@ -316,11 +328,46 @@ export default function ExpensesDetailScreen() {
       isInactive: boolean;
       isCurrentlyEditing: boolean;
       dimRow: boolean;
+      showTopDivider: boolean;
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => {
+    if (state.inline) {
+      return (
+        <InlineRowEditor
+          key={getItemId(item)}
+          isLastInGroup={isLastInGroup}
+          draftName={state.inline.draftName}
+          draftAmount={state.inline.draftAmount}
+          errorMessage={state.inline.errorMessage}
+          onDraftNameChange={state.inline.onDraftNameChange}
+          onDraftAmountChange={state.inline.onDraftAmountChange}
+          onSave={state.inline.onSave}
+          onCancel={state.inline.onCancel}
+          leadingSlot={
+            callbacks.onToggleActive ? (
+              <ItemActiveCheckbox
+                isActive={state.isActive}
+                onToggle={callbacks.onToggleActive}
+                disabled={state.locked}
+              />
+            ) : undefined
+          }
+        />
+      );
+    }
+
     return (
       <ExpenseRowWithActions
         key={getItemId(item)}
@@ -352,12 +399,12 @@ export default function ExpensesDetailScreen() {
       totalText={totalExpensesText}
       subtextMain="Grouped monthly expenses"
       subtextFootnote="If a bill isn't monthly, estimate its monthly equivalent."
-      editorSubtext="Only active items are used in your Snapshot and projections. Inactive items are kept for reference."
+      editorSubtext="Uncheck any item to exclude it from your cash flow and projections — they'll stay here but won't affect your numbers."
       helpContent={expensesHelpContent}
       groups={state.expenseGroups}
       setGroups={setExpenseGroups}
-      items={state.expenses}
-      setItems={setExpenses}
+      items={displayItems}
+      setItems={(items) => setExpenses(items.filter(e => !e.id.startsWith('loan-interest:') && !e.id.startsWith('loan-principal:')))}
       getItemId={getItemId}
       getItemName={getItemName}
       getItemAmount={getItemAmount}
@@ -390,6 +437,7 @@ export default function ExpensesDetailScreen() {
       getItemIsActive={getItemIsActive}
       setItemIsActive={setItemIsActive}
       validateEditedItem={validateEditedItem}
+      inlineEditorMode={true}
       renderRow={renderExpenseRow} // v2: Custom row renderer using ExpenseRowWithActions with EditableCollectionScreen swipe coordination
     />
   );

@@ -48,7 +48,7 @@ import { isAssetLiquidAtAge, computeLiquidAssetsSeries } from '../projection/com
 import { detectProblems } from '../projection/detectProblems';
 import type { DetectedProblem } from '../projection/detectProblems';
 import { backSolve } from '../projection/backSolve';
-import ProblemSolverModal from '../components/ProblemSolverModal';
+import type { ProblemSection } from './ProblemOptionsScreen';
 import { generateChartExplanation } from '../projection/generateChartExplanation';
 import { initLoan, stepLoanMonth } from '../engines/loanEngine';
 import { formatCurrencyFull, formatCurrencyFullSigned, formatCurrencyCompact, formatCurrencyCompactSigned } from '../ui/formatters';
@@ -2469,13 +2469,33 @@ export default function ProjectionResultsScreen() {
     });
   }, [baselineProjectionInputs, state.assets, liquidAssetsSeries, baselineSummary]);
 
-  // Phase 13 redesign: Problem Solver modal state
-  const [solverModalProblem, setSolverModalProblem] = useState<DetectedProblem | null>(null);
-  const solverLevers = useMemo(() => {
-    if (!solverModalProblem) return [];
-    const assetsWithAvailability = state.assets.filter(a => a.isActive !== false);
-    return backSolve(baselineProjectionInputs, assetsWithAvailability, solverModalProblem).levers;
-  }, [solverModalProblem, baselineProjectionInputs, state.assets]);
+  // Phase 13 redesign: pre-compute all problem sections with nav params for ProblemOptionsScreen
+  const allProblemSections: ProblemSection[] = useMemo(() => {
+    return detectedProblems.map(problem => {
+      const assetsWithAvailability = state.assets.filter(a => a.isActive !== false);
+      const levers = backSolve(baselineProjectionInputs, assetsWithAvailability, problem).levers;
+      const leversWithNav = levers.map(lever => {
+        if (lever.solvedValue === null) return { ...lever, navParams: null };
+        const navParams = (() => {
+          switch (lever.kind) {
+            case 'CHANGE_RETIREMENT_AGE':
+              return { templateId: 'retire-at-age', initialValue: lever.solvedValue! };
+            case 'FLOW_TO_ASSET': {
+              const currentRate = baselineProjectionInputs.assetsToday
+                .find(a => a.id === lever.assetId)?.annualGrowthRatePct ?? 0;
+              return { templateId: 'savings-what-if', initialValue: lever.solvedValue!, initialGrowthRate: currentRate };
+            }
+            case 'REDUCE_EXPENSES':
+              return { templateId: 'spend-less', initialValue: lever.solvedValue! };
+            case 'CHANGE_ASSET_GROWTH_RATE':
+              return { templateId: 'savings-what-if', initialGrowthRate: lever.solvedValue! };
+          }
+        })();
+        return { ...lever, navParams: { ...navParams, initialTargetId: lever.assetId, returnToTab: 'ProjectionTab' } };
+      });
+      return { problem, levers: leversWithNav };
+    });
+  }, [detectedProblems, baselineProjectionInputs, state.assets]);
 
   const chartData = useMemo(() => {
     // Phase 5.3: Structural chart series with stable semantic identifiers
@@ -2772,7 +2792,7 @@ export default function ProjectionResultsScreen() {
   // Keep this visually dominant, but give enough vertical space for Victory's top/bounds + labels.
   const chartHeight: number = Math.round(Math.min(300, Math.max(240, windowWidth * 0.70)));
   // Explicit chart padding: left for £ tick labels, bottom for x-axis labels + legend, top keeps line off border
-  const chartPadding = { top: 8, bottom: 36, left: 36, right: 16 } as const;
+  const chartPadding = { top: 8, bottom: 36, left: 48, right: 16 } as const;
 
   // Phase 5.2a: Helper to map touch X coordinate to age
   // Returns null if mapping is invalid (e.g., invalid plottable width)
@@ -3179,27 +3199,25 @@ export default function ProjectionResultsScreen() {
             onSaveKpis={(ids) => { setSelectedKpiIds(ids); saveSelectedKpiIds(ids); }}
             hasLiabilities={state.liabilities.filter(l => l.isActive !== false).some(l => l.balance > UI_TOLERANCE)}
             detectedProblems={detectedProblems}
-            onSolveProblem={(problem) => setSolverModalProblem(problem)}
+            onShowOptions={detectedProblems.length > 0
+              ? () => navigation.navigate('ProblemOptions', { problemSections: allProblemSections })
+              : undefined}
           />
           <SectionCard fillColor="transparent" style={{ paddingBottom: spacing.sm, paddingHorizontal: spacing.sm }}>
             {/* Section Header with Toggle below */}
-            <SectionHeader title="Projected Net Worth" />
+            <SectionHeader title={`Your Future Projection at Age ${selectedAge}`} />
+
+            {/* Liquid / All Assets toggle */}
             <Pressable
-              style={[
-                styles.chartMiniToggle,
-                { backgroundColor: theme.colors.bg.subtle, alignSelf: 'center', marginBottom: spacing.sm },
-                showLiquidOnly && [styles.chartMiniToggleActive, { backgroundColor: theme.colors.brand.tint }],
-              ]}
               onPress={() => setShowLiquidOnly(v => !v)}
+              style={{ alignSelf: 'center', paddingVertical: spacing.xs, marginBottom: spacing.xs }}
+              hitSlop={8}
             >
-              <Text
-                style={[
-                  styles.chartMiniToggleText,
-                  showLiquidOnly && [styles.chartMiniToggleTextActive, { color: theme.colors.brand.primary }],
-                ]}
-              >
-                {showLiquidOnly ? 'Liquid assets' : 'All assets'}
-              </Text>
+              <View style={{ borderBottomWidth: 1, borderBottomColor: palette.accent }}>
+                <Text style={[styles.chartMiniToggleText, { ...theme.typography.body, color: palette.accent }]}>
+                  {showLiquidOnly ? 'Chart shows liquid assets only. Show all assets >' : 'Chart shows all assets. Show liquid assets only >'}
+                </Text>
+              </View>
             </Pressable>
 
             {/* Inline stats row: Net worth · Assets · Liabilities */}
@@ -3263,13 +3281,14 @@ export default function ProjectionResultsScreen() {
                 padding={chartPadding}
                 domain={{ y: [chartData.domainMin, chartData.domainMax] }}
                 domainPadding={{ x: 12, y: 6 }}
+                style={{ background: { fill: theme.colors.bg.app } }}
               >
                 <VictoryAxis
                   tickFormat={t => `${Number(t)}`}
                   tickLabelComponent={<VictoryLabel dy={6} />}
                   style={{
                     axis: { stroke: chartPalette.axis },
-                    tickLabels: { fontSize: theme.typography.bodySmall.fontSize, fill: chartPalette.tickLabels },
+                    tickLabels: { fontSize: theme.typography.bodySmall.fontSize, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                     grid: { stroke: 'transparent' }, // Phase 7.11: Remove horizontal gridlines
                   }}
                 />
@@ -3279,7 +3298,7 @@ export default function ProjectionResultsScreen() {
                   tickFormat={t => formatCurrencyCompact(Number(t))}
                   style={{
                     axis: { stroke: chartPalette.axis },
-                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: chartPalette.tickLabels },
+                    tickLabels: { fontSize: theme.typography.caption.fontSize, fill: chartPalette.tickLabels, fontFamily: 'Virgil' },
                     grid: { stroke: 'transparent' }, // Phase 7.11: Remove vertical gridlines
                   }}
                 />
@@ -3394,6 +3413,7 @@ export default function ProjectionResultsScreen() {
                 Showing liquid assets only · Scenario applied
               </Text>
             ) : null}
+
           </View>
           </SectionCard>
 
@@ -3405,7 +3425,7 @@ export default function ProjectionResultsScreen() {
               accessibilityRole="button"
               accessibilityLabel={chartExplainExpanded ? 'Hide chart explanation' : 'Show chart explanation'}
             >
-              <SectionHeader title="Explain my chart" />
+              <SectionHeader title="Your Chart Explained" />
               <View style={styles.sectionHeaderOverlay} pointerEvents="none">
                 <Text style={[styles.chartMiniToggleText, { color: theme.colors.text.muted }]}>
                   {chartExplainExpanded ? 'Hide' : 'Show'}
@@ -3936,45 +3956,6 @@ export default function ProjectionResultsScreen() {
         </View>
       </Modal>
 
-      {/* Phase 13: Problem Solver recommendation modal */}
-      <ProblemSolverModal
-        visible={solverModalProblem !== null}
-        problem={solverModalProblem}
-        levers={solverLevers}
-        onClose={() => setSolverModalProblem(null)}
-        onSelectLever={(lever) => {
-          setSolverModalProblem(null);
-          if (lever.solvedValue === null) return;
-
-          // Map lever kinds to scenario template IDs
-          // FLOW_TO_ASSET and CHANGE_ASSET_GROWTH_RATE both route to 'savings-what-if'
-          // (multi-slider template with contribution + growthRate)
-          const leverParams = (() => {
-            switch (lever.kind) {
-              case 'CHANGE_RETIREMENT_AGE':
-                return { templateId: 'retire-at-age', initialValue: lever.solvedValue };
-              case 'FLOW_TO_ASSET': {
-                const currentRate = baselineProjectionInputs.assetsToday
-                  .find(a => a.id === lever.assetId)?.annualGrowthRatePct ?? 0;
-                return { templateId: 'savings-what-if', initialValue: lever.solvedValue, initialGrowthRate: currentRate };
-              }
-              case 'REDUCE_EXPENSES':
-                return { templateId: 'spend-less', initialValue: lever.solvedValue };
-              case 'CHANGE_ASSET_GROWTH_RATE':
-                return { templateId: 'savings-what-if', initialGrowthRate: lever.solvedValue };
-            }
-          })();
-
-          navigation.navigate('WhatIfTab', {
-            screen: 'ScenarioExplorer',
-            params: {
-              ...leverParams,
-              initialTargetId: lever.assetId,
-              returnToTab: 'ProjectionTab',
-            },
-          });
-        }}
-      />
       </SketchBackground>
     </SafeAreaView>
   );
@@ -4105,10 +4086,6 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: layout.screenPadding,
       paddingTop: spacing.sm,
       paddingBottom: spacing.base,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border.subtle,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border.subtle,
     },
     quickWhatIfHint: {
       ...theme.typography.bodySmall,
@@ -4671,8 +4648,6 @@ function makeStyles(theme: Theme) {
     },
     modalOption: {
       paddingVertical: spacing.base,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border.subtle,
     },
     modalOptionText: {
       ...theme.typography.valueSmall,
@@ -4992,7 +4967,9 @@ function makeStyles(theme: Theme) {
       opacity: 0.7,
     },
     explainHeading: {
-      ...theme.typography.label,
+      ...theme.typography.bodyLarge,
+      fontWeight: '600',
+      textAlign: 'center',
       marginBottom: spacing.xs,
     },
     explainBody: {

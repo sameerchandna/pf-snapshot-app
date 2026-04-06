@@ -1,59 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleProp, View, ViewStyle } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import SketchLine from './SketchLine';
 
 type DividerVariant = 'default' | 'subtle' | 'thick';
 
 type Props = {
   variant?: DividerVariant;
+  color?: string;
   style?: StyleProp<ViewStyle>;
 };
 
-/**
- * Divider component for horizontal visual separators.
- * 
- * Provides consistent, theme-aware dividers with variant thickness options.
- * Spacing (margins/padding) is the caller's responsibility.
- * 
- * Uses border-based implementation (borderTopWidth) rather than fixed height
- * for more semantic and flexible rendering.
- */
-export default function Divider({ variant = 'default', style }: Props) {
+export default function Divider({ variant = 'default', color: colorProp, style }: Props) {
   const { theme } = useTheme();
+  const [width, setWidth] = useState(0);
 
-  // Get border width and color based on variant
-  const getDividerConfig = (): { width: number; color: string } => {
-    switch (variant) {
-      case 'subtle':
-        return {
-          width: 0.5,
-          color: theme.colors.border.subtle,
-        };
-      case 'thick':
-        return {
-          width: 2,
-          color: theme.colors.border.default,
-        };
-      default:
-        return {
-          width: 1,
-          color: theme.colors.border.default,
-        };
-    }
-  };
+  const color = colorProp ?? (
+    variant === 'subtle'
+      ? theme.colors.border.subtle
+      : theme.colors.border.default
+  );
 
-  const config = getDividerConfig();
+  const strokeWidth =
+    variant === 'thick' ? 2 : variant === 'subtle' ? 0.75 : 1.5;
 
   return (
     <View
-      style={[
-        {
-          alignSelf: 'stretch',
-          borderTopWidth: config.width,
-          borderTopColor: config.color,
-        },
-        style,
-      ]}
-    />
+      style={[{ alignSelf: 'stretch', alignItems: 'center' }, style]}
+      onLayout={e => setWidth(e.nativeEvent.layout.width * 0.9)}
+    >
+      {width > 0 ? (
+        <SketchLine
+          length={width}
+          orientation="horizontal"
+          color={color}
+          strokeWidth={strokeWidth}
+        />
+      ) : null}
+    </View>
   );
 }

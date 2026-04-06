@@ -1,15 +1,19 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Group } from '../types';
 import EditableCollectionScreen from './EditableCollectionScreen';
 import { useSnapshot } from '../context/SnapshotContext';
 import { formatPercent, formatCurrencyFull } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 import { typography } from '../ui/theme/theme';
 import { Swipeable } from 'react-native-gesture-handler';
 import CollectionRowWithActions from '../components/rows/CollectionRowWithActions';
+import SketchCard from '../components/SketchCard';
+import Divider from '../components/Divider';
+import SketchCircle from '../components/SketchCircle';
 
 type ProjectionFieldItem = {
   id: string;
@@ -38,6 +42,7 @@ function formatGBPInt(value: number): string {
 
 export default function ProjectionSettingsScreen() {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const navigation = useNavigation<any>();
   const { state, setProjection } = useSnapshot();
 
@@ -158,8 +163,88 @@ export default function ProjectionSettingsScreen() {
       name: string;
       amountText: string;
       metaText: string | null;
+      inline?: {
+        draftName: string;
+        draftAmount: string;
+        errorMessage: string;
+        onDraftNameChange: (v: string) => void;
+        onDraftAmountChange: (v: string) => void;
+        onSave: () => void;
+        onCancel: () => void;
+      };
     },
   ) => {
+    if (state.inline) {
+      const CIRCLE_SIZE = 30;
+      return (
+        <>
+        <View
+          key={item.id}
+          style={inlineStyles.container}
+        >
+          {state.inline.errorMessage.length > 0 ? (
+            <View
+              style={[
+                inlineStyles.errorBanner,
+                {
+                  backgroundColor: theme.colors.semantic.errorBg,
+                  borderColor: theme.colors.semantic.errorBorder,
+                  borderRadius: theme.radius.small,
+                },
+              ]}
+            >
+              <Text style={[theme.typography.caption, { color: theme.colors.semantic.errorText }]}>
+                {state.inline.errorMessage}
+              </Text>
+            </View>
+          ) : null}
+          <View style={inlineStyles.inputRow}>
+            <Text style={[theme.typography.body, { color: theme.colors.text.primary, flex: 1 }]} numberOfLines={1}>
+              {state.name}
+            </Text>
+            <SketchCard
+              borderColor={palette.accent}
+              fillColor={theme.colors.bg.input}
+              borderRadius={theme.radius.base}
+              style={inlineStyles.amountInputWrapper}
+            >
+              <TextInput
+                style={[theme.typography.body, inlineStyles.inputInner, { color: theme.colors.text.primary, textAlign: 'right' }]}
+                value={state.inline.draftAmount}
+                onChangeText={state.inline.onDraftAmountChange}
+                placeholder="0"
+                placeholderTextColor={theme.colors.text.disabled}
+                keyboardType="numeric"
+                returnKeyType="done"
+                onSubmitEditing={state.inline.onSave}
+                autoFocus
+              />
+            </SketchCard>
+            <Pressable
+              onPress={state.inline.onSave}
+              style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
+              accessibilityLabel="Save"
+            >
+              <SketchCircle size={CIRCLE_SIZE} fillColor={palette.sectionHeaderBg} borderColor={palette.accent}>
+                <Text style={[theme.typography.button, { color: palette.accent }]}>✓</Text>
+              </SketchCircle>
+            </Pressable>
+            <Pressable
+              onPress={state.inline.onCancel}
+              style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
+              accessibilityLabel="Cancel"
+            >
+              <SketchCircle size={CIRCLE_SIZE} fillColor={theme.colors.bg.subtle} borderColor={palette.accent}>
+                <Text style={[theme.typography.button, { color: palette.accent }]}>✕</Text>
+              </SketchCircle>
+            </Pressable>
+          </View>
+        </View>
+        {!isLastInGroup && <Divider variant="subtle" />}
+        </>
+      );
+    }
+
     // Compute disableDelete using exact legacy conditions from EditableCollectionScreen line 772:
     // deleteDisabled = locked || !canDeleteItems || (groupsEnabled && canCollapseGroups && groupId && !isExpanded(groupId))
     // For ProjectionSettingsScreen:
@@ -179,10 +264,12 @@ export default function ProjectionSettingsScreen() {
         isCurrentlyEditing={state.isCurrentlyEditing}
         dimRow={state.dimRow}
         isLastInGroup={isLastInGroup}
-        pressEnabled={false}
+        pressEnabled={!state.locked}
+        onPress={callbacks.onEdit}
         onEdit={callbacks.onEdit}
         onDelete={callbacks.onDelete}
         disableDelete={disableDelete}
+        disableEdit={true}
         swipeableRef={callbacks.swipeableRef}
         onSwipeableWillOpen={callbacks.onSwipeableWillOpen}
         onSwipeableOpen={callbacks.onSwipeableOpen}
@@ -241,6 +328,7 @@ export default function ProjectionSettingsScreen() {
       groupsCollapsible={false}
       isItemLocked={isLocked}
       validateEditedItem={validateEditedItem}
+      inlineEditorMode={true}
       renderRow={renderProjectionSettingsRow}
     />
   );
@@ -253,6 +341,34 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     ...typography.button,
+  },
+});
+
+const inlineStyles = StyleSheet.create({
+  container: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+  },
+  errorBanner: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 44,
+    gap: spacing.sm,
+  },
+  amountInputWrapper: {
+    width: 90,
+    height: 36,
+  },
+  inputInner: {
+    flex: 1,
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.sm,
   },
 });
 

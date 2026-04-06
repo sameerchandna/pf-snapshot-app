@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
+import SketchCircle from './SketchCircle';
 
 /**
  * Compact EditorActionGroup component for editor ADD/EDIT modes.
@@ -18,91 +19,49 @@ type EditorActionGroupProps = {
   editingItemId: string | null;
 };
 
+const CIRCLE_SIZE = 30;
+
 export default function EditorActionGroup({ onSave, onCancel, editingItemId }: EditorActionGroupProps) {
   const { theme } = useTheme();
-  
-  // Visual control height: 36px (85-90% of input height ~40px)
-  const visualHeight = 36;
-  // Tap target height: 44pt (Apple HIG minimum)
-  const tapTargetHeight = 44;
-  
+  const palette = useScreenPalette();
+
   return (
-    <View
-      style={[
-        styles.outerWrapper,
-        {
-          height: tapTargetHeight,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.innerControl,
-          {
-            height: visualHeight,
-            minWidth: 72,
-            borderWidth: 1,
-            borderColor: theme.colors.border.subtle,
-            borderRadius: theme.radius.base,
-            flexDirection: 'row',
-            overflow: 'hidden',
-          },
-        ]}
+    <View style={styles.row}>
+      <Pressable
+        onPress={onSave}
+        style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
+        accessibilityLabel={editingItemId ? 'Save' : 'Add'}
       >
-        <Pressable
-          onPress={onSave}
-          style={({ pressed }) => [
-            styles.confirmButton,
-            {
-              height: visualHeight,
-              backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-              borderTopLeftRadius: theme.radius.base,
-              borderBottomLeftRadius: theme.radius.base,
-            },
-          ]}
-          accessibilityLabel={editingItemId ? 'Save' : 'Add'}
+        <SketchCircle
+          size={CIRCLE_SIZE}
+          fillColor={palette.sectionHeaderBg}
+          borderColor={palette.accent}
         >
-          <Feather name="check" size={16} color={theme.colors.semantic.success} />
-        </Pressable>
-        
-        <View style={[styles.divider, { backgroundColor: theme.colors.border.default, height: visualHeight }]} />
-        
-        <Pressable
-          onPress={onCancel}
-          style={({ pressed }) => [
-            styles.confirmButton,
-            {
-              height: visualHeight,
-              backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-              borderTopRightRadius: theme.radius.base,
-              borderBottomRightRadius: theme.radius.base,
-            },
-          ]}
-          accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
+          <Text style={[theme.typography.button, { color: palette.accent }]}>✓</Text>
+        </SketchCircle>
+      </Pressable>
+
+      <Pressable
+        onPress={onCancel}
+        style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
+        accessibilityLabel={editingItemId ? 'Cancel' : 'Clear'}
+      >
+        <SketchCircle
+          size={CIRCLE_SIZE}
+          fillColor={theme.colors.bg.subtle}
+          borderColor={palette.accent}
         >
-          <Feather name="x" size={16} color={theme.colors.text.secondary} />
-        </Pressable>
-      </View>
+          <Text style={[theme.typography.button, { color: palette.accent }]}>✕</Text>
+        </SketchCircle>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerWrapper: {
-    // 44pt tap target wrapper - centers the 36px visual control
-  },
-  innerControl: {
-    // 36px visual segmented control
-  },
-  confirmButton: {
-    flex: 1,
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  divider: {
-    width: 1,
+    gap: spacing.sm,
   },
 });

@@ -31,6 +31,7 @@ import { spacing } from '../../ui/spacing';
 type Props = {
   title: string;
   subtitle?: string | null;
+  subtitleVariant?: 'valueSmall' | 'caption';
   trailingText?: string;
   trailingSlot?: ReactNode;
   leading?: ReactNode;
@@ -39,6 +40,7 @@ type Props = {
   dimmed?: boolean;
   swipeActive?: boolean;
   isLastInGroup?: boolean;
+  highlightColor?: string;
 };
 
 // Fixed row height - a layout invariant, not a theme token.
@@ -48,6 +50,7 @@ const ROW_HEIGHT = 44;
 export default function RowVisual({
   title,
   subtitle,
+  subtitleVariant = 'valueSmall',
   trailingText,
   trailingSlot,
   leading,
@@ -56,13 +59,16 @@ export default function RowVisual({
   dimmed = false,
   swipeActive = false,
   isLastInGroup = false,
+  highlightColor,
 }: Props) {
   const { theme } = useTheme();
   const [leadingWidth, setLeadingWidth] = useState(0);
 
   // Determine text colors based on visual states
   // Explicit color assignment - do not rely on inherited text color
-  const titleColor = locked
+  const titleColor = highlightColor
+    ? highlightColor
+    : locked
     ? theme.colors.text.muted
     : theme.colors.text.primary;
 
@@ -70,7 +76,9 @@ export default function RowVisual({
     ? theme.colors.text.disabled
     : theme.colors.text.secondary;
 
-  const trailingColor = locked
+  const trailingColor = highlightColor
+    ? highlightColor
+    : locked
     ? theme.colors.text.muted
     : theme.colors.text.secondary;
 
@@ -147,7 +155,7 @@ export default function RowVisual({
             <Text
               style={[
                 styles.subtitle,
-                theme.typography.valueSmall,
+                theme.typography[subtitleVariant],
                 {
                   fontWeight: '400',
                   color: subtitleColor,

@@ -25,6 +25,7 @@ import { layout } from '../ui/layout';
 import { useTheme } from '../ui/theme/useTheme';
 import { typography } from '../ui/theme/theme';
 import IconButton from './IconButton';
+import Divider from './Divider';
 
 type Props = {
   onClose: () => void;
@@ -35,18 +36,19 @@ export default function SavingsEducationOverlay({ onClose }: Props) {
 
   return (
     <>
-      <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border.subtle }]}>
+      <View style={styles.modalHeader}>
         <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
           Understanding Savings Balances
         </Text>
         <IconButton
-          icon="x"
+          icon="close-outline"
           size="md"
           variant="default"
           onPress={onClose}
           accessibilityLabel="Close"
         />
       </View>
+      <Divider variant="subtle" />
 
       <ScrollView style={styles.modalBody} contentContainerStyle={styles.modalBodyContent}>
         {/* Contributions vs Growth */}
@@ -97,7 +99,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
     backgroundColor: 'transparent',
   },
   modalTitle: {

@@ -5,6 +5,7 @@ import { useTheme } from '../../ui/theme/useTheme';
 import { spacing } from '../../ui/spacing';
 import { layout } from '../../ui/layout';
 import Row from './Row';
+import Divider from '../Divider';
 
 export type Group<TItem> = {
   id: string;
@@ -183,15 +184,7 @@ export default function List<TItem>({
       const rowContent = renderRow(item, index);
       const rowWithSeparator = showSeparators && index > 0 ? (
         <View key={`sep-${getItemId(item)}`}>
-          <View
-            style={[
-              styles.separator,
-              {
-                borderTopColor: theme.colors.border.subtle,
-                marginLeft: layout.rowPaddingHorizontal,
-              },
-            ]}
-          />
+          <Divider variant="subtle" />
           {rowContent}
         </View>
       ) : (
@@ -237,15 +230,7 @@ export default function List<TItem>({
                 const rowContent = renderRow(item, index);
                 const rowWithSeparator = showSeparators && index > 0 ? (
                   <View key={`sep-${getItemId(item)}`}>
-                    <View
-                      style={[
-                        styles.separator,
-                        {
-                          borderTopColor: theme.colors.border.subtle,
-                          marginLeft: layout.rowPaddingHorizontal,
-                        },
-                      ]}
-                    />
+                    <Divider variant="subtle" />
                     {rowContent}
                   </View>
                 ) : (
@@ -311,8 +296,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 44,
     paddingHorizontal: spacing.sm,
-  },
-  separator: {
-    borderTopWidth: 1, // Use 1px for better visibility on white backgrounds
   },
 });

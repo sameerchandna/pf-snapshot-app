@@ -5,8 +5,11 @@ import { layout } from '../ui/layout';
 import type { AssetItem } from '../types';
 import { formatCurrencyFull } from '../ui/formatters';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
+import SketchCard from './SketchCard';
 import Icon from './Icon';
+import Divider from './Divider';
 
 type Props = {
   title: string;
@@ -27,6 +30,7 @@ type Props = {
 
 export default function AssumptionsPill({ title, subtitle, onPress, assets, scenarioState, onScenarioChange, onClearScenario, availableToAllocate, scenarioValidationError }: Props) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const [whatIfExpanded, setWhatIfExpanded] = useState(false);
   const [selectedScenarioType, setSelectedScenarioType] = useState<string | null>(null);
   // Phase Two: use controlled state from parent if provided, otherwise local state
@@ -187,39 +191,35 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
             {/* Asset Selector */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.fieldLabel, { color: theme.colors.text.tertiary }]}>Apply to</Text>
-              <Pressable
-                onPress={() => {
-                  if (assets.length === 0) {
-                    // For Phase One, just open picker even if empty (no navigation)
-                    setAssetPickerOpen(true);
-                    return;
-                  }
-                  setAssetPickerOpen(true);
-                }}
-                style={({ pressed }) => [
-                  styles.selector,
-                  {
-                    backgroundColor: pressed ? theme.colors.bg.subtle : theme.colors.bg.card,
-                    borderColor: theme.colors.border.default,
-                  }
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Select asset"
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.medium}
               >
-                <View style={styles.selectorRow}>
-                  <Text
-                    style={[
-                      styles.selectorValue,
-                      { color: theme.colors.text.primary },
-                      !selectedAsset ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {selectedAsset ? getAssetName(selectedAsset) : 'Select asset'}
-                  </Text>
-                  <Icon name="chevron-down" size="small" color={theme.colors.text.muted} />
-                </View>
-              </Pressable>
+                <Pressable
+                  onPress={() => setAssetPickerOpen(true)}
+                  style={({ pressed }) => [
+                    styles.selectorInner,
+                    { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Select asset"
+                >
+                  <View style={styles.selectorRow}>
+                    <Text
+                      style={[
+                        styles.selectorValue,
+                        { color: theme.colors.text.primary },
+                        !selectedAsset ? [styles.selectorPlaceholder, { color: theme.colors.text.muted }] : null
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {selectedAsset ? getAssetName(selectedAsset) : 'Select asset'}
+                    </Text>
+                    <Icon name="chevron-down-outline" size="small" color={theme.colors.text.muted} />
+                  </View>
+                </Pressable>
+              </SketchCard>
               {/* Helper Text - moved here with minimal spacing */}
               <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
                 Uses this asset's growth assumptions and applies during your earning years only.
@@ -229,22 +229,21 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
             {/* Amount Input */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.fieldLabel, { color: theme.colors.text.tertiary }]}>Extra amount per month</Text>
-              <TextInput
-                style={[
-                  styles.amountInput,
-                  {
-                    backgroundColor: theme.colors.bg.card,
-                    borderColor: theme.colors.border.default,
-                    color: theme.colors.text.primary,
-                  },
-                  scenarioValidationError ? [styles.amountInputError, { borderColor: theme.colors.semantic.error }] : null
-                ]}
-                value={amountInput}
-                onChangeText={handleAmountChange}
-                placeholder="0"
-                keyboardType="numeric"
-                returnKeyType="done"
-              />
+              <SketchCard
+                borderColor={scenarioValidationError ? theme.colors.semantic.error : palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={radius.medium}
+                style={styles.amountInputWrapper}
+              >
+                <TextInput
+                  style={[styles.amountInputInner, { color: theme.colors.text.primary }]}
+                  value={amountInput}
+                  onChangeText={handleAmountChange}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                />
+              </SketchCard>
               {/* Available to Allocate Display - muted, italic, minimal spacing */}
               {availableToAllocate !== undefined && (
                 <Text style={[styles.availableCashText, { color: theme.colors.text.secondary }]}>
@@ -290,27 +289,27 @@ export default function AssumptionsPill({ title, subtitle, onPress, assets, scen
           <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select asset</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-              {assets.map(asset => {
+              {assets.map((asset, index) => {
                 const metadata = formatAssetMetadata(asset);
+                const isLast = index === assets.length - 1;
                 return (
-                  <Pressable
-                    key={asset.id}
-                    onPress={() => handleSelectAsset(asset.id)}
-                    style={({ pressed }) => [
-                      styles.modalOption,
-                      {
-                        backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent',
-                        borderBottomColor: theme.colors.border.subtle,
-                      }
-                    ]}
-                  >
-                    <View style={styles.modalOptionContent}>
-                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{asset.name}</Text>
-                      {metadata ? (
-                        <Text style={[styles.modalOptionMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
-                      ) : null}
-                    </View>
-                  </Pressable>
+                  <React.Fragment key={asset.id}>
+                    <Pressable
+                      onPress={() => handleSelectAsset(asset.id)}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                      ]}
+                    >
+                      <View style={styles.modalOptionContent}>
+                        <Text style={[styles.modalOptionText, { color: theme.colors.text.primary }]}>{asset.name}</Text>
+                        {metadata ? (
+                          <Text style={[styles.modalOptionMetadata, { color: theme.colors.text.muted }]}>{metadata}</Text>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                    {!isLast && <Divider variant="subtle" />}
+                  </React.Fragment>
                 );
               })}
               {assets.length === 0 ? (
@@ -380,11 +379,10 @@ const styles = StyleSheet.create({
     ...typography.label,
     marginBottom: spacing.xs,
   },
-  selector: {
-    borderWidth: 1,
-    borderRadius: radius.medium,
+  selectorInner: {
     paddingVertical: layout.inputPadding,
     paddingHorizontal: spacing.base,
+    alignSelf: 'stretch',
   },
   selectorRow: {
     flexDirection: 'row',
@@ -404,14 +402,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: spacing.xs,
   },
-  amountInput: {
-    borderWidth: 1,
-    borderRadius: radius.medium,
+  amountInputWrapper: {
+    // layout only — border drawn by SketchCard
+  },
+  amountInputInner: {
     padding: layout.inputPadding,
     ...typography.valueSmall,
-  },
-  amountInputError: {
-    borderWidth: 1.5,
+    alignSelf: 'stretch',
   },
   validationErrorContainer: {
     marginTop: spacing.xs,
@@ -463,7 +460,6 @@ const styles = StyleSheet.create({
   },
   modalOption: {
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
   },
   modalOptionContent: {
     flexDirection: 'column',

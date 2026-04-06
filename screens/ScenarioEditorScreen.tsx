@@ -20,6 +20,8 @@ import { getScenarios, saveScenario, setActiveScenarioId } from '../scenarioStat
 import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
+import SketchCard from '../components/SketchCard';
+import Divider from '../components/Divider';
 
 type RouteParams = {
   scenarioId?: ScenarioId;
@@ -202,7 +204,7 @@ export default function ScenarioEditorScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title={isEdit ? 'Edit Scenario' : 'New Scenario'} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <EducationBox
@@ -298,63 +300,79 @@ export default function ScenarioEditorScreen() {
             {/* Name Input */}
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.colors.text.primary, fontSize: theme.typography.label.fontSize, fontWeight: theme.typography.label.fontWeight }]}>Name</Text>
-              <TextInput
-                style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.medium, fontSize: theme.typography.input.fontSize }]}
-                value={name}
-                onChangeText={setName}
-                placeholder="e.g. Extra investing"
-                placeholderTextColor={theme.colors.text.muted}
-                autoCapitalize="sentences"
-                autoCorrect={false}
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={theme.radius.medium}
+              >
+                <TextInput
+                  style={[styles.inputInner, { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="e.g. Extra investing"
+                  placeholderTextColor={theme.colors.text.muted}
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                />
+              </SketchCard>
             </View>
 
             {/* Asset/Liability Selector */}
             {scenarioKind === 'FLOW_TO_ASSET' ? (
               <View style={styles.field}>
                 <Text style={[styles.label, { color: theme.colors.text.primary, fontSize: theme.typography.label.fontSize, fontWeight: theme.typography.label.fontWeight }]}>Asset</Text>
-                <Pressable
-                  onPress={() => setAssetPickerOpen(true)}
-                  style={({ pressed }) => [
-                    styles.selector,
-                    { borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.medium },
-                    pressed ? { backgroundColor: theme.colors.bg.subtle } : null
-                  ]}
+                <SketchCard
+                  borderColor={palette.accent}
+                  fillColor={theme.colors.bg.card}
+                  borderRadius={theme.radius.medium}
                 >
-                  <View style={styles.selectorRow}>
-                    <Text style={[
-                      styles.selectorValue,
-                      { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
-                      !assetId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
-                    ]} numberOfLines={1}>
-                      {assetId ? state.assets.find(a => a.id === assetId)?.name || 'Unknown asset' : 'Select asset'}
-                    </Text>
-                    <Text style={[styles.selectorChevron, { color: theme.colors.text.muted, fontSize: theme.typography.body.fontSize }]}>▼</Text>
-                  </View>
-                </Pressable>
+                  <Pressable
+                    onPress={() => setAssetPickerOpen(true)}
+                    style={({ pressed }) => [
+                      styles.selectorInner,
+                      { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                    ]}
+                  >
+                    <View style={styles.selectorRow}>
+                      <Text style={[
+                        styles.selectorValue,
+                        { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
+                        !assetId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
+                      ]} numberOfLines={1}>
+                        {assetId ? state.assets.find(a => a.id === assetId)?.name || 'Unknown asset' : 'Select asset'}
+                      </Text>
+                      <Text style={[styles.selectorChevron, { color: theme.colors.text.muted, fontSize: theme.typography.body.fontSize }]}>▼</Text>
+                    </View>
+                  </Pressable>
+                </SketchCard>
               </View>
             ) : (
               <View style={styles.field}>
                 <Text style={[styles.label, { color: theme.colors.text.primary, fontSize: theme.typography.label.fontSize, fontWeight: theme.typography.label.fontWeight }]}>Loan</Text>
-                <Pressable
-                  onPress={() => setLiabilityPickerOpen(true)}
-                  style={({ pressed }) => [
-                    styles.selector,
-                    { borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.medium },
-                    pressed ? { backgroundColor: theme.colors.bg.subtle } : null
-                  ]}
+                <SketchCard
+                  borderColor={palette.accent}
+                  fillColor={theme.colors.bg.card}
+                  borderRadius={theme.radius.medium}
                 >
-                  <View style={styles.selectorRow}>
-                    <Text style={[
-                      styles.selectorValue,
-                      { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
-                      !liabilityId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
-                    ]} numberOfLines={1}>
-                      {liabilityId ? loanLiabilities.find(l => l.id === liabilityId)?.name || 'Unknown loan' : 'Select loan'}
-                    </Text>
-                    <Text style={[styles.selectorChevron, { color: theme.colors.text.muted, fontSize: theme.typography.body.fontSize }]}>▼</Text>
-                  </View>
-                </Pressable>
+                  <Pressable
+                    onPress={() => setLiabilityPickerOpen(true)}
+                    style={({ pressed }) => [
+                      styles.selectorInner,
+                      { backgroundColor: pressed ? theme.colors.bg.subtle : 'transparent' },
+                    ]}
+                  >
+                    <View style={styles.selectorRow}>
+                      <Text style={[
+                        styles.selectorValue,
+                        { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize },
+                        !liabilityId ? { color: theme.colors.text.muted, fontWeight: '400' } : { fontWeight: '400' }
+                      ]} numberOfLines={1}>
+                        {liabilityId ? loanLiabilities.find(l => l.id === liabilityId)?.name || 'Unknown loan' : 'Select loan'}
+                      </Text>
+                      <Text style={[styles.selectorChevron, { color: theme.colors.text.muted, fontSize: theme.typography.body.fontSize }]}>▼</Text>
+                    </View>
+                  </Pressable>
+                </SketchCard>
               </View>
             )}
 
@@ -363,14 +381,20 @@ export default function ScenarioEditorScreen() {
               <Text style={[styles.label, { color: theme.colors.text.primary, fontSize: theme.typography.label.fontSize, fontWeight: theme.typography.label.fontWeight }]}>
                 {scenarioKind === 'FLOW_TO_ASSET' ? 'Monthly amount (£)' : 'Monthly overpayment (£)'}
               </Text>
-              <TextInput
-                style={[styles.input, { color: theme.colors.text.primary, borderColor: theme.colors.border.default, backgroundColor: theme.colors.bg.card, borderRadius: theme.radius.medium, fontSize: theme.typography.input.fontSize }]}
-                value={amountMonthly}
-                onChangeText={setAmountMonthly}
-                placeholder="0"
-                placeholderTextColor={theme.colors.text.muted}
-                keyboardType="numeric"
-              />
+              <SketchCard
+                borderColor={palette.accent}
+                fillColor={theme.colors.bg.card}
+                borderRadius={theme.radius.medium}
+              >
+                <TextInput
+                  style={[styles.inputInner, { color: theme.colors.text.primary, fontSize: theme.typography.input.fontSize }]}
+                  value={amountMonthly}
+                  onChangeText={setAmountMonthly}
+                  placeholder="0"
+                  placeholderTextColor={theme.colors.text.muted}
+                  keyboardType="numeric"
+                />
+              </SketchCard>
             </View>
 
             {/* Preview Text */}
@@ -400,22 +424,26 @@ export default function ScenarioEditorScreen() {
           <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text.primary, fontSize: theme.typography.sectionTitle.fontSize, fontWeight: '700' }]}>Select asset</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-              {state.assets.map(asset => (
-                <Pressable
-                  key={asset.id}
-                  onPress={() => {
-                    setAssetId(asset.id);
-                    setAssetPickerOpen(false);
-                  }}
-                  style={({ pressed }) => [
-                    styles.modalOption,
-                    { borderBottomColor: theme.colors.border.subtle },
-                    pressed ? { backgroundColor: theme.colors.bg.subtle } : null
-                  ]}
-                >
-                  <Text style={[styles.modalOptionText, { color: theme.colors.text.primary, fontSize: theme.typography.bodyLarge.fontSize, fontWeight: '600' }]}>{asset.name}</Text>
-                </Pressable>
-              ))}
+              {state.assets.map((asset, index) => {
+                const isLast = index === state.assets.length - 1;
+                return (
+                  <React.Fragment key={asset.id}>
+                    <Pressable
+                      onPress={() => {
+                        setAssetId(asset.id);
+                        setAssetPickerOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        pressed ? { backgroundColor: theme.colors.bg.subtle } : null
+                      ]}
+                    >
+                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary, fontSize: theme.typography.bodyLarge.fontSize, fontWeight: '600' }]}>{asset.name}</Text>
+                    </Pressable>
+                    {!isLast && <Divider variant="subtle" />}
+                  </React.Fragment>
+                );
+              })}
               {state.assets.length === 0 ? <Text style={[styles.modalEmptyText, { color: theme.colors.text.muted, fontSize: theme.typography.bodyLarge.fontSize }]}>No assets available</Text> : null}
             </ScrollView>
           </View>
@@ -429,22 +457,26 @@ export default function ScenarioEditorScreen() {
           <View style={[styles.modalSheet, { backgroundColor: theme.colors.bg.card }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text.primary, fontSize: theme.typography.sectionTitle.fontSize, fontWeight: '700' }]}>Select loan</Text>
             <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-              {loanLiabilities.map(liability => (
-                <Pressable
-                  key={liability.id}
-                  onPress={() => {
-                    setLiabilityId(liability.id);
-                    setLiabilityPickerOpen(false);
-                  }}
-                  style={({ pressed }) => [
-                    styles.modalOption,
-                    { borderBottomColor: theme.colors.border.subtle },
-                    pressed ? { backgroundColor: theme.colors.bg.subtle } : null
-                  ]}
-                >
-                  <Text style={[styles.modalOptionText, { color: theme.colors.text.primary, fontSize: theme.typography.bodyLarge.fontSize, fontWeight: '600' }]}>{liability.name}</Text>
-                </Pressable>
-              ))}
+              {loanLiabilities.map((liability, index) => {
+                const isLast = index === loanLiabilities.length - 1;
+                return (
+                  <React.Fragment key={liability.id}>
+                    <Pressable
+                      onPress={() => {
+                        setLiabilityId(liability.id);
+                        setLiabilityPickerOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.modalOption,
+                        pressed ? { backgroundColor: theme.colors.bg.subtle } : null
+                      ]}
+                    >
+                      <Text style={[styles.modalOptionText, { color: theme.colors.text.primary, fontSize: theme.typography.bodyLarge.fontSize, fontWeight: '600' }]}>{liability.name}</Text>
+                    </Pressable>
+                    {!isLast && <Divider variant="subtle" />}
+                  </React.Fragment>
+                );
+              })}
               {loanLiabilities.length === 0 ? <Text style={[styles.modalEmptyText, { color: theme.colors.text.muted, fontSize: theme.typography.bodyLarge.fontSize }]}>No loans available</Text> : null}
             </ScrollView>
           </View>
@@ -517,15 +549,14 @@ const styles = StyleSheet.create({
     marginBottom: layout.componentGapSmall,
     // color, fontWeight set inline
   },
-  input: {
+  inputInner: {
     paddingVertical: layout.inputPaddingVertical,
     paddingHorizontal: layout.inputPaddingHorizontal,
-    borderWidth: 1,
-    // color, borderColor, backgroundColor, borderRadius, fontSize set inline
+    alignSelf: 'stretch',
+    // color, fontSize set inline
   },
-  selector: {
-    borderWidth: 1,
-    // borderColor, backgroundColor, borderRadius set inline
+  selectorInner: {
+    alignSelf: 'stretch',
   },
   selectorRow: {
     flexDirection: 'row',
@@ -603,8 +634,7 @@ const styles = StyleSheet.create({
   },
   modalOption: {
     paddingVertical: spacing.base,
-    borderBottomWidth: 1,
-    // borderBottomColor, backgroundColor set inline
+    // backgroundColor set inline
   },
   modalOptionText: {
     // color, fontSize, fontWeight set inline

@@ -46,13 +46,13 @@ export default function RowActionIcon({
       case 'save':
         return null; // Uses text checkmark instead
       case 'cancel':
-        return 'x';
+        return 'close-outline';
       case 'add':
-        return 'plus';
+        return 'add-outline';
       case 'edit':
-        return 'edit-2';
+        return 'create-outline';
       case 'delete':
-        return 'trash-2';
+        return 'trash-outline';
     }
   };
 

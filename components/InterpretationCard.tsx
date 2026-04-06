@@ -19,6 +19,7 @@ import SectionCard from './SectionCard';
 import SectionHeader from './SectionHeader';
 import SketchCircle from './SketchCircle';
 import Button from './Button';
+import Divider from './Divider';
 import { formatCurrencyCompact } from '../ui/formatters';
 import { typography, radius } from '../ui/theme/theme';
 import { useScreenPalette } from '../ui/theme/palettes';
@@ -33,10 +34,10 @@ interface InterpretationCardProps {
   onSaveKpis: (ids: KpiId[]) => void;
   /** Whether liabilities exist (used to contextualise headline) */
   hasLiabilities: boolean;
-  /** Detected problems from Phase 13 back-solve engine; enables tappable warnings */
+  /** Detected problems from Phase 13 back-solve engine */
   detectedProblems?: DetectedProblem[];
-  /** Called when the user taps a solvable warning */
-  onSolveProblem?: (problem: DetectedProblem) => void;
+  /** Called when the user taps "What are my options to fix these?" */
+  onShowOptions?: () => void;
   style?: object;
 }
 
@@ -74,7 +75,8 @@ function buildWarningParagraph(kpiData: KpiData): string | null {
   if (hasLongevityGap) {
     const depletionAge = Math.round(interpretation.depletionAge!);
     const gap = Math.round(endAge - interpretation.depletionAge!);
-    const opener = hasBridgeGap ? 'And even after that,' : 'At your current pace,';
+    const annualExpenses = formatCurrencyCompact(monthlyExpenses * 12);
+    const opener = hasBridgeGap ? 'And even after that,' : `At your current pace of expenses of ${annualExpenses}/yr,`;
     sentences.push(`${opener} your total savings may only last to around age ${depletionAge} — ${gap} years short of your plan end at ${Math.round(endAge)}.`);
   }
 
@@ -186,9 +188,10 @@ function KpiPickerModal({ visible, currentSelection, onSave, onDismiss }: KpiPic
           contentContainerStyle={styles.pickerListContent}
           showsVerticalScrollIndicator={false}
         >
-          {ALL_KPI_DEFINITIONS.map(def => {
+          {ALL_KPI_DEFINITIONS.map((def, index) => {
             const isSelected = draft.includes(def.id);
             const isDisabled = !isSelected && draft.length >= 3;
+            const isLast = index === ALL_KPI_DEFINITIONS.length - 1;
             const IconComponent = def.Icon;
             const rowColor = isDisabled
               ? theme.colors.text.disabled
@@ -198,14 +201,13 @@ function KpiPickerModal({ visible, currentSelection, onSave, onDismiss }: KpiPic
               : theme.colors.brand.primary;
 
             return (
+              <React.Fragment key={def.id}>
               <Pressable
-                key={def.id}
                 onPress={() => toggle(def.id)}
                 disabled={isDisabled}
                 style={({ pressed }) => [
                   styles.pickerRow,
                   {
-                    borderBottomColor: theme.colors.border.subtle,
                     opacity: isDisabled ? 0.4 : 1,
                     backgroundColor: !isDisabled && pressed ? theme.colors.bg.subtlePressed : 'transparent',
                   },
@@ -237,6 +239,8 @@ function KpiPickerModal({ visible, currentSelection, onSave, onDismiss }: KpiPic
                   <CircleIcon size={20} color={theme.colors.border.default} weight="regular" />
                 )}
               </Pressable>
+              {!isLast && <Divider variant="subtle" />}
+              </React.Fragment>
             );
           })}
         </ScrollView>
@@ -263,11 +267,12 @@ export default function InterpretationCard({
   kpiData,
   selectedKpiIds,
   onSaveKpis,
-  detectedProblems,
-  onSolveProblem: _onSolveProblem,
+  detectedProblems: _detectedProblems,
+  onShowOptions,
   style,
 }: InterpretationCardProps) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const warningParagraph = buildWarningParagraph(kpiData);
@@ -281,7 +286,7 @@ export default function InterpretationCard({
   return (
     <>
       <SectionCard fillColor="transparent" style={[styles.card, style]}>
-        <SectionHeader title="Your Projection" />
+        <SectionHeader title="Your Key Takeaways" />
 
         {/* KPI circles */}
         <View style={{ position: 'relative' }}>
@@ -309,9 +314,26 @@ export default function InterpretationCard({
 
         {/* Warning paragraph */}
         {warningParagraph != null && (
-          <Text style={[styles.warningParagraph, { color: theme.colors.semantic.errorText }]}>
+          <Text style={[styles.warningParagraph, { color: palette.accent }]}>
             {warningParagraph}
           </Text>
+        )}
+
+        {/* Options link */}
+        {warningParagraph != null && onShowOptions != null && (
+          <Pressable
+            onPress={onShowOptions}
+            style={styles.optionsLink}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="What are my options to fix these"
+          >
+            <View style={[styles.optionsLinkUnderline, { borderBottomColor: palette.accent }]}>
+              <Text style={[styles.optionsLinkText, { color: palette.accent }]}>
+                What are my options to fix these?
+              </Text>
+            </View>
+          </Pressable>
         )}
       </SectionCard>
 
@@ -371,6 +393,19 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
+  // Options link
+  optionsLink: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  optionsLinkUnderline: {
+    borderBottomWidth: 1,
+  },
+  optionsLinkText: {
+    ...typography.body,
+  },
+
   // Picker modal
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -413,7 +448,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.base,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   pickerRowLeft: {
     flexDirection: 'row',

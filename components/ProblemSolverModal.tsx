@@ -18,6 +18,7 @@ import {
 import { useTheme } from '../ui/theme/useTheme';
 import { formatCurrencyCompact, formatYearsMonths } from '../ui/formatters';
 import { spacing } from '../ui/spacing';
+import Divider from './Divider';
 import { layout } from '../ui/layout';
 import { typography, radius } from '../ui/theme/theme';
 import type { DetectedProblem } from '../projection/detectProblems';
@@ -175,10 +176,10 @@ export default function ProblemSolverModal({
               const isLast = index === levers.length - 1;
 
               const row = (
+                <View>
                 <View
                   style={[
                     styles.tableRow,
-                    !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border.subtle },
                     !isSolvable && { opacity: 0.45 },
                   ]}
                 >
@@ -189,6 +190,8 @@ export default function ProblemSolverModal({
                   {isSolvable && (
                     <CaretRight size={13} color={theme.colors.text.muted} weight="bold" />
                   )}
+                </View>
+                {!isLast && <Divider variant="subtle" />}
                 </View>
               );
 

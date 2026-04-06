@@ -36,6 +36,7 @@ import { spacing } from '../ui/spacing';
 import { useTheme } from '../ui/theme/useTheme';
 import { useScreenPalette } from '../ui/theme/palettes';
 import { radius, typography } from '../ui/theme/theme';
+import SketchCard from '../components/SketchCard';
 import type { GoalConfig } from '../types';
 
 // ─── Goal type labels ─────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ interface GoalRowProps {
 
 function GoalRow({ goal, index, onChangeTarget, onChangeTargetAge, onDelete, isLast }: GoalRowProps) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
   const hasTargetAge = goal.type === 'netWorthMilestone' || goal.type === 'retirementIncome';
   const targetAge = targetAgeOf(goal);
 
@@ -114,23 +116,22 @@ function GoalRow({ goal, index, onChangeTarget, onChangeTargetAge, onDelete, isL
           <Text style={[styles.fieldLabel, { color: theme.colors.text.secondary }]}>
             Target (£)
           </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: theme.colors.text.primary,
-                backgroundColor: theme.colors.bg.subtle,
-                borderColor: theme.colors.border.default,
-                borderRadius: radius.base,
-              },
-            ]}
-            value={String(goal.target)}
-            onChangeText={v => onChangeTarget(index, v)}
-            keyboardType="numeric"
-            placeholder="0"
-            placeholderTextColor={theme.colors.text.muted}
-            returnKeyType="done"
-          />
+          <SketchCard
+            borderColor={palette.accent}
+            fillColor={theme.colors.bg.subtle}
+            borderRadius={radius.base}
+            style={styles.inputWrapper}
+          >
+            <TextInput
+              style={[styles.inputInner, { color: theme.colors.text.primary }]}
+              value={String(goal.target)}
+              onChangeText={v => onChangeTarget(index, v)}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor={theme.colors.text.muted}
+              returnKeyType="done"
+            />
+          </SketchCard>
         </View>
 
         {/* Optional target age input */}
@@ -139,23 +140,22 @@ function GoalRow({ goal, index, onChangeTarget, onChangeTargetAge, onDelete, isL
             <Text style={[styles.fieldLabel, { color: theme.colors.text.secondary }]}>
               By age (optional)
             </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.colors.text.primary,
-                  backgroundColor: theme.colors.bg.subtle,
-                  borderColor: theme.colors.border.default,
-                  borderRadius: radius.base,
-                },
-              ]}
-              value={targetAge != null ? String(targetAge) : ''}
-              onChangeText={v => onChangeTargetAge(index, v)}
-              keyboardType="numeric"
-              placeholder="e.g. 67"
-              placeholderTextColor={theme.colors.text.muted}
-              returnKeyType="done"
-            />
+            <SketchCard
+              borderColor={palette.accent}
+              fillColor={theme.colors.bg.subtle}
+              borderRadius={radius.base}
+              style={styles.inputWrapper}
+            >
+              <TextInput
+                style={[styles.inputInner, { color: theme.colors.text.primary }]}
+                value={targetAge != null ? String(targetAge) : ''}
+                onChangeText={v => onChangeTargetAge(index, v)}
+                keyboardType="numeric"
+                placeholder="e.g. 67"
+                placeholderTextColor={theme.colors.text.muted}
+                returnKeyType="done"
+              />
+            </SketchCard>
           </View>
         ) : null}
       </View>
@@ -320,7 +320,7 @@ export default function GoalEditorScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader
         title="Edit Goals"
       />
@@ -451,13 +451,15 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     flex: 1,
   },
-  input: {
+  inputWrapper: {
+    minWidth: 100,
+  },
+  inputInner: {
     ...typography.body,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderWidth: 1,
-    minWidth: 100,
     textAlign: 'right',
+    alignSelf: 'stretch',
   },
   addRow: {
     flexDirection: 'row',

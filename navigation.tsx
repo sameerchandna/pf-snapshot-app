@@ -32,6 +32,7 @@ import ProjectionRefactorValidationScreen from './screens/ProjectionRefactorVali
 import SnapshotDataSummaryScreen from './screens/SnapshotDataSummaryScreen';
 import BalanceDeepDiveScreen from './screens/BalanceDeepDiveScreen';
 import GoalEditorScreen from './screens/GoalEditorScreen';
+import ProblemOptionsScreen from './screens/ProblemOptionsScreen';
 
 const Stack = createNativeStackNavigator();
 const WhatIfStack = createNativeStackNavigator();
@@ -45,6 +46,17 @@ function withEntryPalette(Component: React.ComponentType<any>): React.ComponentT
   return function EntryPaletteScreen(props: any) {
     return (
       <ScreenPaletteProvider value={palettes.entry}>
+        <Component {...props} />
+      </ScreenPaletteProvider>
+    );
+  };
+}
+
+// Wraps a screen in the teal palette (Fix My Plan screen).
+function withTealPalette(Component: React.ComponentType<any>): React.ComponentType<any> {
+  return function TealPaletteScreen(props: any) {
+    return (
+      <ScreenPaletteProvider value={palettes.teal}>
         <Component {...props} />
       </ScreenPaletteProvider>
     );
@@ -75,7 +87,7 @@ function SnapshotStackNavigator() {
         <Stack.Screen name="Snapshot" component={SnapshotScreen} />
         <Stack.Screen name="GrossIncomeDetail" component={withEntryPalette(GrossIncomeDetailScreen)} />
         <Stack.Screen name="PensionDetail" component={withEntryPalette(PensionDetailScreen)} />
-        <Stack.Screen name="NetIncomeDetail" component={NetIncomeDetailScreen} />
+        <Stack.Screen name="NetIncomeDetail" component={withEntryPalette(NetIncomeDetailScreen)} />
         <Stack.Screen name="DeductionsDetail" component={withEntryPalette(DeductionsDetailScreen)} />
         <Stack.Screen name="ExpensesDetail" component={withEntryPalette(ExpensesDetailScreen)} />
         <Stack.Screen name="AvailableCashDetail" component={AvailableCashDetailScreen} />
@@ -112,6 +124,7 @@ function ProjectionStackNavigator() {
     <ScreenPaletteProvider value={palettes.projection}>
       <ProjectionStack.Navigator screenOptions={{ headerShown: STACK_HEADER_SHOWN }}>
         <ProjectionStack.Screen name="ProjectionResults" component={ProjectionResultsScreen} />
+        <ProjectionStack.Screen name="ProblemOptions" component={withTealPalette(ProblemOptionsScreen)} />
         <ProjectionStack.Screen name="ProjectionSettings" component={ProjectionSettingsScreen} />
         <ProjectionStack.Screen name="ScenarioManagement" component={ScenarioManagementScreen} />
         <ProjectionStack.Screen name="ScenarioEditor" component={ScenarioEditorScreen} />

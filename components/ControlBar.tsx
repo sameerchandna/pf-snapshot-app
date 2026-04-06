@@ -197,7 +197,7 @@ export default function ControlBar({
           )}
         </View>
         <Icon
-          name="chevron-down"
+          name="chevron-down-outline"
           size="md"
           color={isActive ? theme.colors.brand.primary : theme.colors.text.secondary}
           style={styles.itemButtonChevron}

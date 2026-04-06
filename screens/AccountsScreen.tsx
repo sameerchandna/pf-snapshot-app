@@ -141,7 +141,7 @@ export default function AccountsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={{flex:1}}>
+      <SketchBackground color={palette.accent} style={{flex:1}}>
       <ScreenHeader title="Accounts" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <SectionCard style={{ marginTop: layout.sectionGap }}>

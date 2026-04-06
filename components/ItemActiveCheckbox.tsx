@@ -8,6 +8,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../ui/theme/useTheme';
+import { useScreenPalette } from '../ui/theme/palettes';
 import { spacing } from '../ui/spacing';
 
 type Props = {
@@ -22,6 +23,7 @@ export default function ItemActiveCheckbox({
   disabled = false,
 }: Props) {
   const { theme } = useTheme();
+  const palette = useScreenPalette();
 
   // Propagation guard: ensure checkbox press never triggers parent row press
   const handlePress = (e?: any) => {
@@ -54,7 +56,7 @@ export default function ItemActiveCheckbox({
           styles.checkboxCircle,
           { borderColor: theme.colors.border.default },
           isActive
-            ? { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.brand.primary }
+            ? { backgroundColor: palette.sectionHeaderBg, borderColor: palette.sectionHeaderBg }
             : null,
         ]}
       >

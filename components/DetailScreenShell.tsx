@@ -6,6 +6,7 @@ import SketchBackground from './SketchBackground';
 import { HelpContent } from '../screens/EditableCollectionScreen';
 import { useScreenPalette } from '../ui/theme/palettes';
 import IconButton from './IconButton';
+import Divider from './Divider';
 import { spacing } from '../ui/spacing';
 import { layout } from '../ui/layout';
 import { typography, radius } from '../ui/theme/theme';
@@ -30,13 +31,13 @@ export default function DetailScreenShell({
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SketchBackground color={palette.bg} style={styles.container}>
+      <SketchBackground color={palette.accent} style={styles.container}>
         <ScreenHeader
           title={title}
           rightAccessory={
             hasHints ? (
               <IconButton
-                icon="help-circle"
+                icon="help-circle-outline"
                 size="md"
                 variant="neutral"
                 onPress={() => setIsHintOpen(true)}
@@ -65,7 +66,8 @@ export default function DetailScreenShell({
                     <Text style={[styles.hintTitle, { color: palette.text }]}>{helpContent.title}</Text>
                     <ScrollView style={styles.hintScroll} contentContainerStyle={styles.hintScrollContent} showsVerticalScrollIndicator={false}>
                       {helpContent.sections.map((section, sectionIdx) => (
-                        <View key={sectionIdx} style={sectionIdx > 0 ? styles.helpSectionDivider : null}>
+                        <View key={sectionIdx} style={sectionIdx > 0 ? styles.helpSectionSpacing : null}>
+                          {sectionIdx > 0 && <Divider variant="subtle" style={{ marginBottom: spacing.xl }} />}
                           {section.heading ? (
                             <Text style={[styles.helpSectionHeading, { color: palette.text }]}>{section.heading}</Text>
                           ) : null}
@@ -136,11 +138,8 @@ const styles = StyleSheet.create({
   hintScrollContent: {
     paddingBottom: spacing.huge,
   },
-  helpSectionDivider: {
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+  helpSectionSpacing: {
     marginTop: spacing.xl,
-    paddingTop: spacing.xl,
   },
   helpSectionHeading: {
     ...typography.small,
