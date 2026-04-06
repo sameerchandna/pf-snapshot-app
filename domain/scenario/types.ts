@@ -22,7 +22,8 @@ export type ScenarioKind =
   | 'REDUCE_EXPENSES'
   | 'CHANGE_ASSET_GROWTH_RATE'
   | 'SAVINGS_WHAT_IF'
-  | 'MORTGAGE_WHAT_IF';
+  | 'MORTGAGE_WHAT_IF'
+  | 'INCOME_CHANGE';
 
 export interface ScenarioBase {
   id: ScenarioId;
@@ -74,6 +75,11 @@ export interface MortgageWhatIfScenario extends ScenarioBase {
   newRemainingTermYears: number; // term override in years (integer, >= 1)
 }
 
+export interface IncomeChangeScenario extends ScenarioBase {
+  kind: 'INCOME_CHANGE';
+  reductionMonthly: number; // monthly income delta (positive = income dropped, negative = income rose)
+}
+
 export type Scenario =
   | FlowToAssetScenario
   | FlowToDebtScenario
@@ -81,7 +87,8 @@ export type Scenario =
   | ReduceExpensesScenario
   | ChangeAssetGrowthRateScenario
   | SavingsWhatIfScenario
-  | MortgageWhatIfScenario;
+  | MortgageWhatIfScenario
+  | IncomeChangeScenario;
 
 /**
  * Creates the baseline scenario object.

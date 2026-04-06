@@ -22,6 +22,7 @@ import type {
   ChangeAssetGrowthRateScenario,
   SavingsWhatIfScenario,
   MortgageWhatIfScenario,
+  IncomeChangeScenario,
 } from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
@@ -33,7 +34,8 @@ export function isScenarioKind(x: unknown): x is ScenarioKind {
     x === 'REDUCE_EXPENSES' ||
     x === 'CHANGE_ASSET_GROWTH_RATE' ||
     x === 'SAVINGS_WHAT_IF' ||
-    x === 'MORTGAGE_WHAT_IF'
+    x === 'MORTGAGE_WHAT_IF' ||
+    x === 'INCOME_CHANGE'
   );
 }
 
@@ -130,6 +132,13 @@ export function isScenario(x: unknown): x is Scenario {
       return false;
     }
     if (typeof obj.newRemainingTermYears !== 'number' || !Number.isFinite(obj.newRemainingTermYears)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (obj.kind === 'INCOME_CHANGE') {
+    if (typeof obj.reductionMonthly !== 'number' || !Number.isFinite(obj.reductionMonthly)) {
       return false;
     }
     return true;
@@ -244,6 +253,13 @@ export function validateScenario(s: Scenario): { ok: true } | { ok: false; error
         errors.push('MortgageWhatIfScenario newRemainingTermYears must be a positive integer');
       }
     }
+
+    if (s.kind === 'INCOME_CHANGE') {
+      const ic = s as IncomeChangeScenario;
+      if (typeof ic.reductionMonthly !== 'number' || !Number.isFinite(ic.reductionMonthly)) {
+        errors.push('IncomeChangeScenario reductionMonthly must be a finite number');
+      }
+    }
   }
 
   if (errors.length > 0) {
@@ -284,8 +300,8 @@ export function isScenarioTargetValid(
     return liabilities.some(l => l.id === flowToDebt.liabilityId);
   }
 
-  // CHANGE_RETIREMENT_AGE and REDUCE_EXPENSES have no asset/liability target
-  if (scenario.kind === 'CHANGE_RETIREMENT_AGE' || scenario.kind === 'REDUCE_EXPENSES') {
+  // CHANGE_RETIREMENT_AGE, REDUCE_EXPENSES, and INCOME_CHANGE have no asset/liability target
+  if (scenario.kind === 'CHANGE_RETIREMENT_AGE' || scenario.kind === 'REDUCE_EXPENSES' || scenario.kind === 'INCOME_CHANGE') {
     return true;
   }
 

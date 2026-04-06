@@ -16,6 +16,7 @@ import type {
   ChangeAssetGrowthRateScenario,
   SavingsWhatIfScenario,
   MortgageWhatIfScenario,
+  IncomeChangeScenario,
 } from './types';
 import { BASELINE_SCENARIO_ID } from './types';
 
@@ -31,6 +32,8 @@ export type ProjectionInputDelta = {
   // MORTGAGE_WHAT_IF: per-liability overrides of rate and term
   liabilityRateOverrides?: Array<{ liabilityId: string; annualInterestRatePct: number }>;
   liabilityTermOverrides?: Array<{ liabilityId: string; remainingTermYears: number }>;
+  // INCOME_CHANGE: monthly income delta (positive = income dropped, negative = income rose)
+  incomeChangeDelta?: number;
 };
 
 export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
@@ -135,6 +138,11 @@ export function scenarioToDelta(s: Scenario): ProjectionInputDelta {
         },
       ],
     };
+  }
+
+  if (s.kind === 'INCOME_CHANGE') {
+    const ir = s as IncomeChangeScenario;
+    return { incomeChangeDelta: ir.reductionMonthly };
   }
 
   // Exhaustive check (TypeScript will error if a new kind is added without handling)

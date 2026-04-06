@@ -238,3 +238,151 @@ Phase 3 is built before Phase 4 even though Phase 4 has higher value — because
 - Scenarios are created through existing `saveScenario` flow
 - All AI output passes through `coerceSnapshotState()` before touching state
 - User always confirms before AI-parsed data is written
+
+
+# Updates from Claude chat for review of above plan:
+
+Claude AI:
+The plan is solid in structure and the build order (interpreter before onboarding) is correctly risk-sequenced. But there are real problems you should address before building.
+What's actually good
+
+Provider-agnostic abstraction (aiClient.ts) is the right call — you're not locked in
+coerceSnapshotState() as the validation gate is smart reuse
+Phase 3 before Phase 4 is the right sequence
+
+Problems worth calling out
+1. The "no auth for MVP" decision is dismissive of a real risk. Rate limiting via a device ID header is trivially bypassed. Anyone can hit your Supabase proxy with rotating headers and rack up your Anthropic bill. "Add later" often means "never" until you get stung. At minimum, add a simple shared secret header — it takes 20 minutes and filters out casual abuse.
+2. Phase 4 (onboarding) failure modes aren't adequately handled. The plan treats coerceSnapshotState() as a catch-all safety net. It's not — it catches type errors, not semantic errors. A user says "I have a £50k pension" and the AI parses £500k. User skims the preview card, taps confirm, and now their 30-year projection is completely wrong. This is a trust-destroying bug. You need explicit value highlighting in SnapshotPreviewCard with amounts displayed prominently, and probably a diff view against whatever was there before.
+3. The AI interpreter (Phase 3) has a positioning conflict with your brand. Your core differentiation is "show, don't advise." A plain-English AI summary of projection results will almost inevitably drift prescriptive — even with a careful prompt. "Your savings will be depleted by age 67" reads differently from "You should save more." But "you're on track to run out of money before state pension age" is only one sentence away from implicit advice. You need to decide exactly where that line is before writing the prompt, not leave it to a runtime instruction.
+4. The repo structure is already diverged from the plan. The plan assumes files in ai/, components/chat/, etc. Your repo has projectionEngine.ts, SnapshotContext.tsx, and most core files at root level, not in organised subdirectories. When you implement the plan, you'll be adding clean structure on top of existing structural debt. That's fine, but acknowledge it — don't pretend the plan and reality are aligned.
+5. Streaming is undecided and that matters. "Streams or returns" needs a decision now. A chat UI with non-streaming responses feels broken above ~200 tokens. Streaming through Supabase Edge Functions is doable but adds implementation complexity. Pick one and design for it.
+One structural suggestion: Phase 1 creates 10+ files before a single user sees any value. As a solo developer, you'd ship faster if Phase 1 was minimal: just aiClient.ts + the Supabase function + a single hardcoded test call. Don't build the full abstraction layer until Phase 3 forces you to.
+
+Me:
+ill go with what you recommend, but honesty at this time  i really just want the onboarding to be simpler - even as i test.. want to say "Income is 50k" (AI should check if net income or gross if not specfied for eg.   Say "Add expense for netflix",  mortage has changed to 3.5%  etc.
+
+AI response:
+
+Good instinct — and it's actually a better architecture than what the plan describes. What you're describing is **incremental mutations**, not full state parsing. That's simpler to build, simpler to test, and more reliable.
+
+Here's the concrete shift:
+
+**The plan's approach (wrong for now):**
+User describes everything → AI outputs full `SnapshotState` JSON → user confirms blob → apply
+
+**What you actually want:**
+User sends one instruction → AI identifies intent + extracts minimal data → AI asks one clarifying question if needed → apply single setter
+
+---
+
+**The three operation types you need:**
+
+```
+ADD    → "income is 50k", "add netflix expense"
+UPDATE → "mortgage changed to 3.5%", "my salary went up to 60k"  
+DELETE → "remove the netflix expense"
+```
+
+AI output is a small typed delta, not full state:
+
+```ts
+type AIIntent =
+  | { op: 'add';    section: 'income'|'expense'|'asset'|'liability'; label: string; amount: number; frequency?: 'monthly'|'annual' }
+  | { op: 'update'; itemId: string; field: 'amount'|'rate'|'label'; value: number|string }
+  | { op: 'clarify'; question: string }  // AI isn't sure — asks before acting
+```
+
+When AI returns `clarify`, you show the question in the chat and wait. No state touched until you have a clean intent.
+
+---
+
+**The gross/net question is a good example of how clarify works:**
+
+User: "income is 50k"
+AI returns: `{ op: 'clarify', question: 'Is that £50k gross (before tax) or net (take-home)?' }`
+User: "net"
+AI returns: `{ op: 'add', section: 'income', label: 'Salary', amount: 50000, frequency: 'annual' }`
+
+---
+
+**Minimum to build for this:**
+
+1. Supabase Edge Function — thin proxy, just forwards to Claude
+2. `aiClient.ts` — single `callAI()` function
+3. `prompts/onboarding.ts` — system prompt that knows your `SnapshotState` schema and outputs only `AIIntent` JSON
+4. `parseIntent.ts` — parses + validates the JSON delta
+5. `AIChatScreen.tsx` — basic chat UI, message bubbles, input bar
+6. Intent → setter mapping (the `op: 'add'` calls your existing `addIncomeItem` etc.)
+
+That's it. No `SnapshotPreviewCard`, no full state confirmation flow, no `coerceSnapshotState()` needed at this stage — because you're applying one small validated delta at a time, the risk is contained.
+
+---
+
+**One thing to decide before writing the prompt:** does your `SnapshotState` use monthly or annual amounts internally? The AI needs to know which unit to output, otherwise you'll get 4x/12x errors that are hard to spot.
+
+What does your `types.ts` use?
+
+ME: Monthly, but i want users to be able tp say add a water bill for £600. if no time given AI should check (montly, quarterly, semi, annual etc.). If user says $1000 annual then it shoud save montly.
+
+Good. So the rule is simple: **always store monthly, AI handles the conversion.**
+
+The frequency clarification belongs in the `clarify` flow:
+
+```
+User: "add water bill £600"
+AI:   { op: 'clarify', question: 'How often is that £600? Monthly, quarterly, or annual?' }
+User: "quarterly"
+AI:   { op: 'add', section: 'expense', label: 'Water', amountMonthly: 50 }
+```
+
+```
+User: "add water bill £600 annual"
+AI:   { op: 'add', section: 'expense', label: 'Water', amountMonthly: 50 }  // no clarify needed
+```
+
+The AI does the division before returning the intent. The app never sees "£600 quarterly" — it only ever receives `amountMonthly`.
+
+---
+
+**The frequency conversion table the AI needs in its system prompt:**
+
+```
+monthly      → ÷ 1
+quarterly    → ÷ 3
+semi-annual  → ÷ 6
+annual       → ÷ 12
+weekly       → × 52 ÷ 12
+```
+
+Also handle currency: if user says `$1000`, AI should flag it — either ask "did you mean £?" or convert using a fixed assumption. Don't silently accept dollars. UK app, flag it explicitly.
+
+---
+
+**The `AIIntent` type updated:**
+
+```ts
+type AIIntent =
+  | { op: 'add';     section: 'income'|'expense'|'asset'|'liability'; label: string; amountMonthly: number }
+  | { op: 'update';  itemId: string; field: 'amount'|'rate'|'label'; value: number|string }
+  | { op: 'delete';  itemId: string }
+  | { op: 'clarify'; question: string }
+```
+
+Note `amountMonthly` — not `amount`. Makes the unit unambiguous in the type itself. Your setter takes monthly, this matches exactly.
+
+---
+
+Ready to write the system prompt and the Supabase edge function? That's the logical next step — get a working call end-to-end before building any UI.
+
+Create a Supabase Edge Function at supabase/functions/ai/index.ts. It should:
+
+Accept POST requests with { messages, systemPrompt } in the body
+Forward to Anthropic Messages API using claude-sonnet-4-20250514, max_tokens 1000
+Hold the Anthropic API key as Deno.env.get('ANTHROPIC_API_KEY')
+Add a simple shared secret check: request must include header x-app-secret matching Deno.env.get('APP_SECRET')
+Return the AI response content as { content: string }
+Return structured errors on failure
+No streaming for now
+
+Also create ai/aiClient.ts that exports a single callAI({ messages, systemPrompt }) function which POSTs to the edge function URL (from an env/config constant) with the shared secret header. Returns string (the content).
+Reference the existing types.ts for context on what SnapshotState looks like — the AI layer will need to understand this structure in later steps.

@@ -98,7 +98,7 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
       {
         id: 'overpayment',
         label: 'Extra monthly overpayment',
-        defaultValue: 0,
+        defaultValue: 100,
         min: 0,
         max: 1000,
         step: 50,
@@ -161,14 +161,19 @@ export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   },
   {
     id: 'income-reduces',
-    question: 'What if my income stopped or reduced?',
-    description: 'Lost your job or went part-time? See how long you could keep things afloat.',
-    scenarioKind: null,
-    icon: 'ChartLineUp',
+    question: 'What if my income changed?',
+    description: 'Lost your job, went part-time, or got a raise? See what it means for your future.',
+    scenarioKind: 'INCOME_CHANGE',
+    icon: 'ChartLineDown',
     category: 'events',
     targetSelector: null,
-    defaults: null,
-    enabled: false,
+    defaults: {
+      amountMonthly: 30000, // placeholder; overridden dynamically from snapshot income in screen
+      min: 0,
+      max: 130000,
+      step: 10000,
+    },
+    enabled: true,
   },
   {
     id: 'markets-crash',

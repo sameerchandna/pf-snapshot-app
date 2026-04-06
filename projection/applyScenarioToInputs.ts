@@ -338,6 +338,17 @@ export function applyScenarioToProjectionInputs(
     return a.amountMonthly - b.amountMonthly;
   });
 
+  // INCOME_CHANGE: scale all contributions proportionally by income delta
+  const scaledAssetContributions = (() => {
+    if (delta.incomeChangeDelta === undefined) {
+      return mergedAssetContributions;
+    }
+    const totalContribs = mergedAssetContributions.reduce((s, c) => s + c.amountMonthly, 0);
+    if (totalContribs <= 0) return mergedAssetContributions;
+    const ratio = Math.max(0, 1 - delta.incomeChangeDelta / totalContribs);
+    return mergedAssetContributions.map(c => ({ ...c, amountMonthly: c.amountMonthly * ratio }));
+  })();
+
   // Merge liability overpayments
   const mergedLiabilityOverpayments = mergeLiabilityOverpayments(
     baseline.liabilityOverpaymentsMonthly,
@@ -392,7 +403,7 @@ export function applyScenarioToProjectionInputs(
     ...baseline,
     assetsToday: mergedAssetsToday,
     liabilitiesToday: mergedLiabilitiesToday,
-    assetContributionsMonthly: mergedAssetContributions,
+    assetContributionsMonthly: scaledAssetContributions,
     liabilityOverpaymentsMonthly: mergedLiabilityOverpayments,
     retirementAge: mergedRetirementAge,
     monthlyExpensesReal: mergedMonthlyExpensesReal,
